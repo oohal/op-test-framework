@@ -312,9 +312,10 @@ class TBSuite():
 class DefaultSuite():
     '''Basic regression tests'''
     def __init__(self):
+        args = OpTestConfiguration.conf.args;
         self.s = unittest.TestSuite()
         self.s.addTest(SkirootSuite().suite())
-        if OpTestConfiguration.conf.args.host_scratch_disk:
+        if args.host_scratch_disk and (args.os_repo or args.os_cdrom):
             self.s.addTest(InstallHost().suite())
         self.s.addTest(HostSuite().suite())
     def suite(self):
