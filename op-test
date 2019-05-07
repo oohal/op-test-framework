@@ -554,26 +554,43 @@ class InstallHost():
     def __init__(self):
         self.s = unittest.TestSuite()
         conf = OpTestConfiguration.conf
-        target = conf.args.os_repo if conf.args.os_repo else conf.args.os_cdrom
-        if conf.args.host_scratch_disk and target:
-            if "ubuntu" in target.lower():
-                self.s.addTest(InstallUbuntu.InstallUbuntu())
-                optestlog.info('InstallUbuntu added to default suite')
-            elif "rhel" or "fedora" in target.lower():
-                self.s.addTest(InstallRhel.InstallRhel())
-                optestlog.info('InstallRhel added to default suite')
-            elif "hostos" in target.lower():
-                self.s.addTest(InstallHostOS.InstallHostOS())
-                optestlog.info('InstallHostOS added to default suite')
-            else:
-                optestlog.info("Could not parse OS name from '{}'".format(target))
-                conf.util.cleanup()
-                exit(-1)
+
+        if not conf.args.host_scratch_disk:
+            optestlog.error("The InstallHost suite requires a host_scratch_disk"
+                            " to install to. NB: For AES systems the scratch"
+                            " disk is set from the Attached Disk field of the"
+                            " System Info page.")
+            conf.util.cleanup()
+            exit(-1)
+
+        repo = conf.args.os_repo if conf.args.os_repo else conf.args.os_cdrom
+        if not repo:
+            optestlog.error("The InstallHost suite requires an os_repo or"
+                            " os_cdrom to be configured. This is used as the"
+                            " source repository for the OS installer.")
+            conf.util.cleanup()
+            exit(-1)
+
+        optestlog.info("{} will be used as the OS installer scratch disk"
+                       .format(conf.args.host_scratch_disk))
+        optestlog.info("{} will be used as the OS installer source repository"
+                       .format(repo))
+
+        if "ubuntu" in target.lower():
+            self.s.addTest(InstallUbuntu.InstallUbuntu())
+            optestlog.info('InstallUbuntu added to default suite')
+        elif "rhel" or "fedora" in target.lower():
+            self.s.addTest(InstallRhel.InstallRhel())
+            optestlog.info('InstallRhel added to default suite')
+        elif "hostos" in target.lower():
+            self.s.addTest(InstallHostOS.InstallHostOS())
+            optestlog.info('InstallHostOS added to default suite')
         else:
-            optestlog.info("Missing parameters for InstallHost suite, if this"
-                " is unexpected, check AES/Hostlocker for Attached Disk."
-                " This was triggered with host_scratch_disk={} target={}"
-                .format(conf.args.host_scratch_disk, target))
+            optestlog.error("Could not parse OS name from '{}' The repo string"
+                            " needs to contain one of these strings: ubuntu,"
+                            " fedora, rhel or hostos so op-test can figure out"
+                            " what it's trying to install."
+                            .format(target))
             conf.util.cleanup()
             exit(-1)
 
