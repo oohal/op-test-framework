@@ -56,33 +56,150 @@ class spawn(pexpect.spawn):
                                     ignore_sighup=ignore_sighup,
                                     encoding=encoding,
                                     codec_errors=codec_errors)
+        self.patterns = []
+
+    def add_pattern(self, cb, pattern):
+        self.patterns.append(pattern)
+        self.cb.append(cb)
+
+    def clear_patterns(self):
+        self.patterns = []
+        self.cb = []
 
     def set_system(self, system):
         self.op_test_system = system
         return
 
-    def expect(self, pattern, timeout=-1, searchwindowsize=-1):
-        op_patterns = ["qemu: could find kernel",
-                       "INFO: rcu_sched self-detected stall on CPU",
-                       "kernel BUG at",
-                       "Kernel panic",
-                       "Watchdog .* Hard LOCKUP",
-                       "Oops: Kernel access of bad area",
-                       "watchdog: .* detected hard LOCKUP on other CPUs",
-                       "Watchdog .* detected Hard LOCKUP other CPUS",
-                       "watchdog: BUG: soft lockup",
-                       "\[[0-9. ]+,0\] Assert fail:",
-                       "\[[0-9. ]+,[0-9]\] Unexpected exception",
-                       "OPAL exiting with locks held",
-                       "LOCK ERROR: Releasing lock we don't hold",
-                       "OPAL: Reboot requested due to Platform error."
-                       ]
+    def do_callback(self):
+        # We set the system state to UNKNOWN_BAD as we want to have a path
+        # to recover and run the next test, which is going to be to IPL
+        # the box again.
+        # We do this via a callback rather than any other method as that's
+        # just a *lot* easier with current code structure
+        if self.failure_callback:
+            state = self.failure_callback(self.failure_callback_data)
 
-        patterns = list(op_patterns)  # we want a *copy*
-        if isinstance(pattern, list):
-            patterns = patterns + pattern
+
+    def handle_kernel_err(self, p):
+        log = str(self.after)
+        l = 0
+
+        self.do_callback()
+
+        # scrape the reset of the error message
+        while l != 8:
+            l = super(spawn, self).expect(["INFO: rcu_sched self-detected stall on CPU",
+                                           "Watchdog .* Hard LOCKUP",
+                                           "Sending IPI to other CPUs",
+                                           ":mon>",
+                                           "Rebooting in \d+ seconds",
+                                           "Kernel panic - not syncing: Fatal exception",
+                                           "Kernel panic - not syncing: Hard LOCKUP",
+                                           "opal_cec_reboot2", pexpect.TIMEOUT],
+                                          timeout=15)
+            log = log + str(self.before) + str(self.after)
+            if l in [2, 3, 4, 7]:
+                # We know we have the end of the error message, so let's
+                # stop here.
+                break
+
+        if "soft lockup" in p:
+            raise KernelSoftLockup(state, log)
+        if "hard lockup" in p.tolower():
+            raise KernelHardLockup(state, log)
+        if "kernel BUG at" in p:
+            raise KernelBug(state, log)
+        if "kernel panic" in p.tolower():
+            if l == 2:
+                raise KernelKdump(state, log)
+            if l == 7:
+                raise KernelFADUMP(state, log)
+            raise KernelPanic(state, log)
+        if "Oops" in p:
+            raise KernelOOPS(state, log)
+
+        raise KernelCrashUnknown(state, log)
+
+    def handle_opal_err(self, is_assert, pty):
+        self.do_callback()
+
+        l = 0
+        log = self.after
+        l = super(spawn, self).expect(["boot_entry.*\r\n",
+                                           "Initiated MPIPL", pexpect.TIMEOUT],
+                                          timeout=10)
+        log = log + self.before + self.after
+        if is_assert:
+           raise SkibootAssert(state, log)
         else:
-            patterns.append(pattern)
+            raise SkibootException(state, log)
+
+
+    def handle_plat_error(self):
+        self.do_callback()
+
+        # Reboot due to HW core checkstop
+        # Let's attempt to capture Hostboot output
+        log = self.before + self.after
+        try:
+            l = super(spawn, self).expect("================================================",
+                                          timeout=120)
+            log = log + self.before + self.after
+            l = super(spawn, self).expect(
+                "System checkstop occurred during runtime on previous boot", timeout=30)
+            log = log + self.before + self.after
+            l = super(spawn, self).expect("================================================",
+                                          timeout=60)
+            log = log + self.before + self.after
+            l = super(spawn, self).expect("ISTEP", timeout=20)
+            log = log + self.before + self.after
+        except pexpect.TIMEOUT as t:
+            pass
+
+        raise PlatformError(state, log)
+
+    def qemu_err(self):
+        raise CommandFailed(self.command, "????", -1)
+
+    def expect(self, input_pattern, timeout=-1, searchwindowsize=-1):
+
+        # HACK: just for now until I move this into OpTestSystem
+        self.clear_patterns()
+
+
+        qemu_err = lambda pty, pat: self.qemu_err()
+        self.add_pattern(qemu_err, "qemu: could find kernel")
+
+        kern_err = lambda pty, pat: self.handle_kernel_err(p, pat)
+        self.add_pattern(kern_err, "INFO: rcu_sched self-detected stall on CPU")
+        self.add_pattern(kern_err, "kernel BUG at")
+        self.add_pattern(kern_err, "Kernel panic")
+        self.add_pattern(kern_err, "Oops: Kernel access of bad area")
+
+        self.add_pattern(kern_err, "Watchdog .* Hard LOCKUP")
+        self.add_pattern(kern_err, "watchdog: .* detected hard LOCKUP on other CPUs")
+        self.add_pattern(kern_err, "Watchdog .* detected Hard LOCKUP other CPUS")
+        self.add_pattern(kern_err, "watchdog: BUG: soft lockup")
+
+        opal_assert = lambda pty, pat: self.handle_opal_err(p, True)
+        self.add_pattern(opal_assert, "\[[0-9. ]+,0\] Assert fail:")
+
+        opal_ex = lambda pty, pat: self.handle_opal_err(p, False)
+        self.add_pattern(opal_ex, "\[[0-9. ]+,[0-9]\] Unexpected exception")
+        self.add_pattern(opal_ex, "OPAL exiting with locks held")
+        self.add_pattern(opal_ex, "LOCK ERROR: Releasing lock we don't hold")
+
+        plat_err = lambda pty, pat: self.handle_plat_err()
+        self.add_pattern(plat_err, "OPAL: Reboot requested due to Platform error.")
+
+
+        # FIXME: fix this once the above is done
+        if isinstance(input_pattern, list):
+            patterns = self.patterns + input_pattern
+            cb = self.cb + [None for x in input_pattern]
+        else:
+            patterns = self.patterns + [pattern]
+            cb = self.cb + [None]
 
         r = super(spawn, self).expect(patterns,
                                       timeout=timeout,
@@ -91,86 +208,10 @@ class spawn(pexpect.spawn):
         if r in [pexpect.EOF, pexpect.TIMEOUT]:
             return r
 
-        if r == 0:
-            raise CommandFailed(self.command, patterns[r], -1)
 
-        state = None
+        # call the callback for this pattern, assuming we have one
+        if cb[r]:
+            cb[r](pty, patterns[r]) # this should throw
+            raise Exception("OPexpect callback returned, don't do that")
 
-        if r in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
-            # We set the system state to UNKNOWN_BAD as we want to have a path
-            # to recover and run the next test, which is going to be to IPL
-            # the box again.
-            # We do this via a callback rather than any other method as that's
-            # just a *lot* easier with current code structure
-            if self.failure_callback:
-                state = self.failure_callback(self.failure_callback_data)
-        if r in [1, 2, 3, 4, 5, 6, 7, 8]:
-            log = str(self.after)
-            l = 0
-
-            while l != 8:
-                l = super(spawn, self).expect(["INFO: rcu_sched self-detected stall on CPU",
-                                               "Watchdog .* Hard LOCKUP",
-                                               "Sending IPI to other CPUs",
-                                               ":mon>",
-                                               "Rebooting in \d+ seconds",
-                                               "Kernel panic - not syncing: Fatal exception",
-                                               "Kernel panic - not syncing: Hard LOCKUP",
-                                               "opal_cec_reboot2", pexpect.TIMEOUT],
-                                              timeout=15)
-                log = log + str(self.before) + str(self.after)
-                if l in [2, 3, 4, 7]:
-                    # We know we have the end of the error message, so let's
-                    # stop here.
-                    break
-
-            if r == 1 or r == 8:
-                raise KernelSoftLockup(state, log)
-            if r == 2:
-                raise KernelBug(state, log)
-            if r == 4 or r == 6 or r == 7:
-                raise KernelHardLockup(state, log)
-            if r == 3 and l == 2:
-                raise KernelKdump(state, log)
-            if r == 3 and l == 7:
-                raise KernelFADUMP(state, log)
-            if r == 3:
-                raise KernelPanic(state, log)
-            if r == 5:
-                raise KernelOOPS(state, log)
-            if l == 8:
-                raise KernelCrashUnknown(state, log)
-
-        if r in [9, 10, 11, 12]:
-            l = 0
-            log = self.after
-            l = super(spawn, self).expect(["boot_entry.*\r\n",
-                                           "Initiated MPIPL", pexpect.TIMEOUT],
-                                          timeout=10)
-            log = log + self.before + self.after
-            if r in [9, 11, 12]:
-                raise SkibootAssert(state, log)
-            if r == 10:
-                raise SkibootException(state, log)
-
-        if r in [13]:
-            # Reboot due to HW core checkstop
-            # Let's attempt to capture Hostboot output
-            log = self.before + self.after
-            try:
-                l = super(spawn, self).expect("================================================",
-                                              timeout=120)
-                log = log + self.before + self.after
-                l = super(spawn, self).expect(
-                    "System checkstop occurred during runtime on previous boot", timeout=30)
-                log = log + self.before + self.after
-                l = super(spawn, self).expect("================================================",
-                                              timeout=60)
-                log = log + self.before + self.after
-                l = super(spawn, self).expect("ISTEP", timeout=20)
-                log = log + self.before + self.after
-            except pexpect.TIMEOUT as t:
-                pass
-            raise PlatformError(state, log)
-
-        return r - len(op_patterns)
+        return r - len(self.patterns)
