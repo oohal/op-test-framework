@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # This implements all the configuration needs for running a test
 # It includes command line argument parsing and keeping a set
@@ -146,7 +147,6 @@ default_templates = {
     'qemu': default_val_qemu,
     'mambo': default_val_mambo,
 }
-
 
 def get_parser():
     parser = argparse.ArgumentParser(
@@ -357,8 +357,8 @@ def get_parser():
                             help="pflash to copy to BMC (if needed)")
     imagegroup.add_argument("--pupdate",
                             help="pupdate to flash PNOR for Supermicro systems")
-    imagegroup.add_argument("--pdbg",
-                            help="pdbg binary to be executed on BMC")
+#    imagegroup.add_argument("--pdbg",
+#                           help="pdbg binary to be executed on BMC")
 
     stbgroup = parser.add_argument_group(
         'STB', 'Secure and Trusted boot parameters')
@@ -448,15 +448,18 @@ class OpTestConfiguration():
 
         self.util_server = None  # Hostlocker or AES
         self.util_bmc_server = None  # OpenBMC REST Server
-        atexit.register(self.cleanup)  # allows cleanup handler to run (OpExit)
+#        atexit.register(self.cleanup)  # allows cleanup handler to run (OpExit)
         self.firmware_versions = None
         self.nvram_debug_opts = None
 
-        for dirname in (next(os.walk(os.path.join(self.basedir, 'addons')))[1]):
-            if dirname == "__pycache__":
-                continue
-            optAddons[dirname] = importlib.import_module(
-                "addons." + dirname + ".OpTest" + dirname + "Setup")
+#       FIXME: virtenv breaks the plugin stuff, annoying, but nothing uses it
+#        print("XXXXXXXXXXXXXXXXXX", self.basedir)
+#
+#        for dirname in (next(os.walk(os.path.join(self.basedir, 'addons')))[1]):
+#            if dirname == "__pycache__":
+#                continue
+#            optAddons[dirname] = importlib.import_module(
+#                "addons." + dirname + ".OpTest" + dirname + "Setup")
 
         return
 
@@ -504,11 +507,13 @@ class OpTestConfiguration():
         # don't parse argv[0]
         self.args, self.remaining_args = parser.parse_known_args(argv[1:])
 
+        if len(self.remaining_args) > 0 and not self.args.accept_unknown_args:
+           print("Unknown command line argument(s): {}".format(str(self.remaining_args)))
         # we use parse_known_args() and generate our own usage because the number
         # of args makes the default usage string... unwieldy
-        if len(self.remaining_args) > 0 and not self.args.accept_unknown_args:
-            raise Exception("Unknown command line argument(s): {}"
-                                .format(str(self.remaining_args)))
+#        if len(self.remaining_args) > 0 and not self.args.accept_unknown_args:
+#           raise Exception("Unknown command line argument(s): {}"
+#                                .format(str(self.remaining_args)))
 
         args_dict = vars(self.args)
 
@@ -696,8 +701,9 @@ class OpTestConfiguration():
         return outsuffix
 
     def objs(self):
-        if self.args.list_suites or self.args.list_tests:
-            return
+        print("creating objects")
+#        if self.args.list_suites or self.args.list_tests:
+#            return
 
         # check to see if bmc_ip even pings to validate configuration parms
         try:
@@ -916,10 +922,11 @@ class OpTestConfiguration():
                                 "version_mappings)".format(self.args.bmc_type))
 
             host.set_system(self.op_system)
+            print("created objects")
             return
         except Exception as e:
             traceback.print_exc()
-            self.util.cleanup()
+#            self.util.cleanup()
             raise e
 
     def bmc(self):
@@ -942,6 +949,5 @@ class OpTestConfiguration():
 
     def platform(self):
         return self.args.platform
-
 
 global conf
