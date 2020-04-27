@@ -49,7 +49,6 @@ import OpTestConfiguration
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
 from .OpTestSSH import OpTestSSH
-from . import OpTestQemu
 from .Exceptions import CommandFailed, NoKernelConfig, KernelModuleNotLoaded, KernelConfigNotSet, ParameterCheck
 
 import logging
@@ -204,11 +203,10 @@ class OpTestHost():
             raise OpTestError(l_msg)
 
     def host_run_command(self, i_cmd, timeout=1500, retry=0, console=0):
-        # if we are QEMU use the system console
-        if isinstance(self.ssh.system.console, OpTestQemu.QemuConsole) or (console == 1):
-            return self.ssh.system.console.run_command(i_cmd, timeout, retry)
-        else:
+        if self.ssh:
             return self.ssh.run_command(i_cmd, timeout, retry)
+        else:
+            return self.ssh.system.console.run_command(i_cmd, timeout, retry)
 
     def host_gather_opal_msg_log(self, console=0):
         '''

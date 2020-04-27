@@ -47,6 +47,7 @@ from .OpTestTConnection import TConnection
 from .OpTestASM import OpTestASM
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
+from .OpTestSystem import OpTestSystem, OpSystemState
 
 Possible_Hyp_value = {'01': 'PowerVM', '03': 'PowerKVM'}
 Possible_Sys_State = {'terminated': 0, 'standby': 1,
@@ -489,4 +490,48 @@ class OpTestFSP():
         return False
 
     def supports_ipmi_dcmi(self):
+        return False
+
+
+class OpTestFSPSystem(OpTestSystem):
+    '''
+    Implementation of an OpTestSystem for IBM FSP based systems (such as Tuleta and ZZ)
+
+    Main differences are that some functions need to be done via the service processor
+    rather than via IPMI due to differences in functionality.
+    '''
+
+    def __init__(self,
+                 host=None,
+                 bmc=None,
+                 conf=None,
+                 state=OpSystemState.UNKNOWN):
+        bmc.fsp_get_console()
+        super(OpTestFSPSystem, self).__init__(host=host,
+                                              bmc=bmc,
+                                              conf=conf,
+                                              state=state)
+
+    def sys_wait_for_standby_state(self, i_timeout=120):
+        return self.cv_BMC.wait_for_standby(i_timeout)
+
+    def wait_for_it(self, **kwargs):
+        # Ensure IPMI console is open so not to miss petitboot
+        sys_pty = self.console.get_console()
+        self.cv_BMC.wait_for_runtime()
+        return super(OpTestFSPSystem, self).wait_for_it(**kwargs)
+
+    def skiboot_log_on_console(self):
+        return False
+
+    def has_host_accessible_eeprom(self):
+        return False
+
+    def has_host_led_support(self):
+        return True
+
+    def has_centaurs_in_dt(self):
+        return False
+
+    def has_mtd_pnor_access(self):
         return False

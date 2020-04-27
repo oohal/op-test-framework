@@ -32,6 +32,7 @@ from common.OpTestSSH import OpTestSSH
 from common.OpTestUtil import OpTestUtil
 from common.Exceptions import CommandFailed
 from common import OPexpect
+from common.OpTestSystem import OpTestSystem, OpSystemState
 
 from .OpTestConstants import OpTestConstants as BMC_CONST
 
@@ -512,3 +513,98 @@ class HMCConsole(HMCUtil):
     def run_command(self, i_cmd, timeout=15):
         return self.util.run_command(self, i_cmd, timeout)
 
+class OpTestLPARSystem(OpTestSystem):
+    '''
+    Implementation of an OpTestSystem for IBM FSP based PHYP systems.
+
+    Main differences are that some functions need to be done via the
+    an HMC interface rather than via IPMI due to differences in functionality.
+    '''
+
+    def __init__(self,
+                 host=None,
+                 bmc=None,
+                 conf=None,
+                 state=OpSystemState.UNKNOWN):
+        bmc.fsp_get_console()
+        self.hmc = bmc.get_hmc()
+
+        # HACK: stop the generic OpTestSystem from trying to look for
+        # skiboot NVRAM params. This should go away when we refactor
+        # OpTestSystem properly...
+        self.conf.nvram_debug_opts = "asdf"
+        super(OpTestLPARSystem, self).__init__(host=host,
+                                              bmc=bmc,
+                                              conf=conf,
+                                              state=state)
+
+    def sys_wait_for_standby_state(self, i_timeout=20):
+        return BMC_CONST.FW_SUCCESS
+
+    def sys_sdr_clear(self):
+        return 0
+
+    def sys_set_bootdev_setup(self):
+        return
+
+    def sys_set_bootdev_no_override(self):
+        return
+
+    def sys_power_on(self):
+        self.hmc.poweron_lpar()
+
+    def sys_power_off(self):
+        self.hmc.poweroff_lpar()
+
+    def wait_for_it(self, **kwargs):
+        sys_pty = self.console.get_console()
+        return super(OpTestLPARSystem, self).wait_for_it(**kwargs)
+
+    def run_UNKNOWN(self, state):
+        # Need to unblock to make HMC SSH usable
+        self.block_setup_term = 0
+        self.sys_power_off()
+        return OpSystemState.POWERING_OFF
+
+    def run_OFF(self, state):
+        """
+        Power on the LPAR from OFF state
+        Return to BOOTING state skipping non-applicable IPL, Petitboot states
+        """
+        self.block_setup_term = 1
+        if state == OpSystemState.OFF:
+            return OpSystemState.OFF
+        if state == OpSystemState.UNKNOWN:
+            raise UnknownStateTransition(state=self.state,
+                                         message="OpTestSystem in run_OFF and something caused the system to go to UNKNOWN")
+
+        r = self.sys_power_on()
+        # Only retry once
+        if r == BMC_CONST.FW_FAILED:
+            r = self.sys_power_on()
+            if r == BMC_CONST.FW_FAILED:
+                raise 'Failed powering on system'
+        return OpSystemState.BOOTING
+
+    def skiboot_log_on_console(self):
+        return False
+
+    def has_host_accessible_eeprom(self):
+        return False
+
+    def has_host_led_support(self):
+        return True
+
+    def has_centaurs_in_dt(self):
+        return False
+
+    def has_mtd_pnor_access(self):
+        return False
+
+    def goto_state(self, state):
+        # FIXME: this shouldn't be throwing a unittest exception
+        if state in [OpSystemState.IPLing, OpSystemState.PETITBOOT, OpSystemState.PETITBOOT_SHELL]:
+            raise unittest.SkipTest(
+                "OpTestSystem running HMC so skipping OpSystemState.[IPLing|PETITBOOT|PETITBOOT_SHELL] test")
+        else:
+            super.goto_state(self, state)

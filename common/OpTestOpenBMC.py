@@ -33,7 +33,7 @@ from .OpTestBMC import OpTestBMC
 from .Exceptions import HTTPCheck
 from .Exceptions import CommandFailed
 from .OpTestConstants import OpTestConstants as BMC_CONST
-from . import OpTestSystem
+from .OpTestSystem import OpTestSystem, OpSystemState
 
 import logging
 import OpTestLogger
@@ -1182,3 +1182,99 @@ class OpTestOpenBMC():
 
     def supports_ipmi_dcmi(self):
         return False
+
+class OpTestOpenBMCSystem(OpTestSystem):
+    '''
+    Implementation of an OpTestSystem for OpenBMC based platforms.
+
+    Near all IPMI functionality is done via the OpenBMC REST interface instead.
+    '''
+
+    def __init__(self,
+                 host=None,
+                 bmc=None,
+                 conf=None,
+                 state=OpSystemState.UNKNOWN):
+        # Ensure we grab host console early, in order to not miss
+        # any messages
+        self.console = bmc.get_host_console()
+        super(OpTestOpenBMCSystem, self).__init__(host=host,
+                                                  bmc=bmc,
+                                                  conf=conf,
+                                                  state=state)
+    # REST Based management
+
+    def sys_inventory(self):
+        self.rest.get_inventory()
+
+    def sys_sensors(self):
+        self.rest.sensors()
+
+    def sys_bmc_state(self):
+        self.rest.get_bmc_state()
+
+    def sys_power_on(self):
+        self.rest.power_on()
+
+    def sys_power_off(self):
+        self.rest.power_off()
+
+    def sys_power_reset(self):
+        self.rest.hard_reboot()
+
+    def sys_power_cycle(self):
+        self.rest.soft_reboot()
+
+    def sys_power_soft(self):
+        # self.rest.power_soft() currently rest command for softPowerOff failing
+        self.rest.power_off()
+
+    def sys_sdr_clear(self):
+        self.rest.clear_sel()
+
+    def sys_get_sel_list(self):
+        self.rest.list_sel()
+
+    def sys_sel_elist(self, dump=False):
+        id_list, dict_list = self.rest.get_sel_ids(dump=dump)
+        output = self.rest.convert_esels_to_list(id_list=id_list, dict_list=dict_list)
+        return output
+
+    def sys_sel_check(self):
+        self.rest.list_sel()
+
+    def sys_wait_for_standby_state(self, i_timeout=120):
+        self.rest.wait_for_standby()
+        return 0
+
+    def wait_for_it(self, **kwargs):
+        # Ensure IPMI console is open so not to miss petitboot
+        sys_pty = self.console.get_console()
+        self.rest.wait_for_runtime()
+        return super(OpTestOpenBMCSystem, self).wait_for_it(**kwargs)
+
+    def sys_set_bootdev_setup(self):
+        self.rest.set_bootdev_to_setup()
+
+    def sys_set_bootdev_no_override(self):
+        self.rest.set_bootdev_to_none()
+
+    def sys_warm_reset(self):
+        self.console.close()
+        self.rest.bmc_reset()
+
+    def sys_cold_reset_bmc(self):
+        self.console.close()
+        self.rest.bmc_reset()
+
+    def sys_enable_tpm(self):
+        self.rest.enable_tpm()
+
+    def sys_disable_tpm(self):
+        self.rest.disable_tpm()
+
+    def sys_is_tpm_enabled(self):
+        return self.rest.is_tpm_enabled()
+
+    def cronus_capable(self):
+        return True

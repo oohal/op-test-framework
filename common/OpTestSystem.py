@@ -38,10 +38,6 @@ import errno
 import unittest
 
 from . import OpTestIPMI  # circular dependencies, use package
-from . import OpTestQemu
-from . import OpTestMambo
-from . import OpTestHMC
-from .OpTestFSP import OpTestFSP
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
 from . import OpTestHost
@@ -361,15 +357,6 @@ class OpTestSystem(object):
         # if user overrides from command line and machine not at desired state can lead to exceptions
         self.block_setup_term = 1  # block in case the system is not on/up
         self.target_state = state  # used in WaitForIt
-        if (isinstance(self.console, OpTestQemu.QemuConsole)
-                or isinstance(self.console, OpTestMambo.MamboConsole)) \
-                and (state == OpSystemState.OS):
-            raise unittest.SkipTest(
-                "OpTestSystem running QEMU/Mambo so skipping OpSystemState.OS test")
-        if isinstance(self.console, OpTestHMC.HMCConsole) \
-                and state in [OpSystemState.IPLing, OpSystemState.PETITBOOT, OpSystemState.PETITBOOT_SHELL]:
-            raise unittest.SkipTest(
-                "OpTestSystem running HMC so skipping OpSystemState.[IPLing|PETITBOOT|PETITBOOT_SHELL] test")
         if (self.state == OpSystemState.UNKNOWN):
             log.debug(
                 "OpTestSystem CHECKING CURRENT STATE and TRANSITIONING for TARGET STATE: %s" % (state))
@@ -404,8 +391,7 @@ class OpTestSystem(object):
         # If we haven't checked for dangerous NVRAM options yet and
         # checking won't disrupt the test, do so now.
         if self.conf.nvram_debug_opts is None and state in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
-            if not isinstance(self.console, OpTestHMC.HMCConsole):
-                self.util.check_nvram_options(self.console)
+            self.util.check_nvram_options(self.console)
 
     def run_DETECT(self, target_state):
         self.detect_counter += 1
@@ -541,9 +527,12 @@ class OpTestSystem(object):
         else:
             # cannot tolerate new connect on transition from 3/4 to 6
             sys_pty = self.console.get_console()
+
+        # FIXME: needed? The SMS menu should auto-bypass anyway...
         # check console type and pass 5 to skip SMS menu when booting an LPAR
-        if isinstance(self.console, OpTestHMC.HMCConsole):
-            sys_pty.sendline('5')
+        #if isinstance(self.console, OpTestHMC.HMCConsole):
+        #    sys_pty.sendline('5')
+
         # we do not perform buffer_kicker here since it can cause changes to things like the petitboot menu and default boot
         if kwargs['refresh']:
             sys_pty.sendcontrol('l')
@@ -553,9 +542,12 @@ class OpTestSystem(object):
         timeout_count = 1
         while (x <= kwargs['loop_max']):
             sys_pty = self.console.get_console()  # preemptive in case EOF came
+
+            # FIXME: needed? The SMS menu should auto-bypass anyway...
             # check console type and pass 5 to skip SMS menu when booting an LPAR
-            if isinstance(self.console, OpTestHMC.HMCConsole) and x == 1:
-                sys_pty.sendline('5')
+            #if isinstance(self.console, OpTestHMC.HMCConsole) and x == 1:
+            #    sys_pty.sendline('5')
+
             r = sys_pty.expect(expect_seq, kwargs['timeout'])
             # if we have a stale buffer and we are still timing out
             if (previous_before == sys_pty.before) and ((r + 1) in range(len(base_seq))):
@@ -1332,320 +1324,3 @@ class OpTestSystem(object):
 
     def sys_is_tpm_enabled(self):
         return self.cv_IPMI.is_tpm_enabled()
-
-
-class OpTestFSPSystem(OpTestSystem):
-    '''
-    Implementation of an OpTestSystem for IBM FSP based systems (such as Tuleta and ZZ)
-
-    Main differences are that some functions need to be done via the service processor
-    rather than via IPMI due to differences in functionality.
-    '''
-
-    def __init__(self,
-                 host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        bmc.fsp_get_console()
-        super(OpTestFSPSystem, self).__init__(host=host,
-                                              bmc=bmc,
-                                              conf=conf,
-                                              state=state)
-
-    def sys_wait_for_standby_state(self, i_timeout=120):
-        return self.cv_BMC.wait_for_standby(i_timeout)
-
-    def wait_for_it(self, **kwargs):
-        # Ensure IPMI console is open so not to miss petitboot
-        sys_pty = self.console.get_console()
-        self.cv_BMC.wait_for_runtime()
-        return super(OpTestFSPSystem, self).wait_for_it(**kwargs)
-
-    def skiboot_log_on_console(self):
-        return False
-
-    def has_host_accessible_eeprom(self):
-        return False
-
-    def has_host_led_support(self):
-        return True
-
-    def has_centaurs_in_dt(self):
-        return False
-
-    def has_mtd_pnor_access(self):
-        return False
-
-
-class OpTestLPARSystem(OpTestSystem):
-    '''
-    Implementation of an OpTestSystem for IBM FSP based PHYP systems.
-
-    Main differences are that some functions need to be done via the
-    an HMC interface rather than via IPMI due to differences in functionality.
-    '''
-
-    def __init__(self,
-                 host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        bmc.fsp_get_console()
-        self.hmc = bmc.get_hmc()
-        super(OpTestLPARSystem, self).__init__(host=host,
-                                              bmc=bmc,
-                                              conf=conf,
-                                              state=state)
-
-    def sys_wait_for_standby_state(self, i_timeout=20):
-        return BMC_CONST.FW_SUCCESS
-
-    def sys_sdr_clear(self):
-        return 0
-
-    def sys_set_bootdev_setup(self):
-        return
-
-    def sys_set_bootdev_no_override(self):
-        return
-
-    def sys_power_on(self):
-        self.hmc.poweron_lpar()
-
-    def sys_power_off(self):
-        self.hmc.poweroff_lpar()
-
-    def wait_for_it(self, **kwargs):
-        sys_pty = self.console.get_console()
-        return super(OpTestLPARSystem, self).wait_for_it(**kwargs)
-
-    def run_UNKNOWN(self, state):
-        # Need to unblock to make HMC SSH usable
-        self.block_setup_term = 0
-        self.sys_power_off()
-        return OpSystemState.POWERING_OFF
-
-    def run_OFF(self, state):
-        """
-        Power on the LPAR from OFF state
-        Return to BOOTING state skipping non-applicable IPL, Petitboot states
-        """
-        self.block_setup_term = 1
-        if state == OpSystemState.OFF:
-            return OpSystemState.OFF
-        if state == OpSystemState.UNKNOWN:
-            raise UnknownStateTransition(state=self.state,
-                                         message="OpTestSystem in run_OFF and something caused the system to go to UNKNOWN")
-
-        r = self.sys_power_on()
-        # Only retry once
-        if r == BMC_CONST.FW_FAILED:
-            r = self.sys_power_on()
-            if r == BMC_CONST.FW_FAILED:
-                raise 'Failed powering on system'
-        return OpSystemState.BOOTING
-
-    def skiboot_log_on_console(self):
-        return False
-
-    def has_host_accessible_eeprom(self):
-        return False
-
-    def has_host_led_support(self):
-        return True
-
-    def has_centaurs_in_dt(self):
-        return False
-
-    def has_mtd_pnor_access(self):
-        return False
-
-
-class OpTestOpenBMCSystem(OpTestSystem):
-    '''
-    Implementation of an OpTestSystem for OpenBMC based platforms.
-
-    Near all IPMI functionality is done via the OpenBMC REST interface instead.
-    '''
-
-    def __init__(self,
-                 host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        # Ensure we grab host console early, in order to not miss
-        # any messages
-        self.console = bmc.get_host_console()
-        super(OpTestOpenBMCSystem, self).__init__(host=host,
-                                                  bmc=bmc,
-                                                  conf=conf,
-                                                  state=state)
-    # REST Based management
-
-    def sys_inventory(self):
-        self.rest.get_inventory()
-
-    def sys_sensors(self):
-        self.rest.sensors()
-
-    def sys_bmc_state(self):
-        self.rest.get_bmc_state()
-
-    def sys_power_on(self):
-        self.rest.power_on()
-
-    def sys_power_off(self):
-        self.rest.power_off()
-
-    def sys_power_reset(self):
-        self.rest.hard_reboot()
-
-    def sys_power_cycle(self):
-        self.rest.soft_reboot()
-
-    def sys_power_soft(self):
-        # self.rest.power_soft() currently rest command for softPowerOff failing
-        self.rest.power_off()
-
-    def sys_sdr_clear(self):
-        self.rest.clear_sel()
-
-    def sys_get_sel_list(self):
-        self.rest.list_sel()
-
-    def sys_sel_elist(self, dump=False):
-        id_list, dict_list = self.rest.get_sel_ids(dump=dump)
-        output = self.rest.convert_esels_to_list(id_list=id_list, dict_list=dict_list)
-        return output
-
-    def sys_sel_check(self):
-        self.rest.list_sel()
-
-    def sys_wait_for_standby_state(self, i_timeout=120):
-        self.rest.wait_for_standby()
-        return 0
-
-    def wait_for_it(self, **kwargs):
-        # Ensure IPMI console is open so not to miss petitboot
-        sys_pty = self.console.get_console()
-        self.rest.wait_for_runtime()
-        return super(OpTestOpenBMCSystem, self).wait_for_it(**kwargs)
-
-    def sys_set_bootdev_setup(self):
-        self.rest.set_bootdev_to_setup()
-
-    def sys_set_bootdev_no_override(self):
-        self.rest.set_bootdev_to_none()
-
-    def sys_warm_reset(self):
-        self.console.close()
-        self.rest.bmc_reset()
-
-    def sys_cold_reset_bmc(self):
-        self.console.close()
-        self.rest.bmc_reset()
-
-    def sys_enable_tpm(self):
-        self.rest.enable_tpm()
-
-    def sys_disable_tpm(self):
-        self.rest.disable_tpm()
-
-    def sys_is_tpm_enabled(self):
-        return self.rest.is_tpm_enabled()
-
-    def cronus_capable(self):
-        return True
-
-
-class OpTestQemuSystem(OpTestSystem):
-    '''
-    Implementation of OpTestSystem for the Qemu Simulator
-
-    Running against a simulator is rather different than running against a machine,
-    but only in some *specific* cases. Many tests will run as-is, but ones that require
-    a bunch of manipulation of the BMC will likely not.
-    '''
-
-    def __init__(self,
-                 host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        # Ensure we grab host console early, in order to not miss
-        # any messages
-        self.console = bmc.get_host_console()
-        if host.scratch_disk in [None, '']:
-            host.scratch_disk = "/dev/sda"
-        super(OpTestQemuSystem, self).__init__(host=host,
-                                               bmc=bmc,
-                                               conf=conf,
-                                               state=state)
-
-    def sys_wait_for_standby_state(self, i_timeout=120):
-        self.bmc.power_off()
-        return 0
-
-    def sys_sdr_clear(self):
-        return 0
-
-    def sys_power_on(self):
-        self.bmc.power_on()
-
-    def get_my_ip_from_host_perspective(self):
-        return "10.0.2.2"
-
-    def has_host_accessible_eeprom(self):
-        return False
-
-    def has_mtd_pnor_access(self):
-        return True
-
-
-class OpTestMamboSystem(OpTestSystem):
-    '''
-    Implementation of OpTestSystem for the Mambo Simulator
-
-    Running against a simulator is rather different than running against a machine,
-    but only in some *specific* cases. Many tests will run as-is, but ones that require
-    a bunch of manipulation of the BMC will likely not.
-    '''
-
-    def __init__(self,
-                 host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        # Ensure we grab host console early, in order to not miss
-        # any messages
-        self.console = bmc.get_host_console()
-        super(OpTestMamboSystem, self).__init__(host=host,
-                                                bmc=bmc,
-                                                conf=conf,
-                                                state=state)
-
-    def sys_wait_for_standby_state(self, i_timeout=120):
-        self.bmc.power_off()
-        return 0
-
-    def sys_sdr_clear(self):
-        return 0
-
-    def sys_power_on(self):
-        self.bmc.power_on()
-
-    def get_my_ip_from_host_perspective(self):
-        return None
-
-    def has_host_accessible_eeprom(self):
-        return False
-
-    def has_mtd_pnor_access(self):
-        return False
-
-    def disable_stty_echo(self):
-        # we do this here since we need it early in OpTestUtil
-        # importing gets circular in OpTestUtil
-        # we use OpTestUtil term_obj to get at the system attributes
-        return True

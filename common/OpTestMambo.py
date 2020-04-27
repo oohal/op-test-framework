@@ -31,6 +31,7 @@ import os
 from common.Exceptions import CommandFailed, ParameterCheck
 from . import OPexpect
 from .OpTestUtil import OpTestUtil
+from .OpTestSystem import OpTestSystem, OpSystemState
 
 import logging
 import OpTestLogger
@@ -307,3 +308,56 @@ class OpTestMambo():
 
     def has_ipmi_sel(self):
         return False
+
+class OpTestMamboSystem(OpTestSystem):
+    '''
+    Implementation of OpTestSystem for the Mambo Simulator
+
+    Running against a simulator is rather different than running against a machine,
+    but only in some *specific* cases. Many tests will run as-is, but ones that require
+    a bunch of manipulation of the BMC will likely not.
+    '''
+
+    def __init__(self,
+                 host=None,
+                 bmc=None,
+                 conf=None,
+                 state=OpSystemState.UNKNOWN):
+        # Ensure we grab host console early, in order to not miss
+        # any messages
+        self.console = bmc.get_host_console()
+        super(OpTestMamboSystem, self).__init__(host=host,
+                                                bmc=bmc,
+                                                conf=conf,
+                                                state=state)
+
+    def sys_wait_for_standby_state(self, i_timeout=120):
+        self.bmc.power_off()
+        return 0
+
+    def sys_sdr_clear(self):
+        return 0
+
+    def sys_power_on(self):
+        self.bmc.power_on() # BMC is none...
+
+    def get_my_ip_from_host_perspective(self):
+        return None
+
+    def has_host_accessible_eeprom(self):
+        return False
+
+    def has_mtd_pnor_access(self):
+        return False
+
+    def disable_stty_echo(self):
+        # we do this here since we need it early in OpTestUtil
+        # importing gets circular in OpTestUtil
+        # we use OpTestUtil term_obj to get at the system attributes
+        return True
+
+    def goto_state(self, state):
+        if (isinstance(self.console, OpTestMambo.MamboConsole)) and (state == OpSystemState.OS):
+            raise unittest.SkipTest("OpSystemState.OS is not supported under mambo")
+        else:
+            super.goto_state(self, state)

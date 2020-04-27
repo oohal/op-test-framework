@@ -34,6 +34,7 @@ from common.Exceptions import CommandFailed
 from . import OPexpect
 from .OpTestUtil import OpTestUtil
 import OpTestConfiguration
+from .OpTestSystem import OpTestSystem, OpSystemState
 
 import logging
 import OpTestLogger
@@ -430,3 +431,53 @@ class OpTestQemu():
         create_hda = subprocess.check_call(["qemu-img", "create",
                                             "-fqcow2", fd.name, size])
         self.console.update_disks(self.disks)
+
+class OpTestQemuSystem(OpTestSystem):
+    '''
+    Implementation of OpTestSystem for the Qemu Simulator
+
+    Running against a simulator is rather different than running against a machine,
+    but only in some *specific* cases. Many tests will run as-is, but ones that require
+    a bunch of manipulation of the BMC will likely not.
+    '''
+
+    def __init__(self,
+                 host=None,
+                 bmc=None,
+                 conf=None,
+                 state=OpSystemState.UNKNOWN):
+        # Ensure we grab host console early, in order to not miss
+        # any messages
+        self.console = bmc.get_host_console()
+        if host.scratch_disk in [None, '']:
+            host.scratch_disk = "/dev/sda"
+        super(OpTestQemuSystem, self).__init__(host=host,
+                                               bmc=bmc,
+                                               conf=conf,
+                                               state=state)
+
+    def sys_wait_for_standby_state(self, i_timeout=120):
+        self.bmc.power_off()
+        return 0
+
+    def sys_sdr_clear(self):
+        return 0
+
+    def sys_power_on(self):
+        self.bmc.power_on()
+
+    def get_my_ip_from_host_perspective(self):
+        return "10.0.2.2"
+
+    def has_host_accessible_eeprom(self):
+        return False
+
+    def has_mtd_pnor_access(self):
+        return True
+
+    def goto_state(self, state):
+        # FIXME: We should proably check if the qemu instance has a disk attached or something
+        if isinstance(self.console, QemuConsole) and state == OpSystemState.OS:
+            raise unittest.SkipTest("OpSystemState.OS is not supported under Qemu")
+        else:
+            super.goto_state(self, state)
