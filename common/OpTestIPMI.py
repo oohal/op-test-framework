@@ -96,7 +96,7 @@ class IPMITool():
             cmd = cmdprefix + self.binary + self.arguments() + cmd
         else:
             cmd = self.binary + self.arguments() + cmd
-        log.debug(cmd)
+        log.info(cmd)
         if background:
             try:
                 child = subprocess.Popen(

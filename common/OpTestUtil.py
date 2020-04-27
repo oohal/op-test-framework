@@ -1187,6 +1187,8 @@ class OpTestUtil():
         expect_prompt = prompt + "$"
         pty.sendline("which bash && exec bash --norc --noprofile")
         time.sleep(0.2)
+        pty.sendline('unset HISTFILE' + prompt)
+        time.sleep(0.2)
         pty.sendline('PS1=' + prompt)
         time.sleep(0.2)
         rc = pty.expect([prompt, pexpect.TIMEOUT, pexpect.EOF], timeout=10)
