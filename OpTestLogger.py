@@ -28,6 +28,12 @@ from logging.handlers import RotatingFileHandler
 
 
 class FileLikeLogger():
+    '''
+    pexpect can record sessions to a log file, this provides a glue layer
+    between the normal File IO and the Log IO interface. This may or may not
+    be a good idea since the resulting logs tend to be a bit unreadable. Especially
+    if there's any binary data / control characters in the session output.
+    '''
     def __init__(self, l):
         self.log = l
 
