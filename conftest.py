@@ -45,15 +45,22 @@ OpTestConfiguration.conf = OpTestConfiguration.OpTestConfiguration()
 
 # create loggers, take hostlocks, etc
 
-# HACK:
+# Add the old op-test options for finding a particular system to the
+# pytest arguments. This still lets us choose the system to run op-test
+# against based on the config in hostlocker, aes, or in a local config file.
 def pytest_addoption(parser):
-    parser.addoption("--hostlocker", action="store", help="hostlocker host to use")
+    parser.addoption("--hostlocker", action="store", help="host from hostlocker to test")
+    parser.addoption("--aes", action="store", help="host in AES to use")
+    parser.addoption("--aes-search-args", action="store", help="host in AES to use")
+    parser.addoption("--config-file", action="store", help="system config file to use")
 
 @pytest.fixture(autouse=True, scope='session')
 def optest_system():
         OpTestConfiguration.conf = OpTestConfiguration.OpTestConfiguration()
         OpTestConfiguration.conf.parse_args(sys.argv)
         OpTestConfiguration.conf.do_testing_setup()
+
+        # this needs to die...
         OpTestConfiguration.conf.objs()
 
         print("heading to outta space")
