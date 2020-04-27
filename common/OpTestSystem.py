@@ -406,10 +406,12 @@ class OpTestSystem(object):
         return detect_state
 
     def detect_target(self, target_state, reboot):
-        self.block_setup_term = 0  # unblock to allow setup_term during get_console
-        self.console.enable_setup_term_quiet()
-        sys_pty = self.console.get_console()
+        # block setup_term while doing the inital probe, if the host is off we end up wasting a lot of time
+        self.block_setup_term = 1  # unblock to allow setup_term during get_console
         self.console.disable_setup_term_quiet()
+
+        sys_pty = self.console.get_console()
+
         if self.detect_counter > 1:
             # May be sitting at the host prompt - send a carriage return to force it to refresh
             sys_pty.sendline()
@@ -431,7 +433,9 @@ class OpTestSystem(object):
             else:
                 return OpSystemState.UNKNOWN
         elif r in [2, 3]:
+            # check_kernel will setup the shell prompt as a side effect
             detect_state = self.check_kernel()
+
             if (detect_state == target_state):
                 self.previous_state = detect_state  # preserve state
                 return detect_state
