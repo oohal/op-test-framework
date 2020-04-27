@@ -47,7 +47,7 @@ from .OpTestUtil import OpTestUtil
 from . import OpTestSystem
 from .Exceptions import CommandFailed
 from .Exceptions import BMCDisconnected
-from . import OPexpect
+from . import OpExpect
 
 import logging
 import OpTestLogger
@@ -144,14 +144,14 @@ class SerialConsole():
             self.util.clear_state(self)
 
         try:
-            self.pty = OPexpect.spawn(self.console_command,
+            self.pty = OpExpect.spawn(self.console_command,
                                       logfile=self.logfile,
                                       failure_callback=set_system_to_UNKNOWN_BAD,
                                       failure_callback_data=self.system)
         except Exception as e:
             self.state = SerialConsoleState.DISCONNECTED
             raise CommandFailed(
-                'OPexpect.spawn', "OPexpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
+                'OpExpect.spawn', "OpExpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
 
         log.debug("#Serial Console CONNECT")
         self.state = SerialConsoleState.CONNECTED

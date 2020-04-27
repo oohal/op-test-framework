@@ -29,7 +29,7 @@ import subprocess
 import os
 
 from common.Exceptions import CommandFailed, ParameterCheck
-from . import OPexpect
+from . import OpExpect
 from .OpTestUtil import OpTestUtil
 from .OpTestSystem import OpTestSystem, OpSystemState
 
@@ -165,13 +165,13 @@ class MamboConsole():
             spawn_env['SKIBOOT_AUTORUN'] = str(self.mambo_autorun)
         log.debug("OpTestMambo cmd={} mambo spawn_env={}".format(cmd, spawn_env))
         try:
-            self.pty = OPexpect.spawn(cmd,
+            self.pty = OpExpect.spawn(cmd,
                                       logfile=self.logfile,
                                       env=spawn_env)
         except Exception as e:
             self.state = ConsoleState.DISCONNECTED
-            raise CommandFailed('OPexpect.spawn',
-                                'OPexpect.spawn encountered a problem: ' + str(e), -1)
+            raise CommandFailed('OpExpect.spawn',
+                                'OpExpect.spawn encountered a problem: ' + str(e), -1)
 
         self.state = ConsoleState.CONNECTED
         self.pty.setwinsize(1000, 1000)

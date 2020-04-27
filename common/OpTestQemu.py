@@ -31,7 +31,7 @@ import tempfile
 import os
 
 from common.Exceptions import CommandFailed
-from . import OPexpect
+from . import OpExpect
 from .OpTestUtil import OpTestUtil
 import OpTestConfiguration
 from .OpTestSystem import OpTestSystem, OpSystemState
@@ -248,11 +248,11 @@ class QemuConsole():
         cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
         print(cmd)
         try:
-            self.pty = OPexpect.spawn(cmd, logfile=self.logfile)
+            self.pty = OpExpect.spawn(cmd, logfile=self.logfile)
         except Exception as e:
             self.state = ConsoleState.DISCONNECTED
-            raise CommandFailed('OPexpect.spawn',
-                                'OPexpect.spawn encountered a problem: ' + str(e), -1)
+            raise CommandFailed('OpExpect.spawn',
+                                'OpExpect.spawn encountered a problem: ' + str(e), -1)
 
         self.state = ConsoleState.CONNECTED
         self.pty.setwinsize(1000, 1000)

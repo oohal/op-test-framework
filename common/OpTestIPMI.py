@@ -48,7 +48,7 @@ from .OpTestUtil import OpTestUtil
 from . import OpTestSystem
 from .Exceptions import CommandFailed
 from .Exceptions import BMCDisconnected
-from . import OPexpect
+from . import OpExpect
 
 from .SerialConsole import SerialConsole
 
@@ -273,14 +273,14 @@ class IPMIConsole():
 
         cmd = self.ipmitool.binary_name() + self.ipmitool.arguments() + ' sol activate'
         try:
-            self.pty = OPexpect.spawn(cmd,
+            self.pty = OpExpect.spawn(cmd,
                                       logfile=self.logfile,
                                       failure_callback=set_system_to_UNKNOWN_BAD,
                                       failure_callback_data=self.system)
         except Exception as e:
             self.state = IPMIConsoleState.DISCONNECTED
             raise CommandFailed(
-                'OPexpect.spawn', "OPexpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
+                'OpExpect.spawn', "OpExpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
 
         log.debug("#IPMI SOL CONNECT")
         self.state = IPMIConsoleState.CONNECTED

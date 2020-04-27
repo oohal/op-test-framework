@@ -20,7 +20,7 @@ OpTestError
 OPExpect
 --------
 
-.. automodule:: common.OPexpect
+.. automodule:: common.OpExpect
    :members:
    :undoc-members:
 

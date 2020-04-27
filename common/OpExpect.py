@@ -18,7 +18,7 @@
 # permissions and limitations under the License.
 
 """
-The OPexpect module is a wrapper around the standard Python pexpect module
+The OpExpect module is a wrapper around the standard Python pexpect module
 that will *always* look for certain error conditions for OpenPOWER machines.
 
 This is to enable op-test test cases to fail *quickly* in the event of errors
@@ -29,8 +29,8 @@ typically will be set up to set the machine state to UNKNOWN, so that when
 the next test starts executing, we re-IPL the system to get back to a clean
 slate.
 
-When developing test cases, use OPexpect over pexpect. If you *intend* for
-certain error conditions to occur, you can catch the exceptions that OPexpect
+When developing test cases, use OpExpect over pexpect. If you *intend* for
+certain error conditions to occur, you can catch the exceptions that OpExpect
 throws.
 """
 
@@ -212,6 +212,6 @@ class spawn(pexpect.spawn):
         # call the callback for this pattern, assuming we have one
         if cb[r]:
             cb[r](pty, patterns[r]) # this should throw
-            raise Exception("OPexpect callback returned, don't do that")
+            raise Exception("OpExpect callback returned, don't do that")
 
         return r - len(self.patterns)

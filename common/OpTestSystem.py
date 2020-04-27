@@ -724,7 +724,7 @@ class OpTestSystem(object):
                     "OpTestSystem has reached the limit on re-IPL'ing to try to recover, we will be stopping")
                 return OpSystemState.UNKNOWN
         except Exception as e:
-            self.stop = 1  # Exceptions like in OPexpect Assert fail
+            self.stop = 1  # Exceptions like in OpExpect Assert fail
             my_msg = ("OpTestSystem in run_IPLing and the Exception=\n\"{}\"\n caused the system to"
                       " go to UNKNOWN_BAD and the system will be stopping.".format(e))
             my_exception = UnknownStateTransition(
@@ -795,7 +795,7 @@ class OpTestSystem(object):
                       " go to UNKNOWN_BAD and the system will be stopping.".format(e))
             my_exception = UnknownStateTransition(
                 state=self.state, message=my_msg)
-            self.stop = 1  # hits like in OPexpect Assert fail
+            self.stop = 1  # hits like in OpExpect Assert fail
             self.state = OpSystemState.UNKNOWN_BAD
             raise my_exception
 

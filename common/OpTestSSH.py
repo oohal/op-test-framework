@@ -31,9 +31,9 @@ import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 try:
-    from common import OPexpect
+    from common import OpExpect
 except ImportError:
-    from . import OPexpect
+    from . import OpExpect
 
 sudo_responses = ["not in the sudoers",
                   "incorrect password"]
@@ -166,7 +166,7 @@ class OpTestSSH():
         self.log.debug(cmd)
 
         try:
-            self.pty = OPexpect.spawn(cmd,
+            self.pty = OpExpect.spawn(cmd,
                                       logfile=self.logfile,
                                       failure_callback=set_system_to_UNKNOWN_BAD,
                                       failure_callback_data=self.system)

@@ -31,7 +31,7 @@ from common.OpTestError import OpTestError
 from common.OpTestSSH import OpTestSSH
 from common.OpTestUtil import OpTestUtil
 from common.Exceptions import CommandFailed
-from common import OPexpect
+from common import OpExpect
 from common.OpTestSystem import OpTestSystem, OpSystemState
 
 from .OpTestConstants import OpTestConstants as BMC_CONST
@@ -72,7 +72,7 @@ class ConsoleState():
     CONNECTED = 1
 
 
-class Spawn(OPexpect.spawn):
+class Spawn(OpExpect.spawn):
     def __init__(self, command, args=[], maxread=8000,
                  searchwindowsize=None, logfile=None, cwd=None, env=None,
                  ignore_sighup=False, echo=True, preexec_fn=None,
@@ -446,8 +446,8 @@ class HMCConsole(HMCUtil):
                 raise OpTestError("Check the lpar activate command")
         except Exception as exp:
             self.state = ConsoleState.DISCONNECTED
-            raise CommandFailed('OPexpect.spawn',
-                                'OPexpect.spawn encountered a problem: ' + str(exp), -1)
+            raise CommandFailed('OpExpect.spawn',
+                                'OpExpect.spawn encountered a problem: ' + str(exp), -1)
 
 
         if self.delaybeforesend:
