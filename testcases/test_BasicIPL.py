@@ -85,6 +85,18 @@ class TestBasicIPL():
         """
         cv_SYSTEM.goto_state(OpSystemState.PETITBOOT_SHELL)
 
+    def test_offonoff(cv_BMC, cv_SYSTEM):
+        """ Off -> On -> Off """
+        cv_SYSTEM.goto_state(OpSystemState.OFF)
+        cv_SYSTEM.goto_state(OpSystemState.PETITBOOT_SHELL)
+        cv_SYSTEM.goto_state(OpSystemState.OFF)
+
+    def test_rightoff(cv_BMC, cv_SYSTEM):
+        """
+        ??? -> Off
+        """
+        cv_SYSTEM.goto_state(OpSystemState.OFF)
+
     def test_SoftPowerOff(cv_BMC, cv_SYSTEM):
         '''
         Do a soft power off (i.e. polite, asking the OS to shut down).
@@ -132,7 +144,7 @@ class TestBasicIPL():
         console = cv_SYSTEM.console
         console.run_command_ignore_fail("dmesg -r|grep '<[4321]>'")
         console.run_command_ignore_fail(
-            "grep ',[0-4]\]' /sys/firmware/opal/msglog")
+            "grep ',[0-4]\\]' /sys/firmware/opal/msglog")
         console.pty.sendline("reboot")
         cv_SYSTEM.set_state(OpSystemState.IPLing)
         try:
