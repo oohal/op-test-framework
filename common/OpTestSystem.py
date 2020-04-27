@@ -43,7 +43,7 @@ from .OpTestError import OpTestError
 from .OpTestUtil import OpTestUtil
 from .Exceptions import HostbootShutdown, WaitForIt, RecoverFailed, UnknownStateTransition
 from .Exceptions import ConsoleSettings, UnexpectedCase, StoppingSystem, HTTPCheck
-from .OpTestSSH import OpTestSSH
+import common.OpTestSSH as OpTestSSH
 
 import logging
 import OpTestLogger
