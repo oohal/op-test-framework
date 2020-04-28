@@ -16,7 +16,7 @@ import common.OpTestHost
 from common.OpTestIPMI import OpTestIPMI, OpTestSMCIPMI
 from common.OpTestHMC import OpTestHMC
 from common.OpTestOpenBMC import HostManagement
-from common.OpTestWeb import OpTestWeb
+from common.OpTestAMIWeb import OpTestAMIWeb
 from common.OpTestUtil import OpTestUtil
 from common.OpTestCronus import OpTestCronus
 from common.Exceptions import HostLocker, AES, ParameterCheck, OpExit
@@ -735,11 +735,11 @@ class OpTestConfiguration():
                                                 known_hosts_file=self.args.known_hosts_file,
                                                 conf=self)
             if self.args.bmc_type in ['AMI', 'SMC']:
-                web = OpTestWeb(self.args.bmc_ip,
-                                self.args.bmc_usernameipmi,
-                                self.args.bmc_passwordipmi)
                 bmc = None
                 if self.args.bmc_type in ['AMI']:
+                    web = OpTestWeb(self.args.bmc_ip,
+                                    self.args.bmc_usernameipmi,
+                                    self.args.bmc_passwordipmi)
                     ipmi = OpTestIPMI(self.args.bmc_ip,
                                       self.args.bmc_usernameipmi,
                                       self.args.bmc_passwordipmi,
@@ -768,7 +768,6 @@ class OpTestConfiguration():
                                     username=self.args.bmc_username,
                                     password=self.args.bmc_password,
                                     ipmi=ipmi,
-                                    web=web,
                                     check_ssh_keys=self.args.check_ssh_keys,
                                     known_hosts_file=self.args.known_hosts_file
                                     )

@@ -46,7 +46,6 @@ from .OpTestSSH import OpTestSSH
 from .OpTestUtil import OpTestUtil
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
-from .OpTestWeb import OpTestWeb
 from .Exceptions import CommandFailed, SSHSessionDisconnected
 
 import logging
