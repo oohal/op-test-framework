@@ -30,14 +30,14 @@ import re
 import subprocess
 import sys
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 import unittest
 
 import OpTestConfiguration
-from common.OpTestUtil import OpTestUtil
-from common.OpTestSystem import OpSystemState
-from common.OpTestIPMI import IPMIConsoleState
-from common.Exceptions import CommandFailed
+from optest.OpTestUtil import OpTestUtil
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestIPMI import IPMIConsoleState
+from optest.Exceptions import CommandFailed
 
 
 class NX842(unittest.TestCase):

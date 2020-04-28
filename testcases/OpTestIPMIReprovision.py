@@ -41,11 +41,11 @@ import time
 import subprocess
 import re
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
+from optest.OpTestSystem import OpSystemState
 
 
 class OpTestIPMIReprovision(unittest.TestCase):

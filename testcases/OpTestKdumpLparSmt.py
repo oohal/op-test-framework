@@ -50,15 +50,15 @@ import os
 import time
 
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestError import OpTestError
-from common import OpTestHMC
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestError import OpTestError
+from optest import OpTestHMC
 
 import unittest
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestSSH import ConsoleState as SSHConnectionState
-from common.Exceptions import KernelOOPS, KernelKdump
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestSSH import ConsoleState as SSHConnectionState
+from optest.Exceptions import KernelOOPS, KernelKdump
 
 class OpTestKernelBase(unittest.TestCase):
     def setUp(self):

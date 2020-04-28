@@ -42,8 +42,8 @@ import unittest
 import difflib
 
 import OpTestConfiguration
-from common.OpTestUtil import OpTestUtil
-from common.OpTestSystem import OpSystemState
+from optest.OpTestUtil import OpTestUtil
+from optest.OpTestSystem import OpSystemState
 
 import logging
 import OpTestLogger

@@ -40,10 +40,10 @@ import os
 
 import OpTestConfiguration
 import unittest
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
-import common.OpTestMambo as OpTestMambo
-import common.OpTestQemu as OpTestQemu
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
+import optest.OpTestMambo as OpTestMambo
+import optest.OpTestQemu as OpTestQemu
 
 import json
 

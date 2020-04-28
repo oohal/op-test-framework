@@ -61,10 +61,10 @@ import pexpect
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import KernelOOPS, KernelPanic, KernelCrashUnknown, KernelKdump, KernelFADUMP, PlatformError, CommandFailed, SkibootAssert
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestError import OpTestError
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import KernelOOPS, KernelPanic, KernelCrashUnknown, KernelKdump, KernelFADUMP, PlatformError, CommandFailed, SkibootAssert
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestError import OpTestError
 
 
 class BootType():

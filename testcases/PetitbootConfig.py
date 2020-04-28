@@ -4,10 +4,10 @@ import time
 import unittest
 
 import OpTestConfiguration
-from common.OpTestUtil import OpTestUtil
-from common.OpTestSystem import OpSystemState
-from common.OpTestError import OpTestError
-from common.OpTestKeys import OpTestKeys as keys
+from optest.OpTestUtil import OpTestUtil
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestError import OpTestError
+from optest.OpTestKeys import OpTestKeys as keys
 
 
 class ConfigEditorTestCase(unittest.TestCase):

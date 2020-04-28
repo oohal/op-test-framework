@@ -30,8 +30,8 @@ import os
 import pexpect
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common import OpTestInstallUtil
+from optest.OpTestSystem import OpSystemState
+from optest import OpTestInstallUtil
 
 import logging
 import OpTestLogger

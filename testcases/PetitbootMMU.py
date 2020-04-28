@@ -31,7 +31,7 @@ import unittest
 import logging
 import OpTestConfiguration
 import OpTestLogger
-from common.OpTestSystem import OpSystemState
+from optest.OpTestSystem import OpSystemState
 
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 

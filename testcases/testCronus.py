@@ -35,8 +35,8 @@ import traceback
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import UnexpectedCase
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import UnexpectedCase
 
 import logging
 import OpTestLogger

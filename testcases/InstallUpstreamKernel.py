@@ -28,9 +28,9 @@ except ImportError:
 
 import OpTestConfiguration
 import OpTestLogger
-from common.OpTestSystem import OpSystemState
-from common.OpTestSOL import OpSOLMonitorThread
-from common.OpTestInstallUtil import InstallUtil
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestSOL import OpSOLMonitorThread
+from optest.OpTestInstallUtil import InstallUtil
 
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 

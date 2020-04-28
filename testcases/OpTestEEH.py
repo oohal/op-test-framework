@@ -44,8 +44,8 @@ import os
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
 
 import logging
 import OpTestLogger

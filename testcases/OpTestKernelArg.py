@@ -22,7 +22,7 @@
 import unittest
 
 import OpTestConfiguration
-from common import OpTestInstallUtil
+from optest import OpTestInstallUtil
 
 
 class OpTestKernelArg(unittest.TestCase):

@@ -4,23 +4,23 @@
 # It includes command line argument parsing and keeping a set
 # of OpTestSystem and similar objects around for tests to use.
 
-import common
-from common.OpTestBMC import OpTestBMC, OpTestSMC
-from common.OpTestFSP import OpTestFSP
-from common.OpTestOpenBMC import OpTestOpenBMC
-from common.OpTestQemu import OpTestQemu
-from common.OpTestMambo import OpTestMambo
-from common.OpTestSystem import OpSystemState
-import common.OpTestSystem
-import common.OpTestHost
-from common.OpTestIPMI import OpTestIPMI, OpTestSMCIPMI
-from common.OpTestHMC import OpTestHMC
-from common.OpTestOpenBMC import HostManagement
-from common.OpTestAMIWeb import OpTestAMIWeb
-from common.OpTestUtil import OpTestUtil
-from common.OpTestCronus import OpTestCronus
-from common.Exceptions import HostLocker, AES, ParameterCheck, OpExit
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+import optest
+from optest.OpTestBMC import OpTestBMC, OpTestSMC
+from optest.OpTestFSP import OpTestFSP
+from optest.OpTestOpenBMC import OpTestOpenBMC
+from optest.OpTestQemu import OpTestQemu
+from optest.OpTestMambo import OpTestMambo
+from optest.OpTestSystem import OpSystemState
+import optest.OpTestSystem
+import optest.OpTestHost
+from optest.OpTestIPMI import OpTestIPMI, OpTestSMCIPMI
+from optest.OpTestHMC import OpTestHMC
+from optest.OpTestOpenBMC import HostManagement
+from optest.OpTestAMIWeb import OpTestAMIWeb
+from optest.OpTestUtil import OpTestUtil
+from optest.OpTestCronus import OpTestCronus
+from optest.Exceptions import HostLocker, AES, ParameterCheck, OpExit
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 import atexit
 import argparse
 import time
@@ -723,7 +723,7 @@ class OpTestConfiguration():
                                      "Exception details: {}".format(self.args.bmc_ip, e))
 
         try:
-            host = common.OpTestHost.OpTestHost(self.args.host_ip,
+            host = optest.OpTestHost.OpTestHost(self.args.host_ip,
                                                 self.args.host_user,
                                                 self.args.host_password,
                                                 self.args.bmc_ip,
@@ -771,7 +771,7 @@ class OpTestConfiguration():
                                     check_ssh_keys=self.args.check_ssh_keys,
                                     known_hosts_file=self.args.known_hosts_file
                                     )
-                self.op_system = common.OpTestSystem.OpTestSystem(
+                self.op_system = optest.OpTestSystem.OpTestSystem(
                     state=self.startState,
                     bmc=bmc,
                     host=host,
@@ -790,7 +790,7 @@ class OpTestConfiguration():
                                 self.args.bmc_password,
                                 ipmi=ipmi,
                                 )
-                self.op_system = common.OpTestFSP.OpTestFSPSystem(
+                self.op_system = optest.OpTestFSP.OpTestFSPSystem(
                     state=self.startState,
                     bmc=bmc,
                     host=host,
@@ -798,7 +798,7 @@ class OpTestConfiguration():
                 )
                 ipmi.set_system(self.op_system)
             elif self.args.bmc_type in ['FSP_PHYP']:
-                host = common.OpTestHost.OpTestLPAR(self.args.host_ip,
+                host = optest.OpTestHost.OpTestLPAR(self.args.host_ip,
                                                 self.args.host_user,
                                                 self.args.host_password,
                                                 self.args.bmc_ip,
@@ -831,7 +831,7 @@ class OpTestConfiguration():
                                 self.args.bmc_password,
                                 hmc=hmc,
                                 )
-                self.op_system = common.OpTestHMC.OpTestLPARSystem(
+                self.op_system = optest.OpTestHMC.OpTestLPARSystem(
                     state=self.startState,
                     bmc=bmc,
                     host=host,
@@ -856,7 +856,7 @@ class OpTestConfiguration():
                                     logfile=self.logfile,
                                     check_ssh_keys=self.args.check_ssh_keys,
                                     known_hosts_file=self.args.known_hosts_file)
-                self.op_system = common.OpTestOpenBMC.OpTestOpenBMCSystem(
+                self.op_system = optest.OpTestOpenBMC.OpTestOpenBMCSystem(
                     host=host,
                     bmc=bmc,
                     state=self.startState,
@@ -873,7 +873,7 @@ class OpTestConfiguration():
                                  initramfs=self.args.flash_initramfs,
                                  cdrom=self.args.os_cdrom,
                                  logfile=self.logfile)
-                self.op_system = common.OpTestQemu.OpTestQemuSystem(host=host,
+                self.op_system = optest.OpTestQemu.OpTestQemuSystem(host=host,
                                                                       bmc=bmc,
                                                                       state=self.startState,
                                                                       conf=self,
@@ -899,7 +899,7 @@ class OpTestConfiguration():
                                   initramfs=self.args.flash_initramfs,
                                   timeout_factor=self.args.mambo_timeout_factor,
                                   logfile=self.logfile)
-                self.op_system = common.OpTestMambo.OpTestMamboSystem(host=host,
+                self.op_system = optest.OpTestMambo.OpTestMamboSystem(host=host,
                                                                        bmc=bmc,
                                                                        state=self.startState,
                                                                        conf=self,

@@ -50,11 +50,11 @@ import unittest
 import tarfile
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestError import OpTestError
-from common.Exceptions import CommandFailed
-from common import OpTestInstallUtil
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestError import OpTestError
+from optest.Exceptions import CommandFailed
+from optest import OpTestInstallUtil
 
 import logging
 import OpTestLogger

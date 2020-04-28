@@ -37,11 +37,11 @@ import struct
 import difflib
 
 import OpTestConfiguration
-from common.Exceptions import CommandFailed
-from common.OpTestError import OpTestError
-from common.OpTestSystem import OpSystemState
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-import common.OpTestQemu as OpTestQemu
+from optest.Exceptions import CommandFailed
+from optest.OpTestError import OpTestError
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+import optest.OpTestQemu as OpTestQemu
 import logging
 import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)

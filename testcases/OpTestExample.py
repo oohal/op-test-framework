@@ -30,8 +30,8 @@ import logging
 
 import OpTestConfiguration
 import OpTestLogger
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
 try:
     import pxssh
 except ImportError:

@@ -37,8 +37,8 @@ import os
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import HTTPCheck
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import HTTPCheck
 
 import logging
 import OpTestLogger

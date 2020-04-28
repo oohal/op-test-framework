@@ -39,9 +39,9 @@ import time
 import pexpect
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
-import common.OpTestMambo as OpTestMambo
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
+import optest.OpTestMambo as OpTestMambo
 
 import logging
 import OpTestLogger

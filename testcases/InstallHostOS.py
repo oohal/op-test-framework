@@ -30,8 +30,8 @@ import unittest
 import os
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common import OpTestInstallUtil
+from optest.OpTestSystem import OpSystemState
+from optest import OpTestInstallUtil
 
 
 class InstallHostOS(unittest.TestCase):

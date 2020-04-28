@@ -44,13 +44,13 @@ import os.path
 from os import path 
 import OpTestConfiguration
 import OpTestLogger
-from common import OpTestHMC, OpTestFSP
-from common import OpTestHMC
-from common.OpTestSystem import OpSystemState
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest import OpTestHMC, OpTestFSP
+from optest import OpTestHMC
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 from random import randint
-from common.OpTestSystem import OpSystemState
-from common.OpTestSOL import OpSOLMonitorThread
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestSOL import OpSOLMonitorThread
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 class OpTestDlpar(unittest.TestCase):
    def setUp(self):

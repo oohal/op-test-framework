@@ -34,8 +34,8 @@ import pexpect
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-import common.OpTestMambo as OpTestMambo
+from optest.OpTestSystem import OpSystemState
+import optest.OpTestMambo as OpTestMambo
 import logging
 import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)

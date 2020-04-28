@@ -34,12 +34,12 @@ Test different OPAL GARD Related functionality
 import re
 import random
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
 
 import logging
 import OpTestLogger

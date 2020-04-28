@@ -31,8 +31,8 @@ import unittest
 import os
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestSOL import OpSOLMonitorThread
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestSOL import OpSOLMonitorThread
 
 
 class RunHostTest(unittest.TestCase):

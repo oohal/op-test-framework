@@ -30,10 +30,10 @@ import os
 import pexpect
 import unittest
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import KernelOOPS
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestError import OpTestError
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import KernelOOPS
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestError import OpTestError
 
 class ImcDebugfs(unittest.TestCase):
    def setUp(self):

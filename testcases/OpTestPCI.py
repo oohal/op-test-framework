@@ -56,8 +56,8 @@ from distutils.version import LooseVersion
 
 import OpTestConfiguration
 import OpTestLogger
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed, UnexpectedCase
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed, UnexpectedCase
 
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 skiroot_done = 0

@@ -34,14 +34,14 @@ import subprocess
 import re
 import subprocess
 
-from common.OpTestIPMI import OpTestIPMI
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestError import OpTestError
+from optest.OpTestIPMI import OpTestIPMI
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestError import OpTestError
 
 import unittest
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestSSH import ConsoleState as SSHConnectionState
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestSSH import ConsoleState as SSHConnectionState
 
 import logging
 import OpTestLogger

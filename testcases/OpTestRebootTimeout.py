@@ -31,8 +31,8 @@ import time
 import pexpect
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 
 import logging
 import OpTestLogger

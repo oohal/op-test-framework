@@ -37,12 +37,12 @@ import subprocess
 import re
 import sys
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestError import OpTestError
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestError import OpTestError
 
 import unittest
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
+from optest.OpTestSystem import OpSystemState
 
 import logging
 import OpTestLogger

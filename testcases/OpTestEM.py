@@ -45,10 +45,10 @@ import decimal
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
-from common.OpTestIPMI import IPMIConsoleState
-import common.OpTestQemu as OpTestQemu
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
+from optest.OpTestIPMI import IPMIConsoleState
+import optest.OpTestQemu as OpTestQemu
 from testcases.DeviceTreeValidation import DeviceTreeValidation
 
 import logging

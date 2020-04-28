@@ -43,14 +43,14 @@ import re
 import subprocess
 import sys
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestIPMI import IPMIConsoleState
-from common.Exceptions import CommandFailed
-import common.OpTestMambo as OpTestMambo
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestIPMI import IPMIConsoleState
+from optest.Exceptions import CommandFailed
+import optest.OpTestMambo as OpTestMambo
 
 import logging
 import OpTestLogger

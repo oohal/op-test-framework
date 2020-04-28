@@ -48,11 +48,11 @@ import pexpect
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestSSH import ConsoleState as SSHConnectionState
-from common.OpTestIPMI import IPMIConsoleState
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.Exceptions import CommandFailed, UnknownStateTransition, PlatformError, HostbootShutdown, StoppingSystem
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestSSH import ConsoleState as SSHConnectionState
+from optest.OpTestIPMI import IPMIConsoleState
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.Exceptions import CommandFailed, UnknownStateTransition, PlatformError, HostbootShutdown, StoppingSystem
 
 import logging
 import OpTestLogger

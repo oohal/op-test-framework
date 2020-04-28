@@ -47,13 +47,13 @@ import random
 import subprocess
 
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 import unittest
 
 import OpTestConfiguration
-from common.OpTestError import OpTestError
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
+from optest.OpTestError import OpTestError
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
 
 import logging
 import OpTestLogger

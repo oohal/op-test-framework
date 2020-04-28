@@ -28,10 +28,10 @@ import time
 import threading
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.OpTestConstants import OpTestConstants as BMC_CONST
-from common.OpTestThread import OpSSHThreadLinearVar1, OpSSHThreadLinearVar2
-from common.OpTestSOL import OpSOLMonitorThread
+from optest.OpTestSystem import OpSystemState
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestThread import OpSSHThreadLinearVar1, OpSSHThreadLinearVar2
+from optest.OpTestSOL import OpSOLMonitorThread
 from testcases.OpTestEM import OpTestEM
 
 import logging

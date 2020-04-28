@@ -30,11 +30,11 @@ enablement of certain components.
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed
 
-import common.OpTestMambo as OpTestMambo
-import common.OpTestQemu as OpTestQemu
+import optest.OpTestMambo as OpTestMambo
+import optest.OpTestQemu as OpTestQemu
 
 import logging
 import OpTestLogger

@@ -35,14 +35,14 @@ import subprocess
 import re
 import sys
 
-from common.OpTestConstants import OpTestConstants as BMC_CONST
+from optest.OpTestConstants import OpTestConstants as BMC_CONST
 
 import unittest
 
 import OpTestConfiguration
-from common.OpTestSystem import OpSystemState
-from common.Exceptions import CommandFailed, KernelModuleNotLoaded
-from common.Exceptions import KernelConfigNotSet
+from optest.OpTestSystem import OpSystemState
+from optest.Exceptions import CommandFailed, KernelModuleNotLoaded
+from optest.Exceptions import KernelConfigNotSet
 
 import logging
 import OpTestLogger
