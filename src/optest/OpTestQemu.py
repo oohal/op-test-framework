@@ -29,15 +29,14 @@ import pexpect
 import subprocess
 import tempfile
 import os
+import logging
 
-from common.Exceptions import CommandFailed
+from .Exceptions import CommandFailed
 from . import OpExpect
 from .OpTestUtil import OpTestUtil
-import OpTestConfiguration
 from .OpTestSystem import OpTestSystem, OpSystemState
+from . import OpTestLogger
 
-import logging
-import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 
@@ -238,13 +237,17 @@ class QemuConsole():
                 diskid += 1
                 bridge['n_devices'] += 1
 
+
+#       old code I ahcked up to remove the OpTestConfig dependency
+#        fru_path = os.path.join(
+#            O pTestConfiguration.conf.basedir, "test_binaries", "qemu_fru")
+
         # typical host ip=10.0.2.2 and typical skiroot 10.0.2.15
         # use skiroot as the source, no sshd in skiroot
-
-        fru_path = os.path.join(
-            OpTestConfiguration.conf.basedir, "test_binaries", "qemu_fru")
-        cmd = cmd + " -device ipmi-bmc-sim,id=bmc0,frudatafile=" + \
-            fru_path + " -device isa-ipmi-bt,bmc=bmc0,irq=10"
+        cmd = " -device ipmi-bmc-sim,id=bmc0,frudatafile="
+        if fru_path:
+            cmd += ",frudatafile=" + fru_path
+        cmd = cmd + fru_path + " -device isa-ipmi-bt,bmc=bmc0,irq=10"
         cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
         print(cmd)
         try:

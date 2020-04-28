@@ -26,13 +26,14 @@ import sys
 import time
 import pexpect
 
-import OpTestLogger
-from common.OpTestError import OpTestError
-from common.OpTestSSH import OpTestSSH
-from common.OpTestUtil import OpTestUtil
-from common.Exceptions import CommandFailed
-from common import OpExpect
-from common.OpTestSystem import OpTestSystem, OpSystemState
+from . import OpExpect
+from . import OpTestLogger
+
+from .OpTestError import OpTestError
+from .OpTestSSH import OpTestSSH
+from .OpTestUtil import OpTestUtil
+from .Exceptions import CommandFailed
+from .OpTestSystem import OpTestSystem, OpSystemState
 
 from .OpTestConstants import OpTestConstants as BMC_CONST
 

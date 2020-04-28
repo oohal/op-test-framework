@@ -45,7 +45,6 @@ import pty
 import pexpect
 import subprocess
 
-import OpTestConfiguration
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
 from .OpTestSSH import OpTestSSH

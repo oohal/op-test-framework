@@ -32,7 +32,6 @@ import time
 import threading
 import pexpect
 
-import OpTestConfiguration
 from .OpTestSystem import OpSystemState
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .Exceptions import CommandFailed
@@ -48,7 +47,7 @@ class OpSSHThreadLinearVar1(threading.Thread):
     Runs a list of commands in a loop with equal sleep times in linear order
     '''
 
-    def __init__(self, threadID, name, cmd_list, sleep_time, execution_time, ignore_fail=False):
+    def __init__(self, host, threadID, name, cmd_list, sleep_time, execution_time, ignore_fail=False):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -56,8 +55,7 @@ class OpSSHThreadLinearVar1(threading.Thread):
         self.sleep_time = sleep_time
         self.execution_time = execution_time
         self.ignore_fail = ignore_fail
-        conf = OpTestConfiguration.conf
-        self.host = conf.host()
+        self.host = host
         self.c = self.host.get_new_ssh_connection(name)
 
     def run(self):
@@ -89,15 +87,14 @@ class OpSSHThreadLinearVar2(threading.Thread):
     Runs a dictionary of command(command, sleep time) pairs with each having individual sleep times
     '''
 
-    def __init__(self, threadID, name, cmd_dic, execution_time, ignore_fail=False):
+    def __init__(self, host, threadID, name, cmd_dic, execution_time, ignore_fail=False):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.cmd_dic = cmd_dic
         self.execution_time = execution_time
         self.ignore_fail = ignore_fail
-        conf = OpTestConfiguration.conf
-        self.host = conf.host()
+        self.host = host
         self.c = self.host.get_new_ssh_connection(name)
 
     def run(self):
@@ -129,7 +126,7 @@ class OpSSHThreadRandom(threading.Thread):
     Runs a random command from a list of commands in a loop with equal sleep times
     '''
 
-    def __init__(self, threadID, name, cmd_list, sleep_time, execution_time, ignore_fail=False):
+    def __init__(self, host, threadID, name, cmd_list, sleep_time, execution_time, ignore_fail=False):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -137,8 +134,7 @@ class OpSSHThreadRandom(threading.Thread):
         self.sleep_time = sleep_time
         self.execution_time = execution_time
         self.ignore_fail = ignore_fail
-        conf = OpTestConfiguration.conf
-        self.host = conf.host()
+        self.host = host
         self.c = self.host.get_new_ssh_connection(name)
 
     def run(self):

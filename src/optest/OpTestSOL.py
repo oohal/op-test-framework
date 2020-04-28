@@ -33,7 +33,6 @@ import threading
 import pexpect
 import os
 
-import OpTestConfiguration
 from .OpTestSystem import OpSystemState
 from .Exceptions import CommandFailed
 from .OpTestIPMI import IPMIConsoleState
@@ -50,15 +49,15 @@ class OpSOLMonitorThread(threading.Thread):
     on other SSH threads
     '''
 
-    def __init__(self, threadID, name, execution_time=None):
+    # HACK: rework this so the logfile stuff is handled more sensible, this was
+    # hacked to make op-test usable as a package.
+    def __init__(self, system, threadID, name, execution_time=None, logfile=sys.stdout):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.execution_time = execution_time
-        conf = OpTestConfiguration.conf
-        self.system = conf.system()
-        self.system.goto_state(OpSystemState.OS)
-        logfile = os.path.join(conf.output, "console.log")
+        self.system.goto_state(OpSystemState.OS) # what the hell?
+
         self.sol_logger(logfile)
         self.c = self.system.console.get_console(logger=self.logger)
         self.c_terminate = False

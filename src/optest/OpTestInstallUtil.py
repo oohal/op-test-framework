@@ -54,7 +54,7 @@ uploaded_files = {}
 
 
 class InstallUtil():
-    def __init__(self, base_path="", initrd="", vmlinux="",
+    def __init__(self, conf, base_path="", initrd="", vmlinux="",
                  ks="", boot_path="", repo=""):
         global BASE_PATH
         global INITRD
@@ -66,8 +66,7 @@ class InstallUtil():
         global BOOTPATH
         global REPO
         global PROXY
-        self.conf = OpTestConfiguration.conf
-        self.cv_HOST = self.conf.host()
+        self.cv_HOST = self.conf.host()    # FIXME: de-conf this pass the damn things in as arguments
         self.cv_SYSTEM = self.conf.system()
         self.server = ""
         self.repo = self.conf.args.os_repo
