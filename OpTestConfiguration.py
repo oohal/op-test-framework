@@ -431,8 +431,6 @@ class OpTestConfiguration():
     def __init__(self):
         # initialize OpTestUtil with this object the OpTestConfiguration
         self.util = OpTestUtil(self)
-        # initialize OpTestCronus with this object the OpTestConfiguration
-        self.cronus = OpTestCronus(self)
         self.args = []
         self.remaining_args = []
         self.basedir = os.path.dirname(sys.argv[0])
@@ -922,6 +920,12 @@ class OpTestConfiguration():
                                 "version_mappings)".format(self.args.bmc_type))
 
             host.set_system(self.op_system)
+
+            # FIXME: All the cronus stuff is probably broken. Fix it up at some point.
+            # FIXME: We should add a cronus / BML system type.
+            if self.args.cronus_product:
+                self.cronus = OpTestCronus(self.conf)
+
             print("created objects")
             return
         except Exception as e:
