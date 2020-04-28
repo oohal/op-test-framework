@@ -28,13 +28,12 @@ import pexpect
 import subprocess
 import os
 
-from common.Exceptions import CommandFailed, ParameterCheck
-from . import OpExpect
+from .Exceptions import CommandFailed, ParameterCheck
 from .OpTestUtil import OpTestUtil
 from .OpTestSystem import OpTestSystem, OpSystemState
+from . import OpExpect
 
-import logging
-import OpTestLogger
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 

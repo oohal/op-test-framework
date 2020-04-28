@@ -55,7 +55,7 @@ from .Exceptions import CommandFailed, RecoverFailed, ConsoleSettings
 from .Exceptions import HostLocker, AES, ParameterCheck, HTTPCheck, UnexpectedCase
 
 import logging
-import OpTestLogger
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 sudo_responses = ["not in the sudoers",

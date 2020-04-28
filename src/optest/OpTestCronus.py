@@ -35,7 +35,7 @@ from .Exceptions import ParameterCheck, UnexpectedCase
 from .OpTestSystem import OpSystemState
 
 import logging
-import OpTestLogger
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 match_list = ["CRONUS_HOME",

@@ -37,8 +37,7 @@ from .OpTestConstants import OpTestConstants as BMC_CONST
 from .Exceptions import CommandFailed
 from .OpTestIPMI import IPMIConsoleState
 
-import logging
-import OpTestLogger
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 

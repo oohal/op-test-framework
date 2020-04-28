@@ -43,10 +43,10 @@ from .OpTestError import OpTestError
 from .OpTestUtil import OpTestUtil
 from .Exceptions import HostbootShutdown, WaitForIt, RecoverFailed, UnknownStateTransition
 from .Exceptions import ConsoleSettings, UnexpectedCase, StoppingSystem, HTTPCheck
-import .OpTestSSH as OpTestSSH
+from .OpTestSSH import OpTestSSH
 
 import logging
-import OpTestLogger
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 

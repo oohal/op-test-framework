@@ -51,9 +51,7 @@ from .OpTestSSH import OpTestSSH
 from .Exceptions import CommandFailed, NoKernelConfig, KernelModuleNotLoaded, KernelConfigNotSet, ParameterCheck
 
 import logging
-import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
-
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 

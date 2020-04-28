@@ -17,8 +17,11 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-from . import OpTestSystem
-from .OpTestUtil import OpTestUtil
+from . import OpTestSystem # module import right
+from . import OpTestLogger
+from . import OpExpect
+
+from .OpTestUtil import OpTestUtil # specific class import?
 from .Exceptions import CommandFailed, SSHSessionDisconnected
 import re
 import sys
@@ -26,14 +29,8 @@ import os
 import time
 import pexpect
 
-import logging
-import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
-try:
-    from common import OpExpect
-except ImportError:
-    from . import OpExpect
 
 sudo_responses = ["not in the sudoers",
                   "incorrect password"]

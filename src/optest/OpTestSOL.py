@@ -32,6 +32,7 @@ import time
 import threading
 import pexpect
 import os
+import sys
 
 from .OpTestSystem import OpSystemState
 from .Exceptions import CommandFailed
@@ -39,7 +40,7 @@ from .OpTestIPMI import IPMIConsoleState
 
 import logging
 from logging.handlers import RotatingFileHandler
-import OpTestLogger
+from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 
