@@ -364,7 +364,6 @@ class OpTestQemu():
                 raise e
 
         self.disks.append(self.conf.args.qemu_scratch_disk)
-        atexit.register(self.cleanup)
         self.console = QemuConsole(qemu_binary=qemu_binary,
                                    pnor=pnor,
                                    skiboot=skiboot,
