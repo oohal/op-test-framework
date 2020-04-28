@@ -2,7 +2,7 @@
 # IBM_PROLOG_BEGIN_TAG
 # This is an automatically generated prolog.
 #
-# $Source: op-test-framework/common/OpTestWeb.py $
+# $Source: op-test-framework/common/OpTestAMIWeb.py $
 #
 # OpenPOWER Automated Test Project
 #
@@ -33,7 +33,7 @@ import unittest
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
 
-# @package OpTestWeb
+# @package OpTestAMIWeb
 #  Contains all BMC related Web tools
 #
 #  This class encapsulates all function which deals with the BMC Using Web GUI
@@ -41,10 +41,10 @@ from .OpTestError import OpTestError
 #
 
 
-class OpTestWeb():
+class OpTestAMIWeb():
 
     ##
-    # @brief Initialize OpTestWeb Object
+    # @brief Initialize OpTestAMIWeb Object
     #
     # @param i_ip The IP address of the BMC
     # @param i_id User id to login to the BMC web page
