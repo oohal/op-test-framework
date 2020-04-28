@@ -793,7 +793,7 @@ class OpTestConfiguration():
                                 self.args.bmc_password,
                                 ipmi=ipmi,
                                 )
-                self.op_system = common.OpTestSystem.OpTestFSPSystem(
+                self.op_system = common.OpTestFSP.OpTestFSPSystem(
                     state=self.startState,
                     bmc=bmc,
                     host=host,
@@ -834,7 +834,7 @@ class OpTestConfiguration():
                                 self.args.bmc_password,
                                 hmc=hmc,
                                 )
-                self.op_system = common.OpTestSystem.OpTestLPARSystem(
+                self.op_system = common.OpTestHMC.OpTestLPARSystem(
                     state=self.startState,
                     bmc=bmc,
                     host=host,
@@ -859,7 +859,7 @@ class OpTestConfiguration():
                                     logfile=self.logfile,
                                     check_ssh_keys=self.args.check_ssh_keys,
                                     known_hosts_file=self.args.known_hosts_file)
-                self.op_system = common.OpTestSystem.OpTestOpenBMCSystem(
+                self.op_system = common.OpTestOpenBMC.OpTestOpenBMCSystem(
                     host=host,
                     bmc=bmc,
                     state=self.startState,
@@ -876,7 +876,7 @@ class OpTestConfiguration():
                                  initramfs=self.args.flash_initramfs,
                                  cdrom=self.args.os_cdrom,
                                  logfile=self.logfile)
-                self.op_system = common.OpTestSystem.OpTestQemuSystem(host=host,
+                self.op_system = common.OpTestQemu.OpTestQemuSystem(host=host,
                                                                       bmc=bmc,
                                                                       state=self.startState,
                                                                       conf=self,
@@ -902,7 +902,7 @@ class OpTestConfiguration():
                                   initramfs=self.args.flash_initramfs,
                                   timeout_factor=self.args.mambo_timeout_factor,
                                   logfile=self.logfile)
-                self.op_system = common.OpTestSystem.OpTestMamboSystem(host=host,
+                self.op_system = common.OpTestMambo.OpTestMamboSystem(host=host,
                                                                        bmc=bmc,
                                                                        state=self.startState,
                                                                        conf=self,
