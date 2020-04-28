@@ -119,6 +119,7 @@ class IPMITool():
             return output
 
 
+# FIXME: move this to the supermicro specific BMC file
 class pUpdate():
     def __init__(self, method='lan', binary='pUpdate',
                  ip=None, username=None, password=None):

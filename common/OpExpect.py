@@ -71,6 +71,7 @@ class spawn(pexpect.spawn):
         return
 
     def do_callback(self):
+        raise Exception("Hit do_callback.")
         # We set the system state to UNKNOWN_BAD as we want to have a path
         # to recover and run the next test, which is going to be to IPL
         # the box again.

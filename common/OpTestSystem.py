@@ -350,16 +350,27 @@ class OpTestSystem(object):
     def set_state(self, state):
         self.state = state
 
+    # FIXME: moved over from OpTestUtil. Dunno what it's really needed for...
+    def clear_system_state(self):
+            # clears attributes of the system object
+            # called when OpTestSystem transitions states
+            # unique from when track_obj's need clearing
+            if self.cronus_capable():
+                self.conf.cronus.env_ready = False
+                self.conf.cronus.cronus_ready = False
+
+
     def goto_state(self, state):
         # only perform detection when incoming state is UNKNOWN
         # if user overrides from command line and machine not at desired state can lead to exceptions
         self.block_setup_term = 1  # block in case the system is not on/up
         self.target_state = state  # used in WaitForIt
         if (self.state == OpSystemState.UNKNOWN):
-            log.debug(
-                "OpTestSystem CHECKING CURRENT STATE and TRANSITIONING for TARGET STATE: %s" % (state))
-            self.state = self.run_DETECT(state)
-            log.debug("OpTestSystem CURRENT DETECTED STATE: %s" % (self.state))
+            if self.should_detect:
+                log.debug(
+                    "OpTestSystem CHECKING CURRENT STATE and TRANSITIONING for TARGET STATE: %s" % (state))
+                self.state = self.run_DETECT(state)
+                log.debug("OpTestSystem CURRENT DETECTED STATE: %s" % (self.state))
 
         log.debug("OpTestSystem START STATE: %s (target %s)" %
                   (self.state, state))
@@ -388,6 +399,7 @@ class OpTestSystem(object):
 
         # If we haven't checked for dangerous NVRAM options yet and
         # checking won't disrupt the test, do so now.
+        # FIXME: move this elsewhere
         if self.conf.nvram_debug_opts is None and state in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
             self.util.check_nvram_options(self.console)
 
@@ -402,8 +414,7 @@ class OpTestSystem(object):
             return OpSystemState.UNKNOWN
         while (detect_state == OpSystemState.UNKNOWN) and (self.detect_counter <= 2):
             # two phases
-            detect_state = self.detect_target(
-                target_state, self.never_rebooted)
+            detect_state = self.detect_target(target_state, self.never_rebooted)
             self.block_setup_term = 1  # block after check_kernel unblocked
             self.never_rebooted = False
             self.detect_counter += 1

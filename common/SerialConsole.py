@@ -44,9 +44,9 @@ import re
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
 from .OpTestUtil import OpTestUtil
-from . import OpTestSystem
 from .Exceptions import CommandFailed
-from .Exceptions import BMCDisconnected
+
+from . import OpTestSystem
 from . import OpExpect
 
 import logging
@@ -169,9 +169,15 @@ class SerialConsole():
             hex(id(self.pty))))
         return self.pty
 
-    def get_console(self, logger=None):
+
+    def get_raw_pty(self, logger=None):
         if self.state == SerialConsoleState.DISCONNECTED:
             self.connect(logger)
+        return self.pty
+
+    def get_console(self, logger=None): # this needs to die...
+        if self.state == SerialConsoleState.DISCONNECTED:
+                                          self.connect(logger)
 
         count = 0
         while (not self.pty.isalive()):
