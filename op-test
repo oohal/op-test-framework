@@ -1,1 +1,1 @@
-/home/oliveroh/op-test/optest-venv/bin/pytest
+./op-test-venv/bin/pytest

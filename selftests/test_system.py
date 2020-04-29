@@ -36,9 +36,6 @@ class StubSystem(OpTestSystem):
     def bmc_power_on(self):
         self.bmc_on = True
 
-
-# goto state is a really bad interface...
-
 def test_goto_petitboot():
     sys = StubSystem("test_data/bootlogs/boot-to-pb")
     sys.goto_state(optest.newsys.OpSystemState.PETITBOOT)
@@ -47,4 +44,17 @@ def test_goto_petitboot():
 def test_goto_os():
     sys = StubSystem("test_data/bootlogs/boot-to-os")
     sys.goto_state(optest.newsys.OpSystemState.OS)
+    assert sys.state == optest.newsys.OpSystemState.OS
+
+
+# XXX: Should this fail? When we get to the point where we've got to petitboot
+# in the console log there's more output available. This is similar to what
+# might happen if we had network problems between the op-test system and the
+# system under test.
+#
+# I'll have to think about it. Maybe we should verify that we're in the state
+# we think we're in?
+def test_goto_pb_with_os_data():
+    sys = StubSystem("test_data/bootlogs/boot-to-os")
+    sys.goto_state(optest.newsys.OpSystemState.PETITBOOT)
     assert sys.state == optest.newsys.OpSystemState.PETITBOOT
