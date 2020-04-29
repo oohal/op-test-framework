@@ -780,7 +780,6 @@ class OpTestSystem(object):
                                             refresh        = self.login_refresh,
                                             loop_max       = self.booting_watermark)
         # thrown from petitboot_callback, and login_callback
-        except WrongPatternMatch as e:
         except WaitForIt as e:
             if self.booting_watermark < self.kill_cord:
                 self.booting_watermark += 1
