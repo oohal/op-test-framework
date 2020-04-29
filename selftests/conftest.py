@@ -31,6 +31,15 @@ trashfire if you don't.
 """
 
 import pytest
+import pexpect
+
+from optest.OpTestConsole import FileConsole
+
+# how do i parameterise this?
+@pytest.fixture()
+def console_input_file(): 
+    yield "/home/oliveroh/bootlogs/boot-to-os"
+
 
 '''
 @pytest.fixture(autouse=True, scope='session')

@@ -78,6 +78,11 @@ class OpTestSystem(object):
 
         self.cv_HOST = host
         self.console = console
+        self.stop = 0
+        self.previous_state = OpSystemState.UNKNOWN
+        self.state = OpSystemState.UNKNOWN
+
+        self.should_detect = trydetect
 
         # When we leave the PETITBOOT and/or OS state.
         self.setup_prompt = False
@@ -203,7 +208,7 @@ class OpTestSystem(object):
     def run_command(self, cmd, timeout=60):
         if self.state not in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
             raise RuntimeError("Can't run host commands in this state {}")
-        return output self.console.run_command(cmd, timeout)
+        return self.console.run_command(cmd, timeout)
 
     # this can probably go elsewhere...
     def skiboot_log_on_console(self):
@@ -216,7 +221,11 @@ class OpTestSystem(object):
     #
     ############################################################################
 
-
+    # tries to determine the state of the system
+    # we could do this a part of system init, dunno
+    def probe(self):
+        raise NotImplementedError()
+        
     # called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
     def login_callback(self, **kwargs):
         default_vals = {'my_r': None, 'value': None}
@@ -397,7 +406,7 @@ class OpTestSystem(object):
 
 
     def detect_state(self, target_state):
-        if not self.sys_power_is_on():
+        if not self.host_power_is_on():
             log.info("Detected powered off system")
             return OpSystemState.OFF
 
@@ -671,7 +680,7 @@ class OpTestSystem(object):
         #    self.sys_set_bootdev_setup()
 
         # We clear any possible errors at this stage
-        self.sys_sdr_clear()
+        #self.sys_sdr_clear()
 
         # Only retry once
         # FIXME: Jank
