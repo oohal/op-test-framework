@@ -67,6 +67,7 @@ class OpSystemState():
     # BMC_OFF
     # BMC_BOOTING
 
+
 class OpTestSystem(object):
     def __init__(self,
                  host=None,
@@ -189,6 +190,9 @@ class OpTestSystem(object):
         raise NotImplementedError()
     def bmc_power_on(self):
         raise NotImplementedError()
+
+    def collect_debug(self):
+        pass
 
 
     ############################################################################
@@ -394,12 +398,9 @@ class OpTestSystem(object):
 
         # If we haven't checked for dangerous NVRAM options yet and
         # checking won't disrupt the test, do so now.
+        #    if self.conf.nvram_debug_opts is None and state in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
+        #        self.util.check_nvram_options(self.console)
         # FIXME: move this elsewhere
-        #        if self.conf.nvram_debug_opts is None and state in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
-        #   self.util.check_nvram_options(self.console)
-
-
-
 
 
     def detect_state(self, target_state):
@@ -559,10 +560,11 @@ class OpTestSystem(object):
         our_match = list(sorted(args['expect_dict'].keys()))
         expect = our_match + err_match
 
-        # FIXME: needed? The SMS menu should auto-bypass anyway...
         # check console type and pass 5 to skip SMS menu when booting an LPAR
         #if isinstance(self.console, OpTestHMC.HMCConsole):
         #    sys_pty.sendline('5')
+        #
+        # FIXME: commented out to break the circular includes with OpTestHMC
 
         # we do not perform buffer_kicker here since it can cause changes to
         # things like the petitboot menu and default boot
@@ -625,7 +627,7 @@ class OpTestSystem(object):
                     self.console.connect()
                     reconnect_count += 1
                 else:
-                    raise "Console died while waiting_for_it"
+                    raise "Console died while waiting_for_it" # FIXME: exception type
 
             log.debug("*** WaitForIt caller: {} state: {:2} -> {:2}"
                       .format(caller, self.state, self.target_state))
