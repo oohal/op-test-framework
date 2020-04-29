@@ -609,6 +609,11 @@ class OpTestSystem(object):
                     do_reconnect = True
             elif expect[r] == pexpect.EOF:
                 log.debug("WaitForIt: EOF")
+                log.debug("WaitForIt: patterns:")
+                for p in our_match:
+                    log.debug("WaitForIt: '''{}'''".format(p))
+                log.debug("WaitForIt: pty.before[-100:]: {}".format(pty.before[-100:]))
+
                 do_reconnect = True
 
             if do_reconnect:
