@@ -311,7 +311,7 @@ class OpTestConsole():
 class FileConsole(OpTestConsole):
     def __init__(self, inputfile, logfile=sys.stdout):
         super().__init__(logfile)
-        self.pty = OpExpect.spawn("cat {}".format(logfile), logfile=self.logfile)
+        self.pty = OpExpect.spawn("cat {}".format(inputfile), logfile=self.logfile)
 
     def connect(self):
         self.state = ConsoleState.CONNECTED

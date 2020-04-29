@@ -35,7 +35,7 @@ import subprocess
 import pexpect
 import socket
 import errno
-import unittest
+import inspect
 
 from . import OpTestIPMI  # circular dependencies, use package
 from .OpTestConstants import OpTestConstants as BMC_CONST
@@ -124,7 +124,6 @@ class OpTestSystem(object):
             self.login_refresh = 0
             # less reliable connections, ipmi act/deact does not trigger default boot cancel
             self.login_reconnect = 1
-            self.login_fresh_start = 0
         else:
             self.threshold_petitboot = 12  # stale buffer check
             # long enough to skip the refresh until kexec, stale buffers need to be jumped over
@@ -134,15 +133,12 @@ class OpTestSystem(object):
             self.petitboot_reconnect = 1  # NEW ssh triggers default boot cancel, just saying
             self.login_refresh = 0
             self.login_reconnect = 1  # NEW ssh triggers default boot cancel, just saying
-            self.login_fresh_start = 0
 
         # watermark is the loop counter (loop_max) used in conjunction with timeout
         # timeout is the expect timeout for each iteration
         # watermark will automatically increase in case the loop is too short
         self.ipl_watermark = 100
-        self.ipl_timeout = 4  # needs consideration with petitboot timeout
         self.booting_watermark = 100
-        self.booting_timeout = 5
         self.kill_cord = 102  # just a ceiling on giving up
 
         # We have a state machine for going in between states of the system
@@ -162,6 +158,8 @@ class OpTestSystem(object):
         self.stateHandlers[OpSystemState.OS] = self.run_OS
         self.stateHandlers[OpSystemState.POWERING_OFF] = self.run_POWERING_OFF
         self.stateHandlers[OpSystemState.UNKNOWN_BAD] = self.run_UNKNOWN
+
+        log.debug("Initialised {}".format(self.__class__.__name__))
 
     ############################################################################
     # Power Control
@@ -193,7 +191,6 @@ class OpTestSystem(object):
         raise NotImplementedError()
 
 
-    
     ############################################################################
     # Console Wrangling
     #
@@ -267,7 +264,7 @@ class OpTestSystem(object):
         for key in default_vals:
             if key not in list(kwargs.keys()):
                 kwargs[key] = default_vals[key]
-        self.sys_sel_elist(dump=True)
+#        self.sys_sel_elist(dump=True)
         guard_exception = UnexpectedCase(
             state=self.state, message="We hit the guard_callback value={}, manually restart the system".format(kwargs['value']))
         self.state = OpSystemState.UNKNOWN_BAD
@@ -306,7 +303,7 @@ class OpTestSystem(object):
             [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
         xmon_exception_registers = sys_pty.after
 
-        self.sys_sel_elist(dump=True) # hmm, suppose we can do that out of band?
+#        self.sys_sel_elist(dump=True) # hmm, suppose we can do that out of band?
         self.stop = 1
 
         my_msg = ('We hit the xmon_callback with \"{}\" backtrace=\n{}\n'
@@ -344,7 +341,7 @@ class OpTestSystem(object):
             if key not in list(kwargs.keys()):
                 kwargs[key] = default_vals[key]
 
-        self.sys_sel_elist(dump=True)
+#        self.sys_sel_elist(dump=True)
         skiboot_exception = UnexpectedCase(
             state=self.state, message="We hit the skiboot_callback value={}, manually restart the system".format(kwargs['value']))
         self.state = OpSystemState.UNKNOWN_BAD
@@ -363,15 +360,15 @@ class OpTestSystem(object):
 
         if (self.state == OpSystemState.UNKNOWN):
             if self.should_detect:
-                log.debug(
-                    "OpTestSystem CHECKING CURRENT STATE and TRANSITIONING for TARGET STATE: %s" % (target_state))
+                log.debug("OpTestSystem Trying to detect system state...")
                 self.state = self.detect_state(target_state)
-                log.debug("OpTestSystem CURRENT DETECTED STATE: %s" % (self.state))
+                log.debug("OpTestSystem Detected state %s" % (self.state))
 
         log.debug("OpTestSystem START STATE: %s (target %s)" %
                   (self.state, target_state))
 
         while True:
+            log.debug('OpTestSystem {} -> {}'.format(self.state, self.target_state))
             # if we've managed to re-enter the unknown state something is broken
             # so bail here.
             if self.state == OpSystemState.UNKNOWN:
@@ -408,6 +405,7 @@ class OpTestSystem(object):
     def detect_state(self, target_state):
         if not self.host_power_is_on():
             log.info("Detected powered off system")
+            self.previous_state = OpSystemState.OFF # use set_state?
             return OpSystemState.OFF
 
         # try clear the input buffer to start with
@@ -505,157 +503,135 @@ class OpTestSystem(object):
             return OpSystemState.UNKNOWN
 
 
-
-
-
     def wait_for_it(self, **kwargs):
-        default_vals = {'expect_dict': None, 'refresh': 1, 'buffer_kicker': 1, 'loop_max': 8,
-                        'threshold': 1, 'reconnect': 1, 'fresh_start': 1, 'last_try': 1, 'timeout': 5}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        base_seq = [pexpect.TIMEOUT, pexpect.EOF]
-        expect_seq = list(base_seq)  # we want a *copy*
-        expect_seq = expect_seq + list(sorted(kwargs['expect_dict'].keys()))
-        if kwargs['fresh_start']:
-            # new connect gets new pexpect buffer, stale buffer from power off can linger
-            sys_pty = self.console.connect()
-        else:
-            # cannot tolerate new connect on transition from 3/4 to 6
-            sys_pty = self.console.get_console()
+        '''
+        wait_for_it() - It waits for it.
+
+        There's a few problems we need to deal with while expect()ing
+        the console. The biggest is missing some event due to the
+        disconnects or characters being dropped. This function
+        tries to handle those as gracefully as possible.
+
+        Situations we have to deal with:
+
+        1) Being stuck at a login prompt. Getty does nothing unless you
+           poke it, so we might have to. Sending a newline will generally
+           refresh the prompt, but it might not.
+
+        2) The host is non-responsive because the console died. Happens
+           pretty frequently with certain BMC implementations and we can
+           work around it to some extent by re-starting the console session.
+           However, anything using op-test (i.e. tests) probably won't
+           cope all that well.
+
+        3) The host is non-responsive because it's dead. There's not much
+           we can do it about it here other than raise an exception if we
+           think it's happened. Frustratingly, this is also pretty hard
+           to differentate from 2) so we need to try handle that before
+           we escalate.
+
+         TODO: In theory we could check with the BMC to see if there was
+               a host checkstop to get confirmation. Won't catch all
+               host-crashes, but it's probably worth handling
+
+        4) Missing our patterns and ending up somewhere unexpected
+
+           e.g. Going for PETITBOOT, and ending up at the host OS login
+                prompt because the console disconnected.
+
+        Again, not much we can do about this right here. The callbacks
+        in the expect dictionary are used to handle these cases, but
+        it does mean you need to know what the fail cases are in
+        advance.
+        '''
+
+        args = {'expect_dict': None,
+                'refresh': 1,
+                'buffer_kicker': 1,
+                'loop_max': 8,
+                'threshold': 1,
+                'reconnect': True,
+                'max_reconnect': 5,
+                'expect_timeout': 5} # seconds
+        args.update(kwargs)
+
+        err_match = [pexpect.TIMEOUT, pexpect.EOF]
+        our_match = list(sorted(args['expect_dict'].keys()))
+        expect = our_match + err_match
 
         # FIXME: needed? The SMS menu should auto-bypass anyway...
         # check console type and pass 5 to skip SMS menu when booting an LPAR
         #if isinstance(self.console, OpTestHMC.HMCConsole):
         #    sys_pty.sendline('5')
 
-        # we do not perform buffer_kicker here since it can cause changes to things like the petitboot menu and default boot
-        if kwargs['refresh']:
+        # we do not perform buffer_kicker here since it can cause changes to
+        # things like the petitboot menu and default boot
+
+        self.console.connect()
+        if args['refresh']:
             sys_pty.sendcontrol('l')
+
         previous_before = 'emptyfirst'
-        x = 1
         reconnect_count = 0
-        timeout_count = 1
+        timeout_count = 0
+        stale_count = 0
+        caller = str(inspect.stack()[1].function)
 
+        for x in range(args['loop_max']):
+            pty = self.console.pty  # preemptive in case EOF XXX: why's this needed?
 
-        while (x <= kwargs['loop_max']):
-            sys_pty = self.console.get_console()  # preemptive in case EOF came
+            r = pty.expect(expect, args['expect_timeout'])
+            if expect[r] in our_match:
+                log.debug("WaitForIt: matched on {} {} ".format(r, expect[r]))
+                matched = expect[r]
 
-            # FIXME: needed? The SMS menu should auto-bypass anyway...
-            # check console type and pass 5 to skip SMS menu when booting an LPAR
-            #if isinstance(self.console, OpTestHMC.HMCConsole) and x == 1:
-            #    sys_pty.sendline('5')
+                callback = args['expect_dict'][matched]
+                if callback:
+                    callback(r, matched) # this will probably throw
 
-            r = sys_pty.expect(expect_seq, kwargs['timeout'])
-            # if we have a stale buffer and we are still timing out
-            if (previous_before == sys_pty.before) and ((r + 1) in range(len(base_seq))):
+                return r, reconnect_count
+
+            elif expect[r] == pexpect.TIMEOUT:
+                log.debug("WaitForIt: Timeout")
                 timeout_count += 1
-                # only attempt reconnect if we've timed out per threshold
-                if (timeout_count % kwargs['threshold'] == 0):
-                    if kwargs['reconnect']:
-                        reconnect_count += 1
-                        try:
-                            sys_pty = self.console.connect()
-                        except Exception as e:
-                            log.error(e)
-                        if kwargs['refresh']:
-                            sys_pty.sendcontrol('l')
-                        if kwargs['buffer_kicker']:
-                            sys_pty.sendline("\r")
-                            sys_pty.expect("\n")
-                    previous_before = 'emptyagain'
-            else:
-                previous_before = sys_pty.before
-                timeout_count = 1
 
-            working_r = self.check_it(my_r=r, check_base_seq=base_seq,
-                                      check_expect_seq=expect_seq, check_expect_dict=kwargs['expect_dict'])
-            # if we found a hit on the callers string return it, otherwise keep looking
-            if working_r != -1:
-                return working_r, reconnect_count
-            else:
-                x += 1
-                log.debug("\n *** WaitForIt CURRENT STATE \"{:02}\" TARGET STATE \"{:02}\"\n"
-                          " *** WaitForIt working on transition\n"
-                          " *** Expect Buffer ID={}\n"
-                          " *** Current loop iteration \"{:02}\"             - Reconnect attempts \"{:02}\" - loop_max \"{:02}\"\n"
-                          " *** WaitForIt timeout interval \"{:02}\" seconds - Stale buffer check every \"{:02}\" times\n"
-                          " *** WaitForIt variables \"{}\"\n"
-                          " *** WaitForIt Refresh=\"{}\" Buffer Kicker=\"{}\" - Kill Cord=\"{:02}\"\n"
-                          .format(self.state, self.target_state,
-                              hex(id(sys_pty)), x, reconnect_count,
-                              kwargs['loop_max'], kwargs['timeout'],
-                              kwargs['threshold'],
-                              sorted(kwargs['expect_dict'].keys()), kwargs['refresh'], kwargs['buffer_kicker'], self.kill_cord))
+                # no new input means we might have hit one of our error cases
+                if previous_before == pty.before:
+                    if args['refresh']:
+                        pty.sendcontrol('l')
+                    if args['buffer_kicker']:
+                        pty.sendline("\r")
+                    stale_count += 1
 
-            if (x >= kwargs['loop_max']):
-                if kwargs['last_try']:
-                    sys_pty = self.console.connect()
-                    sys_pty.sendcontrol('l')
-                    sys_pty.sendline("\r")
-                    r = sys_pty.expect(expect_seq, kwargs['timeout'])
-                    try:
-                        last_try_r = self.check_it(my_r=r, check_base_seq=base_seq, check_expect_seq=expect_seq,
-                                                   check_expect_dict=kwargs['expect_dict'])
-                        if last_try_r != -1:
-                            return last_try_r, reconnect_count
-                        else:
-                            raise WaitForIt(
-                                expect_dict=kwargs['expect_dict'], reconnect_count=reconnect_count)
-                    except Exception as e:
-                        raise e
-                raise WaitForIt(
-                    expect_dict=kwargs['expect_dict'], reconnect_count=reconnect_count)
+                # if the console hasn't done anything for a while it
+                # might have died (case 2)
+                if stale_count % args['threshold'] == 0:
+                    do_reconnect = True
+            elif expect[r] == pexpect.EOF:
+                log.debug("WaitForIt: EOF")
+                do_reconnect = True
 
-    def check_it(self, **kwargs):
-        default_vals = {'my_r': None, 'check_base_seq': None,
-                        'check_expect_seq': None, 'check_expect_dict': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        check_r = kwargs['my_r']
-        check_expect_seq = kwargs['check_expect_seq']
-        check_base_seq = kwargs['check_base_seq']
-        check_expect_dict = kwargs['check_expect_dict']
-        # if we have a hit on the callers string process it
-        if (check_r + 1) in range(len(check_base_seq) + 1, len(check_expect_seq) + 1):
-            # if there is a handler callback
-            if check_expect_dict[check_expect_seq[check_r]]:
-                try:
-                    # this calls the handler callback, mostly intended for raising exceptions
-                    check_expect_dict[check_expect_seq[check_r]](
-                        my_r=check_r, value=check_expect_seq[check_r])
-                    if self.ignore == 1:  # future use, set this flag in a handler callback
-                        self.ignore = 0
-                        # if we go to a callback and get back here flag this to ignore the find
-                        # this allows special handling without interrupting the waiting for a good case
-                        return -1
-                except Exception as e:
-                    # if a callback handler raised an exception this will catch it and then re-raise it
-                    raise e
-            # r based on sorted order of dict
-            return check_r - len(check_base_seq)
-        else:
-            if check_r == 1:  # EOF
-                self.console.close()  # while loop will get_console
-        # we found nothing so return -1
-        return -1
+            if do_reconnect:
+                do_reconnect = False
+                # if we hit max reconnects then either the system is dead
+                # or the console completely unusable
+                if args['reconnect'] and reconnect_count < args['max_reconnect']:
+                    self.console.close()
+                    self.console.connect()
+                    reconnect_count += 1
+                else:
+                    raise "Console died while waiting_for_it"
 
-    def do_host_reboot(self, target_state):
-        sys_pty = self.console.get_console()
-
-        if target_state in [OpSystemState.PETITBOOT_SHELL, OpSystemState.PETITBOOT]:
-            self.sys_set_bootdev_setup()
-        else:
-            self.sys_set_bootdev_no_override()
-
-        self.util.clear_system_state(self)
-        self.util.clear_state(self)
-        self.block_setup_term = 1  # block during reboot
-        # connect will have the login/root setup_term done
-        sys_pty.sendline('reboot')
-        sys_pty.expect("\n")
-
+            log.debug("*** WaitForIt caller: {} state: {:2} -> {:2}"
+                      .format(caller, self.state, self.target_state))
+            log.debug("*** Current loop {:02} of {:02} Reconnects {:02}"
+                      .format(x, args['loop_max'], reconnect_count))
+            log.debug("*** WaitForIt expect timeout: {:02}s - Stale buffer check every {:02} times\n"
+                      .format(args['threshold'], args['timeout']))
+            log.debug("*** WaitForIt expect_patterns Expect Buffer ID = {}"
+                      .format(sorted(args['expect_dict'].keys()), id(pty)))
+            log.debug("*** WaitForIt Refresh={} Buffer Kicker={} - Kill Cord={:02}"
+                      .format(args['refresh'], args['buffer_kicker'], self.kill_cord))
 
     def run_UNKNOWN(self, target_state):
         self.start_power_off()
@@ -693,24 +669,35 @@ class OpTestSystem(object):
 
     def run_IPLing(self, target_state):
         if target_state == OpSystemState.OFF:
-            self.host_power_off()
+            self.start_power_off()
             return OpSystemState.POWERING_OFF
 
         try:
+            petitboot_expect_table = {
+                'Petitboot'          : None,
+                '/ #'                : None,
+                'x=exit'             : None,
+                'shutdown requested' : self.hostboot_callback,
+                'login: ': self.login_callback,
+                'mon> ': self.xmon_callback,
+                'dracut:/#': self.dracut_callback,
+                'System shutting down with error status': self.guard_callback,
+                'Aborting!': self.skiboot_callback,
+            }
+
             # if petitboot cannot be reached it will automatically increase the
             # watermark and retry see the tunables ipl_watermark and ipl_timeout
             # for customization for extra long boot cycles for debugging, etc
             petit_r, petit_reconnect = self.wait_for_it(
-                                            expect_dict=self.petitboot_expect_table,
+                                            expect_dict=petitboot_expect_table,
                                             reconnect=self.petitboot_reconnect,
                                             buffer_kicker=self.petitboot_kicker,
                                             threshold=self.threshold_petitboot,
                                             refresh=self.petitboot_refresh,
-                                            loop_max=self.ipl_watermark,
-                                            timeout=self.ipl_timeout)
+                                            loop_max=self.ipl_watermark)
         except HostbootShutdown as e:
             log.error(e)
-            self.sys_sel_check()
+#            self.sys_sel_check()
             raise e
         except (WaitForIt, HTTPCheck) as e:
             if self.ipl_watermark < self.kill_cord:
@@ -731,11 +718,11 @@ class OpTestSystem(object):
                       " go to UNKNOWN_BAD and the system will be stopping.".format(e))
 
             self.state = OpSystemState.UNKNOWN_BAD
-            raise UnknownStateTransition(state=self.state, message=msg)
+            raise e # UnknownStateTransition(state=self.state, message=msg)
 
         if petit_r != -1:
             # Once reached to petitboot check for any SEL events
-            self.sys_sel_check()
+#            self.sys_sel_check()
             return OpSystemState.PETITBOOT
 
     def run_PETITBOOT(self, target_state):
@@ -775,18 +762,25 @@ class OpTestSystem(object):
 
     def run_BOOTING(self, target_state):
         try:
-            # if login cannot be reached it will automatically increase the watermark and retry
-            # see the tunables booting_watermark and booting_timeout for customization for extra long boot cycles for debugging, etc
-            login_r, login_reconnect = self.wait_for_it(
-                                            expect_dict=self.login_expect_table,
-                                            reconnect=self.login_reconnect,
-                                            threshold=self.threshold_login,
-                                            refresh=self.login_refresh,
-                                            loop_max=self.booting_watermark,
-                                            fresh_start=self.login_fresh_start,
-                                            timeout=self.booting_timeout)
+            login_expect_table = {
+                'login: '   : None,
+                '/ #'       : self.petitboot_callback,
+                'mon> '     : self.xmon_callback,
+                'dracut:/#' : self.dracut_callback,
+            }
 
+            # if login cannot be reached it will automatically increase the
+            # watermark and retry see the tunables booting_watermark and
+            # booting_timeout for customization for extra long boot cycles
+            # for debugging, etc
+            login_r, login_reconnect = self.wait_for_it(
+                                            expect_dict    = login_expect_table,
+                                            reconnect      = self.login_reconnect,
+                                            threshold      = self.threshold_login,
+                                            refresh        = self.login_refresh,
+                                            loop_max       = self.booting_watermark)
         # thrown from petitboot_callback, and login_callback
+        except WrongPatternMatch as e:
         except WaitForIt as e:
             if self.booting_watermark < self.kill_cord:
                 self.booting_watermark += 1
@@ -798,37 +792,35 @@ class OpTestSystem(object):
                     "OpTestSystem has reached the limit on re-IPL'ing to try to recover, we will be stopping")
                 return OpSystemState.UNKNOWN
         except Exception as e:
-            my_msg = ("OpTestSystem in run_IPLing and Exception=\"{}\" caused the system to"
-                      " go to UNKNOWN_BAD and the system will be stopping.".format(e))
-            my_exception = UnknownStateTransition(
-                state=self.state, message=my_msg)
             self.stop = 1  # hits like in OpExpect Assert fail
             self.state = OpSystemState.UNKNOWN_BAD
-            raise my_exception
+            raise e
 
         if login_r != -1:
             return OpSystemState.OS
 
     def run_OS(self, target_state):
+        # FIXME: verify that we're actually at the OS. We might want to also
+        # split out the "OS" state from a "waiting for login" state
         if target_state == OpSystemState.OS:
             return OpSystemState.OS
 
-        self.console.shell_mark_invalid()
         self.start_power_off()
         return OpSystemState.POWERING_OFF
 
-
     def start_power_off(self):
+        ''' initiates a host power off, doesn't touch the state machine '''
+        # FIXME: should we set self.state here? dunno
         self.console.shell_mark_invalid()
         self.host_power_off()
-        # FIXME: should we set self.state here? Probs not
-        # FIXME: record the start time and add a timeout
-        #        below
+        self.power_off_start_time = time.monotonic()
 
     def run_POWERING_OFF(self, target_state):
         # FIXME: Because this isn't watching the host console you get no output
         # until something starts looking at it again. Make this poll the power
         # status and drive expect with a low timeout so it's less crap.
+        #
+        # FIXME: use the time saved above to implement a timeout
         rc = int(self.sys_wait_for_standby_state(BMC_CONST.SYSTEM_STANDBY_STATE_DELAY))
         if rc == BMC_CONST.FW_SUCCESS:
             msg = "System is in standby/Soft-off state"

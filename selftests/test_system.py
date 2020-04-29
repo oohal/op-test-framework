@@ -1,3 +1,5 @@
+
+import optest
 import optest.newsys
 
 from optest.newsys import OpTestSystem
@@ -33,7 +35,16 @@ class StubSystem(OpTestSystem):
         self.bmc_on = False
     def bmc_power_on(self):
         self.bmc_on = True
-    
-def test_goto(console_input_file):
-    sys = StubSystem(console_input_file)
+
+
+# goto state is a really bad interface...
+
+def test_goto_petitboot():
+    sys = StubSystem("test_data/bootlogs/boot-to-pb")
     sys.goto_state(optest.newsys.OpSystemState.PETITBOOT)
+    assert sys.state == optest.newsys.OpSystemState.PETITBOOT
+
+def test_goto_os():
+    sys = StubSystem("test_data/bootlogs/boot-to-os")
+    sys.goto_state(optest.newsys.OpSystemState.OS)
+    assert sys.state == optest.newsys.OpSystemState.PETITBOOT
