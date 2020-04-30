@@ -49,50 +49,10 @@ import logging
 from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
-
 class ErrorPattern(Exception):
     pass
 class MissedState(Exception):
     pass
-
-# called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
-def error_pattern(pattern, context):
-    raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
-
-def missed_state(pattern, context):
-    raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
-
-
-ipling_expect_table = {
-    'istep 4.' : None,
-    'Welcome to Hostboot' : None,
-}
-
-skiboot_expect_table = {
-    'OPAL v6.' : None,
-    'OPAL v5.' : None,
-    'SkiBoot' : None,
-}
-
-# each expect table indicates when we've *entered* that state
-pb_expect_table = {
-    'Petitboot': None,
-    'x=exit': None,
-    '/ #': None,
-    'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
-    'login: ': missed_state,
-#    'mon> ': xmon_callback,
-#    'dracut:/#': dracut_callback,
-#    'System shutting down with error status': guard_callback,
-    'Aborting!': error_pattern,
-}
-
-login_expect_table = {
-    'login: ': None,
-    '/ #': error_pattern,
-    'mon> ': error_pattern,
-#    'dracut:/#': dracut_callback,
-}
 
 class SysState():
     '''
@@ -120,35 +80,18 @@ class SysState():
             return self.name == other.name
         return False
 
-# ordered list of possible states for this system
-state_table = [
-        SysState('off',         True,   None,           1),
-        SysState('ipling',      False,  ipling_expect_table,    120),
-#        SysState('skiboot',     False,  ski_patterns    60),
-        SysState('petitboot',   True,   pb_expect_table, 60),
-        SysState('login',       True,   login_expect_table, 180), # network cards suck
-#        SysState('os',          True,   os_patterns,    30),
-]
 
-class OpTestSystem(object):
+class BaseSystem(object):
     def __init__(self, host=None, console=None, pdu=None):
         self.host = host
         self.console = console
+        self.pdu = pdu
 
         # XXX: should setting this up be the job of the subclass? probably
         self.state_table = []
         self.states = {}
         self.state_idx = {}
         self.visited = {}
-
-        # FIXME: move this to subclasses
-        for s in state_table:
-            self._add_state(s)
-
-        # a list of error patterns to look for while expect()ing the
-        # host console FIXME: these are in OpExpect currently, which is
-        # dumb
-        self.error_patterns = []
 
         log.debug("Initialised {}".format(self.__class__.__name__))
 
@@ -288,3 +231,69 @@ class OpTestSystem(object):
 
         self.waitfor(target)
         self.states[target].interrupt()
+
+
+
+# FIXME: seperate file?
+
+# called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
+def error_pattern(pattern, context):
+    raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
+
+def missed_state(pattern, context):
+    raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
+
+# each expect table indicates when we've *entered* that state
+ipling_expect_table = {
+    'istep 4.' : None,
+    'Welcome to Hostboot' : None,
+}
+
+skiboot_expect_table = {
+    'OPAL v6.' : None,
+    'OPAL v5.' : None, #
+    'SkiBoot' : None,  # old boot header
+}
+
+pb_expect_table = {
+    'Petitboot': None,
+    'x=exit': None,
+    '/ #': None,
+    'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
+    'login: ': missed_state,
+#    'mon> ': xmon_callback,
+#    'dracut:/#': dracut_callback,
+#    'System shutting down with error status': guard_callback,
+    'Aborting!': error_pattern,
+}
+
+login_expect_table = {
+    'login: ': None,
+    '/ #': error_pattern,
+    'mon> ': error_pattern,
+#    'dracut:/#': dracut_callback,
+}
+
+
+class OpSystem(BaseSystem):
+    # ordered list of possible states for this system
+    openpower_state_table = [
+            SysState('off',       True,   None,           1),
+            SysState('ipling',    False,  ipling_expect_table,    120),
+            SysState('skiboot',   False,  skiboot_expect_table,   60),
+            SysState('petitboot', True,   pb_expect_table, 60),
+            SysState('login',     True,   login_expect_table, 180), # network cards suck
+    #        SysState('os',       True,   os_patterns,    30),
+    ]
+
+    def __init__(self, host=None, console=None, pdu=None):
+        super.__init__(host, console, pdu)
+
+        # build our state table
+        for s in self.state_table:
+            self._add_state(s)
+
+        # a list of error patterns to look for while expect()ing the
+        # host console FIXME: these are in OpExpect currently, which is
+        # dumb
+        self.error_patterns = []

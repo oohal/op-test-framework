@@ -96,8 +96,7 @@ class KernelModuleNotLoaded(Exception):
         self.module = module
 
     def __str__(self):
-        return "Kernel module '{}' not loaded".format(
-            self.module)
+        return "Kernel module '{}' not loaded".format(self.module)
 
 
 class KernelConfigNotSet(Exception):
@@ -110,8 +109,7 @@ class KernelConfigNotSet(Exception):
         self.opt = opt
 
     def __str__(self):
-        return "Kernel config '{}' not present".format(
-            self.opt)
+        return "Kernel config '{}' not present".format(self.opt)
 
 
 class KernelSoftLockup(Exception):
@@ -122,13 +120,11 @@ class KernelSoftLockup(Exception):
     and act appropriately.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Soft lockup (machine in state '{}'): {}".format(
-            self.state, self.log)
+        return "Soft lockup: {}".format(self.log)
 
 
 class KernelHardLockup(Exception):
@@ -136,13 +132,11 @@ class KernelHardLockup(Exception):
     We detected a hard lockup from the running kernel.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Hard lockup (machine in state '{}'): {}".format(
-            self.state, self.log)
+        return "Hard lockup: {}".format(self.log)
 
 
 class KernelOOPS(Exception):
@@ -153,13 +147,11 @@ class KernelOOPS(Exception):
     and act appropriately.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Kernel OOPS (machine in state '{}'): {}".format(
-            self.state, self.log)
+        return "Kernel OOPS: {}".format(self.log)
 
 
 class KernelKdump(Exception):
@@ -168,13 +160,11 @@ class KernelKdump(Exception):
     for debug.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Kernel Kdump (machine in state '{}'): {}".format(
-            self.state, self.log)
+        return "Kernel Kdump: {}".format(self.log)
 
 
 class KernelFADUMP(Exception):
@@ -182,12 +172,11 @@ class KernelFADUMP(Exception):
     We observe a kernel crash and follwed by MPIPL boot to dump opalcore/vmcore for debug.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Kernel FADUMP/MPIPL (machine in state '{}'): {}".format(self.state, self.log)
+        return "Kernel FADUMP/MPIPL: {}".format(self.log)
 
 
 class KernelCrashUnknown(Exception):
@@ -196,23 +185,19 @@ class KernelCrashUnknown(Exception):
     (i.e a timeout occured)
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Kernel crash unknown state (machine in state '{}'): {}".format(
-            self.state, self.log)
+        return "Kernel crash unknown state: {}".format(self.log)
 
 
 class KernelBug(Exception):
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Kernel bug in state '{}': {}".format(
-            self.state, self.log)
+        return "Kernel bug {}".format(self.log)
 
 
 class SkibootAssert(Exception):
@@ -220,13 +205,11 @@ class SkibootAssert(Exception):
     We detected an assert from OPAL (skiboot) firmware.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Hit skiboot assert in state '{}': {}".format(
-            self.state, self.log)
+        return "Hit skiboot assert : {}".format(self.log)
 
 
 class SkibootException(Exception):
@@ -234,27 +217,22 @@ class SkibootException(Exception):
     We detected an exception from OPAL (skiboot) firmware.
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Hit skiboot unexpected exception in state '{}': {}".format(
-            self.state, self.log)
-
+        return "Hit skiboot unexpected exception: {}".format(self.log)
 
 class KernelPanic(Exception):
     '''
     Kernel got panic due to high seveirty conditions
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Kernel panic in state '{}': {}".format(
-            self.state, self.log)
+        return "Kernel panic detected: {}".format(self.log)
 
 
 class PlatformError(Exception):
@@ -263,13 +241,11 @@ class PlatformError(Exception):
     machine check, MCE, etc)
     '''
 
-    def __init__(self, state, log):
+    def __init__(self, log):
         self.log = log
-        self.state = state
 
     def __str__(self):
-        return "Platform error at state '{}'. Log: {}".format(
-            self.state, self.log)
+        return "Platform error. Log: {}".format(self.log)
 
 
 class HostbootShutdown(Exception):

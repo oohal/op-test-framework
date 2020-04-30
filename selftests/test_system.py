@@ -3,11 +3,11 @@ import pytest
 import optest
 import optest.newersys
 
-from optest.newersys import OpTestSystem
+from optest.newersys import BaseSystem
 from optest.OpTestConsole import FileConsole
 
 
-class StubSystem(OpTestSystem):
+class StubSystem(BaseSystem):
     def __init__(self, input_file):
         self.input_file = input_file
         self.host_on = False
@@ -53,6 +53,7 @@ def test_boot_pb(off_system):
     # FIXME: how is the "off" state handled?
     sys.host_power_on()
     sys.waitfor('ipling')
+    sys.waitfor('skiboot')
     sys.waitfor('login')
 
     # powering off sort of breaks our model, but it's a special case anyway

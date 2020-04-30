@@ -109,7 +109,7 @@ class OpTestConsole():
 
     def shell_mark_invalid(self):
         self.shell_setup_done = False
-        
+
     def shell_setup(self):
         patterns = [self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF]
 
