@@ -639,8 +639,7 @@ class OpTestSystem(object):
             if check_expect_dict[check_expect_seq[check_r]]:
                 try:
                     # this calls the handler callback, mostly intended for raising exceptions
-                    check_expect_dict[check_expect_seq[check_r]](
-                        my_r=check_r, value=check_expect_seq[check_r])
+                    check_expect_dict[check_expect_seq[check_r]](my_r=check_r, value=check_expect_seq[check_r])
                     if self.ignore == 1:  # future use, set this flag in a handler callback
                         self.ignore = 0
                         # if we go to a callback and get back here flag this to ignore the find

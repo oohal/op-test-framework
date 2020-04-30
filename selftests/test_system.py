@@ -27,34 +27,22 @@ class StubSystem(OpTestSystem):
     def host_power_is_on(self): # -> Bool
         return self.host_on
 
-    # bmc stubs
-    def bmc_is_alive(self):
-        return self.bmc_on
-    def bmc_power_off(self):
-        self.host_power_off()
-        self.bmc_on = False
-    def bmc_power_on(self):
-        self.bmc_on = True
-
-def test_goto_petitboot():
-    sys = StubSystem("test_data/bootlogs/boot-to-pb")
-    sys.goto_state(optest.newsys.OpSystemState.PETITBOOT)
-    assert sys.state == optest.newsys.OpSystemState.PETITBOOT
-
-def test_goto_os():
+@pytest.fixture
+def off_system():
     sys = StubSystem("test_data/bootlogs/boot-to-os")
-    sys.goto_state(optest.newsys.OpSystemState.OS)
-    assert sys.state == optest.newsys.OpSystemState.OS
+    sys.power_off()
+    sys.prepare()
 
+def test_boot_os(off_system):
+    sys = off_sys
 
-# XXX: Should this fail? When we get to the point where we've got to petitboot
-# in the console log there's more output available. This is similar to what
-# might happen if we had network problems between the op-test system and the
-# system under test.
-#
-# I'll have to think about it. Maybe we should verify that we're in the state
-# we think we're in?
-def test_goto_pb_with_os_data():
-    sys = StubSystem("test_data/bootlogs/boot-to-os")
-    sys.goto_state(optest.newsys.OpSystemState.PETITBOOT)
-    assert sys.state == optest.newsys.OpSystemState.PETITBOOT
+    # FIXME: how is the "off" state handled?
+    sys.power_on()
+    sys.waitfor('ipling')
+    sys.waitfor('skiboot')
+    sys.waitfor('petitboot')
+    sys.waitat('oslogin')
+
+    # powering off sort of breaks our model, but it's a special case anyway
+
+    # FIXME: what do we have to verify where we are?

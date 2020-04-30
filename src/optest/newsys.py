@@ -352,8 +352,53 @@ class OpTestSystem(object):
         self.stop = 1
         raise skiboot_exception
 
-    # FIXME: need to pick up non-xmon kernel crashes too
 
+    class SysState():
+        def __init__(self, name, patterns, timeout, interrupt):
+            self.name = name
+            self.patterns = patterns
+            self.timeout = timeout
+            self.interrupt = interrupt
+
+    # ordered list of possible states for this system
+    state_table = [
+            SysState('sbe',       sbe_patterns), # tricky since not all systems have SBE output
+            SysState('hostboot',   hb_patterns, 120),
+            SysState('skiboot',   ski_patterns  60),
+            SysState('petitboot',  pb_patterns, 60),
+            SysState('login',   login_patterns, 180), # network cards suck
+            SysState('os',         os_patterns, 30),
+    ]
+
+    def waitfor(self, state):
+        if state not in self.states:
+            raise ValueError("No such state?")
+        if self.visited[state]:
+            raise ValueError('State already visited')
+
+        for index in range(len(self.state_table)):
+            s = self.state_table[index]
+            if s.name == target_state:
+                break
+
+        # console retry logic goes here
+        self.console.expect(s.patterns, timeout=s.timeout)
+
+        # backannotate all previous states as visited
+        for i in range(index):
+            self.visited[i] = True
+        # can we verify our state some how?
+
+    def waitat(self, target):
+        if not self.state_dict[target].interrupt:
+            raise ValueError("state can't be waited at")
+
+        self.waitfor(target)
+        self.state_dict[target].interrupt()
+    # FIXME: Need an error table in addition.
+
+
+    # FIXME: need to pick up non-xmon kernel crashes too
     def set_state(self, new_state):
         self.state = new_state
 
