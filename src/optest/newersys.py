@@ -50,66 +50,219 @@ from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 
-class OpSystemState():
-    '''
-    This class is used as an enum as to what state op-test *thinks* the host is in.
-    These states are used to drive a state machine in OpTestSystem.
-    '''
-    UNKNOWN = 0
-    OFF = 1
-    IPLing = 2
-    PETITBOOT = 3
-    PETITBOOT_SHELL = 4
-    BOOTING = 5
-    OS = 6
-    POWERING_OFF = 7
-    UNKNOWN_BAD = 8  # special case, use set_state to place system in hold for later goto
-    # BMC_OFF
-    # BMC_BOOTING
+class ErrorPattern(Exception):
+    pass
 
+# called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
+def login_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None}
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+    log.warning(
+        "\n\n *** OpTestSystem found the login prompt \"{}\" but this is unexpected, we will retry\n\n".format(kwargs['value']))
+    # raise the WaitForIt exception to be bubbled back to recycle early rather than having to wait the full loop_max
+    raise WaitForIt(expect_dict=self.petitboot_expect_table,
+                    reconnect_count=-1)
+
+# called when we get to petitboot, but wanted the login prompt (i.e. unwanted reboot)
+def petitboot_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None}
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+    log.warning(
+        "\n\n *** OpTestSystem found the petitboot prompt \"{}\" but this is unexpected, we will retry\n\n".format(kwargs['value']))
+    raise WaitForIt(expect_dict=self.login_expect_table,
+                    reconnect_count=-1)
+
+
+# Hostboot IPL error, bummer
+def hostboot_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None}
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+    self.state = OpSystemState.UNKNOWN_BAD
+    self.stop = 1
+    raise HostbootShutdown()
+
+# we hit this when hostboot guards something out during boot.
+# it should probably be non-fatal.
+def guard_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None}
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+#        self.sys_sel_elist(dump=True)
+    guard_exception = UnexpectedCase(
+        state=self.state, message="We hit the guard_callback value={}, manually restart the system".format(kwargs['value']))
+    self.state = OpSystemState.UNKNOWN_BAD
+    self.stop = 1
+    raise guard_exception
+
+# kernel crash! Weeeeeeeeeeee
+def xmon_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None} # can we replace this with dict({...}).update(kwargs)? or even .get()
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+    xmon_check_r = kwargs['my_r']
+    xmon_value = kwargs['value']
+    time.sleep(2)
+    sys_pty = self.console.get_console()
+    time.sleep(2)
+    sys_pty.sendline("t")
+    time.sleep(2)
+    rc = sys_pty.expect(
+        [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+    xmon_backtrace = sys_pty.after
+    sys_pty.sendline("r")
+    time.sleep(2)
+    rc = sys_pty.expect(
+        [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+    xmon_registers = sys_pty.after
+    sys_pty.sendline("S")
+    time.sleep(2)
+    rc = sys_pty.expect(
+        [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+    xmon_special_registers = sys_pty.after
+    sys_pty.sendline("e")
+    time.sleep(2)
+    rc = sys_pty.expect(
+        [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+    xmon_exception_registers = sys_pty.after
+
+#        self.sys_sel_elist(dump=True) # hmm, suppose we can do that out of band?
+    self.stop = 1
+
+    my_msg = ('We hit the xmon_callback with \"{}\" backtrace=\n{}\n'
+              ' registers=\n{}\n special_registers=\n{}\n'
+              ' exception_registers=\n{}\n'
+              .format(xmon_value,
+                      xmon_backtrace,
+                      xmon_registers,
+                      xmon_special_registers,
+                      xmon_exception_registers))
+    xmon_exception = UnexpectedCase(state=self.state, message=my_msg)
+    self.state = OpSystemState.UNKNOWN_BAD
+    raise xmon_exception
+
+def dracut_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None}
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+    try:
+        sys_pty = self.console.get_console()
+        sys_pty.sendline('cat /run/initramfs/rdsosreport.txt')
+    except Exception as err:
+        log.warning("Could not get dracut failure messages:\n %s", err)
+    self.state = OpSystemState.UNKNOWN_BAD
+    self.stop = 1
+    msg = ("We hit the dracut_callback value={}, "
+           "manually restart the system\n".format(kwargs['value']))
+    dracut_exception = UnexpectedCase(state=self.state, message=msg)
+    raise dracut_exception
+
+def skiboot_callback(self, **kwargs):
+    default_vals = {'my_r': None, 'value': None}
+    for key in default_vals:
+        if key not in list(kwargs.keys()):
+            kwargs[key] = default_vals[key]
+
+#        self.sys_sel_elist(dump=True)
+    skiboot_exception = UnexpectedCase(
+        state=self.state, message="We hit the skiboot_callback value={}, manually restart the system".format(kwargs['value']))
+    self.state = OpSystemState.UNKNOWN_BAD
+    self.stop = 1
+    raise skiboot_exception
+
+ipling_expect_table = {
+    'istep 4.' : None,
+    'Welcome to Hostboot' : None,
+}
+
+skiboot_expect_table = {
+    'OPAL v6.' : None,
+    'OPAL v5.' : None,
+    'SkiBoot' : None,
+}
+
+# each expect table indicates when we've *entered* that state
+pb_expect_table = {
+    'Petitboot': None,
+    '/ #': None,
+    'shutdown requested': self.hostboot_callback,
+    'x=exit': None,
+    'login: ': self.login_callback, # missed petitboot -> UNKNOWN_BAD
+    'mon> ': self.xmon_callback,
+    'dracut:/#': self.dracut_callback,
+    'System shutting down with error status': self.guard_callback,
+    'Aborting!': self.skiboot_callback,
+}
+
+login_expect_table = {
+    'login: ': None,
+    '/ #': self.petitboot_callback,
+    'mon> ': self.xmon_callback,
+    'dracut:/#': self.dracut_callback,
+}
+
+class SysState():
+    '''
+    defines one of the states a system can be in. Note that the OpTestSystem
+    requires a linear flow of states and you can only reach one system state
+    by going through all the previous ones.
+
+    Making this assumption allows us to simplify the internal state machine
+    considerably since we don't need to deal with arbitrary movements
+    between states. If a prior state is requested we can handle it by
+    powering the system off and re-IPLing.
+    '''
+    def __init__(self, name, patterns, timeout, stop_fn):
+        self.name = name
+        self.patterns = patterns # patterns we're looking for to indicate this state was reached
+        self.timeout = timeout   # how long this state is expected to last
+        self.stop_fn = stop_fn   # function to call to stop the IPL in this state
+
+    def __hash__(self)
+        return self.name.__hash__()
+
+    def __eq__(self, other):
+        return self.name == other.name
+
+# ordered list of possible states for this system
+state_table = [
+        SysState('off',         True,   None,           1),
+        SysState('ipling',      False,  ipling_expect_table,    120),
+#        SysState('skiboot',     False,  ski_patterns    60),
+        SysState('petitboot',   True,   pb_expect_table, 60),
+        SysState('login',       True,   login_expect_table, 180), # network cards suck
+#        SysState('os',          True,   os_patterns,    30),
+]
 
 class OpTestSystem(object):
     def __init__(self,
                  host=None,
-                 console=None,                 # subclasses should pass this up
-                 pdu=None,                     # pdu for this system (if it has one)
-                 trydetect=False,              # determine whether we try to detect the system state
-                                               # or just force a power cycle
-                 state=OpSystemState.UNKNOWN): # where do we pass in the pdu / serial cons objects?
+                 console=None,
+                 pdu=None)
 
-        self.cv_HOST = host
+        self.host = host
         self.console = console
-        self.stop = 0
-        self.previous_state = OpSystemState.UNKNOWN
-        self.state = OpSystemState.UNKNOWN
 
-        self.should_detect = trydetect
+        # XXX: should setting this up be the job of the subclass?
+        self.state_table = []
+        self.state_dict = {}
+        self.state_idx = {}
 
-        # When we leave the PETITBOOT and/or OS state.
-        self.setup_prompt = False
+        # FIXME: the state table is system specific and should be done in the subclass
+        for s in state_table:
+            self._add_state(s)
 
-        # dictionary used in sorted order
-        # column 1 is the string, column 2 is the action
-        # normally None is the action, otherwise a handler mostly used for exceptions
-
-        self.petitboot_expect_table = {
-            'Petitboot': None,
-            '/ #': None,
-            'shutdown requested': self.hostboot_callback,
-            'x=exit': None,
-            'login: ': self.login_callback, # missed petitboot -> UNKNOWN_BAD
-            'mon> ': self.xmon_callback,
-            'dracut:/#': self.dracut_callback,
-            'System shutting down with error status': self.guard_callback,
-            'Aborting!': self.skiboot_callback,
-        }
-
-        self.login_expect_table = {
-            'login: ': None,
-            '/ #': self.petitboot_callback,
-            'mon> ': self.xmon_callback,
-            'dracut:/#': self.dracut_callback,
-        }
+        # a list of error patterns to look for while expect() the
+        # host console
+        self.error_patterns = []
 
         # tunables for customizations, put them here all together
 
@@ -135,30 +288,17 @@ class OpTestSystem(object):
             self.login_refresh = 0
             self.login_reconnect = 1  # NEW ssh triggers default boot cancel, just saying
 
-        # watermark is the loop counter (loop_max) used in conjunction with timeout
-        # timeout is the expect timeout for each iteration
-        # watermark will automatically increase in case the loop is too short
+
+        # FIXME: document what these actually do
+
+        # watermark is the loop counter (loop_max) used in conjunction with
+        # timeout
         self.ipl_watermark = 100
+
+        # watermark will automatically increase in case the loop is too short
         self.booting_watermark = 100
         self.kill_cord = 102  # just a ceiling on giving up
-
-        # We have a state machine for going in between states of the system
-        # initially, everything in UNKNOWN, so we reset things.
-        # UNKNOWN is used to flag the system to auto-detect the state if
-        # possible to efficiently achieve state transitions.
-        # But, we allow setting an initial state if you, say, need to
-        # run against an already IPLed system
-        self.state = state
-        self.stateHandlers = {}
-        self.stateHandlers[OpSystemState.UNKNOWN] = self.run_UNKNOWN
-        self.stateHandlers[OpSystemState.OFF] = self.run_OFF
-        self.stateHandlers[OpSystemState.IPLing] = self.run_IPLing
-        self.stateHandlers[OpSystemState.PETITBOOT] = self.run_PETITBOOT
-        self.stateHandlers[OpSystemState.PETITBOOT_SHELL] = self.run_PETITBOOT_SHELL
-        self.stateHandlers[OpSystemState.BOOTING] = self.run_BOOTING
-        self.stateHandlers[OpSystemState.OS] = self.run_OS
-        self.stateHandlers[OpSystemState.POWERING_OFF] = self.run_POWERING_OFF
-        self.stateHandlers[OpSystemState.UNKNOWN_BAD] = self.run_UNKNOWN
+        # timeout is the expect timeout for each iteration
 
         log.debug("Initialised {}".format(self.__class__.__name__))
 
@@ -207,187 +347,89 @@ class OpTestSystem(object):
         return self.console
 
     def run_command(self, cmd, timeout=60):
-        if self.state not in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
-            raise RuntimeError("Can't run host commands in this state {}")
         return self.console.run_command(cmd, timeout)
 
     # this can probably go elsewhere...
     def skiboot_log_on_console(self):
         return True
 
+
+
     ############################################################################
     #
-    # System state tracking circus. This only works well for PowerNV systems
-    # at the moment. Eventually we need to generalise it a bit.
+    # System state tracking circus.
     #
     ############################################################################
 
-    # tries to determine the state of the system
-    # we could do this a part of system init, dunno
-    def probe(self):
-        raise NotImplementedError()
-        
-    # called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
-    def login_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        log.warning(
-            "\n\n *** OpTestSystem found the login prompt \"{}\" but this is unexpected, we will retry\n\n".format(kwargs['value']))
-        # raise the WaitForIt exception to be bubbled back to recycle early rather than having to wait the full loop_max
-        raise WaitForIt(expect_dict=self.petitboot_expect_table,
-                        reconnect_count=-1)
+    def _add_state(self, new_state):
+        self.state_table.append(new_state)
+        self.state_dict[new_state] = new_state
+        self.state_idx[new_state] = len(self.state_table) - 1
 
-    # called when we get to petitboot, but wanted the login prompt (i.e. unwanted reboot)
-    def petitboot_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        log.warning(
-            "\n\n *** OpTestSystem found the petitboot prompt \"{}\" but this is unexpected, we will retry\n\n".format(kwargs['value']))
-        raise WaitForIt(expect_dict=self.login_expect_table,
-                        reconnect_count=-1)
+    def set_state(self, new_state):
+        ''' Updates the state tracking machinery to reflect reality
 
+        NB: You probably should use goto_state() rather than this. However,
+            if you're doing something to change the underlying system state,
+            such as forcing a reboot, then use this to sync the state
+            tracking up with reality.
+        '''
 
-    # Hostboot IPL error, bummer
-    def hostboot_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        self.state = OpSystemState.UNKNOWN_BAD
-        self.stop = 1
-        raise HostbootShutdown()
+        # TODO: update error patterns?
+        for i in range(self.state_idx[state]):
+            self.visited[i] = True
+        self.last_state = new_state
 
-    # we hit this when hostboot guards something out during boot.
-    # it should probably be non-fatal.
-    def guard_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-#        self.sys_sel_elist(dump=True)
-        guard_exception = UnexpectedCase(
-            state=self.state, message="We hit the guard_callback value={}, manually restart the system".format(kwargs['value']))
-        self.state = OpSystemState.UNKNOWN_BAD
-        self.stop = 1
-        raise guard_exception
+    def poweroff(self, soft_first=True):
+        ''' helper for powering off the host and reset our state tracking '''
+        self.reset_states()
 
-    # kernel crash! Weeeeeeeeeeee
-    def xmon_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None} # can we replace this with dict({...}).update(kwargs)? or even .get()
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        xmon_check_r = kwargs['my_r']
-        xmon_value = kwargs['value']
-        time.sleep(2)
-        sys_pty = self.console.get_console()
-        time.sleep(2)
-        sys_pty.sendline("t")
-        time.sleep(2)
-        rc = sys_pty.expect(
-            [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        xmon_backtrace = sys_pty.after
-        sys_pty.sendline("r")
-        time.sleep(2)
-        rc = sys_pty.expect(
-            [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        xmon_registers = sys_pty.after
-        sys_pty.sendline("S")
-        time.sleep(2)
-        rc = sys_pty.expect(
-            [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        xmon_special_registers = sys_pty.after
-        sys_pty.sendline("e")
-        time.sleep(2)
-        rc = sys_pty.expect(
-            [".*mon> ", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        xmon_exception_registers = sys_pty.after
+        self.host_power_off()
+        if soft_first:
+            for i in range(self.power_off_delay):
+                if self.host_is_off():
+                    return
+                time.sleep(1)
+            log.info("Timeout while powering off host. Yanking power now")
 
-#        self.sys_sel_elist(dump=True) # hmm, suppose we can do that out of band?
-        self.stop = 1
-
-        my_msg = ('We hit the xmon_callback with \"{}\" backtrace=\n{}\n'
-                  ' registers=\n{}\n special_registers=\n{}\n'
-                  ' exception_registers=\n{}\n'
-                  .format(xmon_value,
-                          xmon_backtrace,
-                          xmon_registers,
-                          xmon_special_registers,
-                          xmon_exception_registers))
-        xmon_exception = UnexpectedCase(state=self.state, message=my_msg)
-        self.state = OpSystemState.UNKNOWN_BAD
-        raise xmon_exception
-
-    def dracut_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-        try:
-            sys_pty = self.console.get_console()
-            sys_pty.sendline('cat /run/initramfs/rdsosreport.txt')
-        except Exception as err:
-            log.warning("Could not get dracut failure messages:\n %s", err)
-        self.state = OpSystemState.UNKNOWN_BAD
-        self.stop = 1
-        msg = ("We hit the dracut_callback value={}, "
-               "manually restart the system\n".format(kwargs['value']))
-        dracut_exception = UnexpectedCase(state=self.state, message=msg)
-        raise dracut_exception
-
-    def skiboot_callback(self, **kwargs):
-        default_vals = {'my_r': None, 'value': None}
-        for key in default_vals:
-            if key not in list(kwargs.keys()):
-                kwargs[key] = default_vals[key]
-
-#        self.sys_sel_elist(dump=True)
-        skiboot_exception = UnexpectedCase(
-            state=self.state, message="We hit the skiboot_callback value={}, manually restart the system".format(kwargs['value']))
-        self.state = OpSystemState.UNKNOWN_BAD
-        self.stop = 1
-        raise skiboot_exception
-
-
-    class SysState():
-        def __init__(self, name, patterns, timeout, interrupt):
-            self.name = name
-            self.patterns = patterns
-            self.timeout = timeout
-            self.interrupt = interrupt
-
-    # ordered list of possible states for this system
-    state_table = [
-            SysState('sbe',       sbe_patterns), # tricky since not all systems have SBE output
-            SysState('hostboot',   hb_patterns, 120),
-            SysState('skiboot',   ski_patterns  60),
-            SysState('petitboot',  pb_patterns, 60),
-            SysState('login',   login_patterns, 180), # network cards suck
-            SysState('os',         os_patterns, 30),
-    ]
+        # try a little harder...
+        self.host_hard_power_off():
+        for i in range(self.power_yank_delay):
+            if self.host_is_off():
+                return
 
     def waitfor(self, state):
-        if state not in self.states:
-            raise ValueError("No such state?")
+        ''' waits for the system to reach the requested state
+
+        It's up to the caller to initiate the state transition.
+        e.g.
+            To get to petitboot you would need to do:
+            system.power_off()
+            system.waitfor('off')
+            system.power_on()
+            system.waitat('petitboot')
+
+        This is a little verbose, but moving to a specific state generally
+        isn't required
+        '''
+
+        if not self.states.get(s, None):
+            raise ValueError("System doesn't support this state?")
         if self.visited[state]:
-            raise ValueError('State already visited')
+            raise ValueError('State already visited. Poweroff required')
 
-        for index in range(len(self.state_table)):
-            s = self.state_table[index]
-            if s.name == target_state:
-                break
+        expect_table = s.patterns.keys()
 
-        # console retry logic goes here
-        self.console.expect(s.patterns, timeout=s.timeout)
+        # raises an exception on timeout, EOF, or any of our error patterns
+        r = self.console.expect(expect_table, timeout=s.timeout)
 
-        # backannotate all previous states as visited
-        for i in range(index):
-            self.visited[i] = True
-        # can we verify our state some how?
+        # error pattern?
+        cb = s.patterns(expect_table[r])
+        if cb:
+            raise "hit error pattern" # FIXME: halfassed
+
+        self.set_state(s)
+
 
     def waitat(self, target):
         if not self.state_dict[target].interrupt:
@@ -395,159 +437,6 @@ class OpTestSystem(object):
 
         self.waitfor(target)
         self.state_dict[target].interrupt()
-    # FIXME: Need an error table in addition.
-
-
-    # FIXME: need to pick up non-xmon kernel crashes too
-    def set_state(self, new_state):
-        self.state = new_state
-
-    def goto_state(self, target_state):
-        # only perform detection when incoming state is UNKNOWN
-        # if user overrides from command line and machine not at desired state can lead to exceptions
-        self.target_state = target_state # used in WaitForIt
-
-        if (self.state == OpSystemState.UNKNOWN):
-            if self.should_detect:
-                log.debug("OpTestSystem Trying to detect system state...")
-                self.state = self.detect_state(target_state)
-                log.debug("OpTestSystem Detected state %s" % (self.state))
-
-        log.debug("OpTestSystem START STATE: %s (target %s)" %
-                  (self.state, target_state))
-
-        while True:
-            log.debug('OpTestSystem {} -> {}'.format(self.state, self.target_state))
-            # if we've managed to re-enter the unknown state something is broken
-            # so bail here.
-            if self.state == OpSystemState.UNKNOWN:
-                self.stop = 1
-                msg = '''OpTestSystem something set the system to UNKNOWN, check the logs for details, we will be stopping the system'''
-                raise UnknownStateTransition(state=self.state, message=(msg))
-
-            # might happen if something caught the above even though it shouldn't
-            if self.stop == 1:
-                raise StoppingSystem()
-
-            # crank the state machine towards out goal
-            self.state = self.stateHandlers[self.state](target_state)
- 
-            # log transitions
-            if self.previous_state != self.state:
-                self.console.shell_mark_invalid()
-                self.previous_state = self.state
-                log.debug("OpTestSystem TRANSITIONED TO: %s" % (self.state))
-
-            if self.state == self.target_state:
-                break
-
-        # If we haven't checked for dangerous NVRAM options yet and
-        # checking won't disrupt the test, do so now.
-        #    if self.conf.nvram_debug_opts is None and state in [OpSystemState.PETITBOOT_SHELL, OpSystemState.OS]:
-        #        self.util.check_nvram_options(self.console)
-        # FIXME: move this elsewhere
-
-
-    def detect_state(self, target_state):
-        if not self.host_power_is_on():
-            log.info("Detected powered off system")
-            self.previous_state = OpSystemState.OFF # use set_state?
-            return OpSystemState.OFF
-
-        # try clear the input buffer to start with
-        self.console.pty.sendcontrol('u')
-        self.console.pty.sendline()
-
-        # try a newline
-        self.console.pty.sendline()
-        detected = self.try_detect_state(target_state)
-        if detected != OpSystemState.UNKNOWN:
-            return detected
-
-        # try clear the screen
-        self.console.pty.sendcontrol('l')
-        detected = self.try_detect_state(target_state)
-        if detected != OpSystemState.UNKNOWN:
-            return detected
-
-        # still nothing? reboot time
-        self.start_power_off()
-        return OpSystemState.POWERING_OFF
-
-    def try_detect_state(self, target_state, reboot):
-        r = self.console.pty.expect(["x=exit", "Petitboot",
-                                     ".*#", ".*\\$",
-                                     "login:",
-                                     pexpect.TIMEOUT, pexpect.EOF],
-                                     timeout=1)
-
-        if r in [0, 1]: # petitboot menu
-            if target_state == OpSystemState.PETITBOOT:
-                return OpSystemState.PETITBOOT
-
-            elif target_state == OpSystemState.PETITBOOT_SHELL:
-                self.petitboot_exit_to_shell()
-                self.console.setup_shell()
-                return OpSystemState.PETITBOOT_SHELL
-
-        elif r in [2, 3]: # shell prompt!
-            # FIXME: use uname -a
-            self.console.setup_shell()
-
-            # FIXME: replace this with a run_command
-            detect_state = self.check_kernel_for_openpower()
-
-            if (detect_state == target_state):
-                self.previous_state = detect_state  # preserve state XXX: What's this doing?
-                return detect_state
-        
-            # If we're targeting petitboot and we're in the OS then we'll have
-            # to reboot. We also need to from petitboot since we've probably
-            # paused the autoboot and petitboot won't resume it.
-            self.start_power_off()
-            return OpSystemState.POWERING_OFF
-
-        elif r == 4: # login prompt
-            if (target_state == OpSystemState.OS):
-                self.console.handle_login()
-                self.console.setup_shell()
-                return OpSystemState.OS
-
-        # error / no response
-        return OpSystemState.UNKNOWN
-
-    # check the kernel version string for -openpower, since that indicates
-    # we're in petitboot
-    def check_kernel_for_openpower(self):
-        sys_pty.sendline()
-        rc = sys_pty.expect(["x=exit", "Petitboot", ".*#", ".*\\$",
-                             "login:", pexpect.TIMEOUT, pexpect.EOF], timeout=5)
-        if rc in [0, 1, 5, 6]:
-            # we really should not have arrived in here and not much we can do
-            return OpSystemState.UNKNOWN
-
-        sys_pty.sendline("cat /proc/version | grep openpower; echo $?")
-        time.sleep(0.2)
-        rc = sys_pty.expect(
-            [self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF], timeout=1)
-        if rc == 0:
-            echo_output = sys_pty.before
-            try:
-                echo_rc = int(echo_output.splitlines()[-1])
-            except Exception as e:
-                # most likely cause is running while booting unknowlingly
-                return OpSystemState.UNKNOWN
-            if (echo_rc == 0):
-                self.previous_state = OpSystemState.PETITBOOT_SHELL
-                return OpSystemState.PETITBOOT_SHELL
-            elif echo_rc == 1:
-                self.previous_state = OpSystemState.OS
-                return OpSystemState.OS
-            else:
-                return OpSystemState.UNKNOWN
-        else:  # TIMEOUT EOF from cat
-            return OpSystemState.UNKNOWN
-
 
     def wait_for_it(self, **kwargs):
         '''
@@ -685,179 +574,6 @@ class OpTestSystem(object):
             log.debug("*** WaitForIt Refresh={} Buffer Kicker={} - Kill Cord={:02}"
                       .format(args['refresh'], args['buffer_kicker'], self.kill_cord))
 
-    def run_UNKNOWN(self, target_state):
-        self.start_power_off()
-        return OpSystemState.POWERING_OFF
-
-    def run_OFF(self, target_state):
-        if target_state == OpSystemState.OFF:
-            return OpSystemState.OFF
-
-        # going to need a way to ensure this is cleared.
-        # we might want to make that a system specific thing and have it
-        # nuke any overrides, put back default FW, etc. This is just one
-        # of many things that would screw up booting...
-        #
-        # if target_state == OpSystemState.OS:
-        #   clear any boot overrides since they could leave
-        #   us stuck in petitboot
-        #    self.sys_set_bootdev_no_override()
-        #
-        # set the bootdev so we stop in petitboot.
-        #if target_state in [OpSystemState.PETITBOOT, OpSystemState.PETITBOOT_SHELL]:
-        #    self.sys_set_bootdev_setup()
-
-        # We clear any possible errors at this stage
-        #self.sys_sdr_clear()
-
-        # Only retry once
-        # FIXME: Jank
-        r = self.host_power_on()
-        if r == BMC_CONST.FW_FAILED:
-            r = self.host_power_on()
-            if r == BMC_CONST.FW_FAILED:
-                raise 'Failed powering on system'
-        return OpSystemState.IPLing
-
-    def run_IPLing(self, target_state):
-        if target_state == OpSystemState.OFF:
-            self.start_power_off()
-            return OpSystemState.POWERING_OFF
-
-        try:
-            petitboot_expect_table = {
-                'Petitboot'          : None,
-                '/ #'                : None,
-                'x=exit'             : None,
-                'shutdown requested' : self.hostboot_callback,
-                'login: ': self.login_callback,
-                'mon> ': self.xmon_callback,
-                'dracut:/#': self.dracut_callback,
-                'System shutting down with error status': self.guard_callback,
-                'Aborting!': self.skiboot_callback,
-            }
-
-            # if petitboot cannot be reached it will automatically increase the
-            # watermark and retry see the tunables ipl_watermark and ipl_timeout
-            # for customization for extra long boot cycles for debugging, etc
-            petit_r, petit_reconnect = self.wait_for_it(
-                                            expect_dict=petitboot_expect_table,
-                                            reconnect=self.petitboot_reconnect,
-                                            buffer_kicker=self.petitboot_kicker,
-                                            threshold=self.threshold_petitboot,
-                                            refresh=self.petitboot_refresh,
-                                            loop_max=self.ipl_watermark)
-        except HostbootShutdown as e:
-            log.error(e)
-#            self.sys_sel_check()
-            raise e
-        except (WaitForIt, HTTPCheck) as e:
-            if self.ipl_watermark < self.kill_cord:
-                self.ipl_watermark += 1
-                log.warning("OpTestSystem UNABLE TO REACH PETITBOOT or we missed it"
-                            "- \"{}\", increasing ipl_watermark for loop_max to {},"
-                            " will re-IPL for another try".format(e, self.ipl_watermark))
-                return OpSystemState.UNKNOWN_BAD # XXX: raise?
-
-            else:
-                self.stop = 1
-                log.error("OpTestSystem has reached the limit on re-IPL'ing, stopping")
-                return OpSystemState.UNKNOWN # XXX: Raise?
-
-        except Exception as e:
-            self.stop = 1  # Exceptions like in OpExpect Assert fail
-            msg = ("OpTestSystem in run_IPLing and the Exception=\n\"{}\"\n caused the system to"
-                      " go to UNKNOWN_BAD and the system will be stopping.".format(e))
-
-            self.state = OpSystemState.UNKNOWN_BAD
-            raise e # UnknownStateTransition(state=self.state, message=msg)
-
-        if petit_r != -1:
-            # Once reached to petitboot check for any SEL events
-#            self.sys_sel_check()
-            return OpSystemState.PETITBOOT
-
-    def run_PETITBOOT(self, target_state):
-        if target_state == OpSystemState.PETITBOOT:
-            # verify that we are at the petitboot menu
-            self.petitboot_exit_to_shell()
-            self.exit_petitboot_shell()
-            return OpSystemState.PETITBOOT
-
-        if target_state == OpSystemState.PETITBOOT_SHELL:
-            self.petitboot_exit_to_shell()
-            return OpSystemState.PETITBOOT_SHELL
-
-        if target_state == OpSystemState.OFF:
-            self.start_power_off()
-            return OpSystemState.POWERING_OFF
-
-        # FIXME: drive petitboot to make sure this actuall happens
-        if target_state == OpSystemState.OS:
-            return OpSystemState.BOOTING
-
-        raise UnknownStateTransition(
-            state=self.state, message="OpTestSystem in run_PETITBOOT and something caused the system to go to UNKNOWN")
-
-    def run_PETITBOOT_SHELL(self, target_state):
-        if target_state == OpSystemState.PETITBOOT_SHELL:
-            # verify that we are at the petitboot shell
-            self.get_petitboot_prompt()
-            return OpSystemState.PETITBOOT_SHELL
-
-        if target_state == OpSystemState.PETITBOOT:
-            self.exit_petitboot_shell()
-            return OpSystemState.PETITBOOT
-
-        self.start_power_off()
-        return OpSystemState.POWERING_OFF
-
-    def run_BOOTING(self, target_state):
-        try:
-            login_expect_table = {
-                'login: '   : None,
-                '/ #'       : self.petitboot_callback,
-                'mon> '     : self.xmon_callback,
-                'dracut:/#' : self.dracut_callback,
-            }
-
-            # if login cannot be reached it will automatically increase the
-            # watermark and retry see the tunables booting_watermark and
-            # booting_timeout for customization for extra long boot cycles
-            # for debugging, etc
-            login_r, login_reconnect = self.wait_for_it(
-                                            expect_dict    = login_expect_table,
-                                            reconnect      = self.login_reconnect,
-                                            threshold      = self.threshold_login,
-                                            refresh        = self.login_refresh,
-                                            loop_max       = self.booting_watermark)
-        # thrown from petitboot_callback, and login_callback
-        except WaitForIt as e:
-            if self.booting_watermark < self.kill_cord:
-                self.booting_watermark += 1
-                log.warning("OpTestSystem UNABLE TO REACH LOGIN or we missed it - \"{}\", increasing booting_watermark for loop_max to {},"
-                            " will re-IPL for another try".format(e, self.booting_watermark))
-                return OpSystemState.UNKNOWN_BAD
-            else:
-                log.error(
-                    "OpTestSystem has reached the limit on re-IPL'ing to try to recover, we will be stopping")
-                return OpSystemState.UNKNOWN
-        except Exception as e:
-            self.stop = 1  # hits like in OpExpect Assert fail
-            self.state = OpSystemState.UNKNOWN_BAD
-            raise e
-
-        if login_r != -1:
-            return OpSystemState.OS
-
-    def run_OS(self, target_state):
-        # FIXME: verify that we're actually at the OS. We might want to also
-        # split out the "OS" state from a "waiting for login" state
-        if target_state == OpSystemState.OS:
-            return OpSystemState.OS
-
-        self.start_power_off()
-        return OpSystemState.POWERING_OFF
 
     def start_power_off(self):
         ''' initiates a host power off, doesn't touch the state machine '''
@@ -865,24 +581,6 @@ class OpTestSystem(object):
         self.console.shell_mark_invalid()
         self.host_power_off()
         self.power_off_start_time = time.monotonic()
-
-    def run_POWERING_OFF(self, target_state):
-        # FIXME: Because this isn't watching the host console you get no output
-        # until something starts looking at it again. Make this poll the power
-        # status and drive expect with a low timeout so it's less crap.
-        #
-        # FIXME: use the time saved above to implement a timeout
-        rc = int(self.sys_wait_for_standby_state(BMC_CONST.SYSTEM_STANDBY_STATE_DELAY))
-        if rc == BMC_CONST.FW_SUCCESS:
-            msg = "System is in standby/Soft-off state"
-        elif rc == BMC_CONST.FW_PARAMETER:
-            msg = "Host Status sensor is not available/Skipping stand-by state check"
-        else:
-            raise OpTestError("System failed to reach standby/Soft-off state")
-        log.info(msg)
-
-        return OpSystemState.OFF
-
 
     # Expect wrangling to get into and out of petitboot
     def petitboot_exit_to_shell(self):
