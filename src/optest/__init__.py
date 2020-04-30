@@ -25,4 +25,4 @@
 # IBM_PROLOG_END_TAG
 
 
-from .Exceptions import *
+from .exceptions import *

@@ -2,7 +2,7 @@
 # IBM_PROLOG_BEGIN_TAG
 # This is an automatically generated prolog.
 #
-# $Source: op-test-framework/common/OpTestConstants.py $
+# $Source: op-test-framework/common/constants.py $
 #
 # OpenPOWER Automated Test Project
 #
@@ -25,7 +25,7 @@
 # IBM_PROLOG_END_TAG
 
 '''
-OpTestConstants
+constants
 ---------------
 
 BMC package which contains all BMC related constants
@@ -37,7 +37,7 @@ OpenPower systems
 import pexpect
 
 
-class OpTestConstants():
+class Constants():
 
     # Platforms
     HABANERO = "habanero"

@@ -29,22 +29,22 @@ import subprocess
 import tempfile
 import os
 
-from . import OpExpect
-from . import newersys
+from . import opexpect
+from . import system
 
-from .newersys import SysState, BaseSystem
-from .Exceptions import CommandFailed
-from .OpTestConsole import OpTestConsole, ConsoleState
+from .system import SysState, BaseSystem
+from .exceptions import CommandFailed
+from .console import Console, ConsoleState
 
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 qemu_state_table = [
-    SysState('skiboot', False, newersys.skiboot_expect_table, 120),
-    SysState('petitboot', False, newersys.pb_expect_table, 120),
+    SysState('skiboot', False, system.skiboot_expect_table, 120),
+    SysState('petitboot', False, system.pb_expect_table, 120),
 ]
 
-class QemuConsole(OpTestConsole):
+class QemuConsole(Console):
     def __init__(self):
         self.qemu_pty = None
         super().__init__()
@@ -196,18 +196,19 @@ class QemuSystem(BaseSystem):
                     bridge['n_devices'] += 1
 
 
-#       old code I ahcked up to remove the OpTestConfig dependency
+#       FIXME: old code I ahcked up to remove the OpTestConfig dependency,
+#              leaving it here so we know the source of fru_data is.
+#       if self.fru_path:
 #        fru_path = os.path.join(
-#            O pTestConfiguration.conf.basedir, "test_binaries", "qemu_fru")
+#            OpTestConfiguration.conf.basedir, "test_binaries", "qemu_fru")
 
-        # typical host ip=10.0.2.2 and typical skiroot 10.0.2.15
-        # use skiroot as the source, no sshd in skiroot
-#        cmd = cmd + " -device ipmi-bmc-sim,id=bmc0"
-#        if self.fru_path:
-#            cmd += ",frudatafile=" + self.fru_path
-#        cmd = cmd + " -device isa-ipmi-bt,bmc=bmc0,irq=10"
-        cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
 
+        # FIXME: this seems to be broken. not sure why
+        cmd = cmd + " -device ipmi-bmc-sim,id=bmc0"
+        if self.fru_path:
+            cmd += ",frudatafile=" + self.fru_path
+        cmd = cmd + " -device isa-ipmi-bt,bmc=bmc0,irq=10"
+        #cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
         cmd = cmd + " -no-reboot"
 
         log.info("Qemu command: {}".format(cmd))
@@ -215,8 +216,12 @@ class QemuSystem(BaseSystem):
 
         # ok, now run qemu and setup our console
         try:
-            pty = OpExpect.spawn(cmd, logfile=self.logfile)
-            time.sleep(0.2)
+            pty = opexpect.spawn(cmd, logfile=self.logfile)
+
+            # HACK: when passed a bad cmdline qemu can take a sec bail, so just wait
+            # if we can make it start with the CPUs not executing we might be able to
+            # do something more intelligent, but w/e this works for now
+            time.sleep(0.5)
             if not pty.isalive():
                 raise CommandFailed(cmd, pty.read(), pty.status)
 

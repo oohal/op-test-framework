@@ -1,7 +1,7 @@
 import pytest
 import optest
 
-from optest.OpTestQemu import QemuSystem
+from optest.qemu import QemuSystem
 
 @pytest.fixture
 def qemu():
@@ -28,9 +28,9 @@ def test_qemu_boot_nokernel():
     sys.host_power_on()
     sys.get_console().connect()
 
-    qemu.waitfor('skiboot')
+    sys.waitfor('skiboot')
     with pytest.raises(optest.SkibootAssert):
-        qemu.waitfor('petitboot') # should fail since there's no kernel image
+        sys.waitfor('petitboot') # should fail since there's no kernel image
     sys.host_power_off()
 
 def test_qemu_boot_pb(qemu):

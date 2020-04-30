@@ -168,3 +168,39 @@ class PetitbootHelper():
                             "commands not supported in server")
 
         return my_ip
+
+
+
+    # FIXME: moved this in from somwehere, need to make it work
+
+    # check the kernel version string for -openpower, since that indicates
+    # we're in petitboot
+    def check_kernel_for_openpower(self):
+        sys_pty.sendline()
+        rc = sys_pty.expect(["x=exit", "Petitboot", ".*#", ".*\\$",
+                             "login:", pexpect.TIMEOUT, pexpect.EOF], timeout=5)
+        if rc in [0, 1, 5, 6]:
+            # we really should not have arrived in here and not much we can do
+            return OpSystemState.UNKNOWN
+
+        sys_pty.sendline("cat /proc/version | grep openpower; echo $?")
+        time.sleep(0.2)
+        rc = sys_pty.expect(
+            [self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF], timeout=1)
+        if rc == 0:
+            echo_output = sys_pty.before
+            try:
+                echo_rc = int(echo_output.splitlines()[-1])
+            except Exception as e:
+                # most likely cause is running while booting unknowlingly
+                return OpSystemState.UNKNOWN
+            if (echo_rc == 0):
+                self.previous_state = OpSystemState.PETITBOOT_SHELL
+                return OpSystemState.PETITBOOT_SHELL
+            elif echo_rc == 1:
+                self.previous_state = OpSystemState.OS
+                return OpSystemState.OS
+            else:
+                return OpSystemState.UNKNOWN
+        else:  # TIMEOUT EOF from cat
+            return OpSystemState.UNKNOWN

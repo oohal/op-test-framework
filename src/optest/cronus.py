@@ -2,7 +2,7 @@
 # IBM_PROLOG_BEGIN_TAG
 # This is an automatically generated prolog.
 #
-# $Source: op-test-framework/common/OpTestCronus.py $
+# $Source: op-test-framework/common/cronus.py $
 #
 # OpenPOWER Automated Test Project
 #
@@ -32,11 +32,11 @@ import traceback
 import socket
 
 from .Exceptions import ParameterCheck, UnexpectedCase
-from .OpTestSystem import OpSystemState
+from .system import OpSystemState
 
 import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 match_list = ["CRONUS_HOME",
               "OPTKROOT",
@@ -59,7 +59,7 @@ match_list = ["CRONUS_HOME",
               ]
 
 
-class OpTestCronus():
+class cronus():
     '''
     Class for managing a cronus shell session.
 
@@ -221,7 +221,7 @@ class OpTestCronus():
                                  " traceback={}".format(e, tb))
 
     def cronus_subcommand(self, command=None, minutes=2):
-        # OpTestCronus class calls this, so be cautious on recursive calls
+        # cronus class calls this, so be cautious on recursive calls
         assert 0 < minutes <= 120, (
             "cronus_subcommand minutes='{}' is out of the desired range of 1-120"
             .format(minutes))
@@ -288,7 +288,7 @@ class OpTestCronus():
 
     def cronus_run_command(self, command=None, minutes=2):
         # callers should assure its not too early in system life to call
-        # we need a system object, OpTestConfiguration.py env_ready cronus_ready
+        # we need a system object, configuration.py env_ready cronus_ready
         assert 0 < minutes <= 120, (
             "cronus_run_command minutes='{}' is out of the desired range of 1-120"
             .format(minutes))

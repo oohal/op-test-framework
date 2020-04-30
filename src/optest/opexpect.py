@@ -35,7 +35,7 @@ throws.
 """
 
 import pexpect
-from .Exceptions import *
+from .exceptions import *
 
 def handle_kernel_err(pty, p):
     log = str(pty.after)

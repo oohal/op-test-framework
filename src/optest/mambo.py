@@ -28,12 +28,11 @@ import pexpect
 import subprocess
 import os
 
-from .Exceptions import CommandFailed, ParameterCheck
-from .OpTestUtil import OpTestUtil
-from .OpTestSystem import OpTestSystem, OpSystemState
-from . import OpExpect
+from .exceptions import CommandFailed, ParameterCheck
+from .system import OpTestSystem, OpSystemState
+from . import opexpect
 
-from . import OpTestLogger
+from . import logger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
 
@@ -164,7 +163,7 @@ class MamboConsole():
             spawn_env['SKIBOOT_AUTORUN'] = str(self.mambo_autorun)
         log.debug("OpTestMambo cmd={} mambo spawn_env={}".format(cmd, spawn_env))
         try:
-            self.pty = OpExpect.spawn(cmd,
+            self.pty = expect.spawn(cmd,
                                       logfile=self.logfile,
                                       env=spawn_env)
         except Exception as e:

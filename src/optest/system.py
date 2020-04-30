@@ -31,23 +31,9 @@
 #  automated flashing and testing of OpenPower systems.
 
 import time
-import subprocess
-import pexpect
-import socket
-import errno
-import inspect
 
-from . import OpTestIPMI  # circular dependencies, use package
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
-from .OpTestUtil import OpTestUtil
-from .Exceptions import HostbootShutdown, WaitForIt, RecoverFailed, UnknownStateTransition
-from .Exceptions import ConsoleSettings, UnexpectedCase, StoppingSystem, HTTPCheck
-from .OpTestSSH import OpTestSSH
-
-import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 class ErrorPattern(Exception):
     pass

@@ -1,32 +1,37 @@
-#!/usr/bin/env python3 
+#!/usr/bin/env python3
 
 import optest
-import optest.Exceptions
-import optest.OpExpect
-import optest.OpTestAMIWeb
-import optest.OpTestASM
-import optest.OpTestBMC
-import optest.OpTestConsole
-import optest.OpTestConstants
-import optest.OpTestCronus
-import optest.OpTestError
-import optest.OpTestFSP
-import optest.OpTestHMC
-import optest.OpTestHost
-import optest.OpTestInstallUtil
-import optest.OpTestIPMI
-import optest.OpTestKeys
-import optest.OpTestLogger
-import optest.OpTestMambo
-import optest.OpTestOpenBMC
-import optest.OpTestQemu
-import optest.OpTestSOL
-import optest.OpTestSSH
-import optest.OpTestSystem
-import optest.OpTestTConnection
-import optest.OpTestThread
-import optest.OpTestUtil
-import optest.SerialConsole
+
+#import optest.amiweb
+#import optest.asm
+#import optest.bmc
+#import optest.constants
+#import optest.cronus
+#import optest.fsp
+#import optest.hmc
+#import optest.host
+#import optest.installutil
+#import optest.ipmi
+#import optest.keys
+#import optest.mambo
+#import optest.openbmc
+#import optest.sol
+#import optest.telnet
+#import optest.thread
+#import optest.util die
+
+
+#import optest.ssh # just provides OpTestSSH, can probably become a CommandConsole
+
+import optest.exceptions
+import optest.system
+import optest.qemu
+import optest.opexpect
+
+import optest.console
+
+import optest.logger
+
 
 def test_import():
     pass

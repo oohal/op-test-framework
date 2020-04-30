@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-import optest.OpTestConsole as con
+import optest.console as con
 
 # FIXME: this is all pretty crappy, better than nothing i guess
 
@@ -11,17 +11,17 @@ import optest.OpTestConsole as con
 # the shell isn't logged out and that drives the odd behaviour here.
 
 def test_nosetup_raises():
-    ssh = con.OpTestSSH("ozrom2-bmc", "root", "0penBmc")
+    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
     with pytest.raises(RuntimeError):
         ssh.run_command("ls -1")
 
 def test_sudo_raises():
-    ssh = con.OpTestSSH("ozrom2-bmc", "root", "0penBmc")
+    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
     with pytest.raises(ValueError):
         ssh.run_command("sudo ls -1")
 
 def test_ssh_shell():
-    ssh = con.OpTestSSH("ozrom2-bmc", "root", "0penBmc")
+    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
 
     ssh.connect()
     ssh.shell_setup()
@@ -39,7 +39,7 @@ def test_ssh_shell():
 # Hmm, how do we really test the setup behaviour?
 
 def test_ssh_vserial():
-    ssh = con.OpTestSSH("ozrom2-bmc", "root", "0penBmc", port=2200)
+    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc", port=2200)
 
     ssh.connect()
     ssh.shell_setup()

@@ -1,10 +1,9 @@
 import pytest
 
 import optest
-import optest.newersys
 
-from optest.newersys import BaseSystem
-from optest.OpTestConsole import FileConsole
+from optest.system import BaseSystem
+from optest.console import FileConsole
 
 
 class StubSystem(BaseSystem):

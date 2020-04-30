@@ -3,7 +3,7 @@
 # IBM_PROLOG_BEGIN_TAG
 # This is an automatically generated prolog.
 #
-# $Source: op-test-framework/common/OpTestASM.py $
+# $Source: op-test-framework/common/asm.py $
 #
 # OpenPOWER Automated Test Project
 #
@@ -26,7 +26,7 @@
 # IBM_PROLOG_END_TAG
 
 '''
-OpTestASM: Advanced System Management (FSP Web UI)
+op-test driver for the FSP Web UI (ASM / Advanced System Management)
 --------------------------------------------------
 
 This class can contains common functions which are useful for
@@ -41,8 +41,7 @@ import pexpect
 import sys
 import subprocess
 
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
+from .exceptions import OpTestError
 
 import http.cookiejar
 import urllib.request
@@ -52,7 +51,8 @@ import re
 import ssl
 
 
-class OpTestASM:
+# FIXME: rename to FspWeb
+class ASM:
     def __init__(self, i_fspIP, i_fspUser, i_fspPasswd):
         self.host_name = i_fspIP
         self.user_name = i_fspUser

@@ -46,12 +46,11 @@ import sys
 import os
 import re
 
-from .OpTestError import OpTestError
-from .Exceptions import CommandFailed
+from .exceptions import CommandFailed, OpTestError
 
-from . import OpExpect
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from . import opexpect
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 class ConsoleDisconnect(Exception):
     pass
@@ -61,7 +60,7 @@ class ConsoleState():
     CONNECTED = 1
 
 # FIXME: what should that log file be by default? Global logger?
-class OpTestConsole():
+class Console():
     def __init__(self, logfile=sys.stdout, prompt=None, disable_echo=False):
         self.state = ConsoleState.DISCONNECTED
 
@@ -186,7 +185,7 @@ class OpTestConsole():
                 break
 
         # timeout or some other problem, welp
-        log.warning("OpTestSystem Problem with the login and/or password prompt,"
+        log.warning("Problem with the login and/or password prompt,"
                     " raised Exception ConsoleSettings but continuing")
         raise ConsoleSettings(before=pty.before, after=pty.after,
                               msg="Problem with logging in. Probably a "
@@ -315,7 +314,7 @@ class OpTestConsole():
         # raise an exception).
         return self.pty.expect(patterns, timeout)
 
-class FileConsole(OpTestConsole):
+class FileConsole(Console):
     def __init__(self, inputfile, logfile=sys.stdout):
         super().__init__(logfile)
         self.pty = OpExpect.spawn("cat {}".format(inputfile), logfile=self.logfile)
@@ -330,7 +329,7 @@ class FileConsole(OpTestConsole):
         self.pty = None
 
 
-class OpTestSSH(OpTestConsole):
+class SSHConsole(Console):
     def __init__(self, host, username, password, logfile=sys.stdout, port=22,
                  prompt=None, check_ssh_keys=False, known_hosts_file=None,
                  delaybeforesend=None, use_parent_logger=True):
