@@ -81,17 +81,17 @@ pb_expect_table = {
     '/ #': None,
     'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
     'login: ': missed_state,
-#    'mon> ': self.xmon_callback,
-#    'dracut:/#': self.dracut_callback,
-#    'System shutting down with error status': self.guard_callback,
-    'Aborting!': self.error_pattern,
+#    'mon> ': xmon_callback,
+#    'dracut:/#': dracut_callback,
+#    'System shutting down with error status': guard_callback,
+    'Aborting!': error_pattern,
 }
 
 login_expect_table = {
     'login: ': None,
-    '/ #': self.error_pattern,
-    'mon> ': self.error_pattern,
-#    'dracut:/#': self.dracut_callback,
+    '/ #': error_pattern,
+    'mon> ': error_pattern,
+#    'dracut:/#': dracut_callback,
 }
 
 class SysState():
@@ -105,17 +105,20 @@ class SysState():
     between states. If a prior state is requested we can handle it by
     powering the system off and re-IPLing.
     '''
-    def __init__(self, name, patterns, timeout, stop_fn):
+    def __init__(self, name, wait, patterns, timeout, stop_fn=None):
         self.name = name
         self.patterns = patterns # patterns we're looking for to indicate this state was reached
+        self.wait = wait # indicates if this is a transient or wait state, FIXME: think harder about this
         self.timeout = timeout   # how long this state is expected to last
         self.stop_fn = stop_fn   # function to call to stop the IPL in this state
 
-    def __hash__(self)
+    def __hash__(self):
         return self.name.__hash__()
 
     def __eq__(self, other):
-        return self.name == other.name
+        if isinstance(other, SysState):
+            return self.name == other.name
+        return False
 
 # ordered list of possible states for this system
 state_table = [
@@ -128,18 +131,15 @@ state_table = [
 ]
 
 class OpTestSystem(object):
-    def __init__(self,
-                 host=None,
-                 console=None,
-                 pdu=None)
-
+    def __init__(self, host=None, console=None, pdu=None):
         self.host = host
         self.console = console
 
         # XXX: should setting this up be the job of the subclass? probably
         self.state_table = []
-        self.state_dict = {}
+        self.states = {}
         self.state_idx = {}
+        self.visited = {}
 
         # FIXME: move this to subclasses
         for s in state_table:
@@ -198,7 +198,7 @@ class OpTestSystem(object):
             log.info("Timeout while powering off host. Yanking power now")
 
         # try a little harder...
-        self.host_power_off_hard():
+        self.host_power_off_hard()
         for i in range(self.power_yank_delay):
             if not self.host_power_is_on():
                 return
@@ -230,8 +230,9 @@ class OpTestSystem(object):
 
     def _add_state(self, new_state):
         self.state_table.append(new_state)
-        self.state_dict[new_state] = new_state
+        self.states[new_state.name] = new_state
         self.state_idx[new_state] = len(self.state_table) - 1
+        self.visited[new_state] = False
 
     def set_state(self, new_state):
         ''' Updates the state tracking machinery to reflect reality
@@ -243,11 +244,11 @@ class OpTestSystem(object):
         '''
 
         # TODO: update error patterns?
-        for i in range(self.state_idx[state]):
-            self.visited[i] = True
-        self.last_state = new_state
+        for i in range(self.state_idx[new_state]):
+            self.visited[self.state_table[i]] = True
+        self.last_state = new_state # XXX: Needed?
 
-    def waitfor(self, state):
+    def waitfor(self, target_state):
         ''' waits for the system to reach the requested state
 
         It's up to the caller to initiate the state transition.
@@ -262,27 +263,28 @@ class OpTestSystem(object):
         isn't required
         '''
 
-        if not self.states.get(s, None):
-            raise ValueError("System doesn't support this state?")
-        if self.visited[state]:
+        s = self.states.get(target_state, None)
+        if not s:
+            raise ValueError("System doesn't support {}".format(target_state))
+        if self.visited[s]:
             raise ValueError('State already visited. Poweroff required')
 
-        expect_table = s.patterns.keys()
+        expect_table = list(s.patterns.keys())
 
         # raises an exception on timeout, EOF, or any of our error patterns
         r = self.console.expect(expect_table, timeout=s.timeout)
 
         # error pattern?
-        cb = s.patterns(expect_table[r])
+        cb = s.patterns[expect_table[r]]
         if cb:
             raise "hit error pattern" # FIXME: halfassed
 
         self.set_state(s)
-
+        log.info("Reached {}".format(target_state))
 
     def waitat(self, target):
-        if not self.state_dict[target].interrupt:
+        if not self.states[target].interrupt:
             raise ValueError("state can't be waited at")
 
         self.waitfor(target)
-        self.state_dict[target].interrupt()
+        self.states[target].interrupt()

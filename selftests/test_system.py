@@ -1,9 +1,11 @@
+import pytest
 
 import optest
-import optest.newsys
+import optest.newersys
 
-from optest.newsys import OpTestSystem
+from optest.newersys import OpTestSystem
 from optest.OpTestConsole import FileConsole
+
 
 class StubSystem(OpTestSystem):
     def __init__(self, input_file):
@@ -13,7 +15,7 @@ class StubSystem(OpTestSystem):
 
         con = FileConsole(self.input_file)
 
-        super().__init__(console=con, trydetect=True)
+        super().__init__(console=con)
 
     # host stubs
     # FIXME: should con remain active even across host reboots? if the BMC dies it can go away
@@ -30,18 +32,28 @@ class StubSystem(OpTestSystem):
 @pytest.fixture
 def off_system():
     sys = StubSystem("test_data/bootlogs/boot-to-os")
-    sys.power_off()
-    sys.prepare()
+    sys.host_power_off()
+    sys.get_console().connect()
+
+    yield sys
+#    sys.prepare()
 
 def test_boot_os(off_system):
-    sys = off_sys
+    sys = off_system
 
     # FIXME: how is the "off" state handled?
-    sys.power_on()
+    sys.host_power_on()
     sys.waitfor('ipling')
-    sys.waitfor('skiboot')
     sys.waitfor('petitboot')
-    sys.waitat('oslogin')
+    sys.waitfor('login')
+
+def test_boot_pb(off_system):
+    sys = off_system
+
+    # FIXME: how is the "off" state handled?
+    sys.host_power_on()
+    sys.waitfor('ipling')
+    sys.waitfor('login')
 
     # powering off sort of breaks our model, but it's a special case anyway
 

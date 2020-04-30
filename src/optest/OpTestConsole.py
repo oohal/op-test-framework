@@ -307,6 +307,13 @@ class OpTestConsole():
     def get_console(self):
         raise NotImplementedError("get_console is dumb and bad, stop using it")
 
+    def expect(self, patterns, timeout=None):
+        # FIXME: we should check if the pty is active or not and raise an
+        # exception if it's not. We need to do this here since the console
+        # might be backed by something fundementally unreliable like IPMI.
+        # As a result, we might need to re-start the pexpect session (or
+        # raise an exception).
+        return self.pty.expect(patterns, timeout)
 
 class FileConsole(OpTestConsole):
     def __init__(self, inputfile, logfile=sys.stdout):
