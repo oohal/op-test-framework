@@ -67,9 +67,8 @@ class QemuConsole(OpTestConsole):
         return True
 
 class QemuSystem(BaseSystem):
-    def __init__(self, qemu_binary="qemu-system-ppc64", pnor=None,
-                 kernel=None, initramfs=None, skiboot=None,
-                 disks=None, cdrom=None, fru_path=None):
+    def __init__(self, pnor, kernel, initramfs, qemu_binary="qemu-system-ppc64",
+                 skiboot=None, disks=None, cdrom=None, fru_path=None):
         self.qemu_binary = qemu_binary
         self.pnor = pnor
         self.skiboot = skiboot
@@ -83,7 +82,7 @@ class QemuSystem(BaseSystem):
         self.mac_str = '52:54:00:22:34:56'
         self.fru_path = None
 
-        self.skip_pci = False
+        self.skip_pci = True
 
         self.qemu_running = False
         con = QemuConsole()
