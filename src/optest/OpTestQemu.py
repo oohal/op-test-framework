@@ -117,7 +117,9 @@ class QemuSystem(BaseSystem):
         # So in the powernv QEMU model we have 3 PHBs with one slot free each.
         # We can add a pcie bridge to each of these, and each bridge has 31
         # slots.. if you see where I'm going..
-        if not self.skip_pci:
+        if self.skip_pci:
+            cmd = cmd + " -global driver=power9_v2.0-pnv-chip,property=num-phbs,value=0"
+        else:
             cmd = (cmd
                    + " -device pcie-pci-bridge,id=pcie.3,bus=pcie.0,addr=0x0"
                    + " -device pcie-pci-bridge,id=pcie.4,bus=pcie.1,addr=0x0"
