@@ -30,6 +30,16 @@ searched for filtering if desired in future use cases.
 
 '''
 
+class OpTestError(Exception):
+    """
+    A catch-all exception.
+
+    Use of OpTestError is **DEPRECATED** and will be removed in the future.
+
+    Some existing code uses this, and it should be gradually converted to use
+    more specialized exceptions.
+    """
+    pass
 
 class CommandFailed(Exception):
     '''
