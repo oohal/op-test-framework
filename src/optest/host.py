@@ -39,7 +39,7 @@ import sys
 import os
 import re
 
-from . import util
+from . import utils
 
 from .constants import Constants as BMC_CONST
 from .console import SSHConsole
@@ -60,14 +60,13 @@ class OpTestHost():
                  scratch_disk="", proxy="", logfile=sys.stdout,
                  check_ssh_keys=False, known_hosts_file=None, conf=None):
         self.conf = conf
-        self.util = conf.util
         self.ip = i_hostip
         self.user = i_hostuser
         self.passwd = i_hostpasswd
         self.bmcip = i_bmcip
         self.results_dir = i_results_dir
         self.logfile = logfile
-        self.ssh = OpTestSSH(i_hostip, i_hostuser, i_hostpasswd,
+        self.ssh = SSHConsole(i_hostip, i_hostuser, i_hostpasswd,
                              logfile=self.logfile, check_ssh_keys=check_ssh_keys,
                              known_hosts_file=known_hosts_file)
         self.scratch_disk = scratch_disk
@@ -153,7 +152,7 @@ class OpTestHost():
         log.debug(("Applying Cold reset on host."))
         l_rc = self.ssh.run_command(BMC_CONST.HOST_COLD_RESET, timeout=60)
 
-        util.ping(self.bmcip, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
+        utils.ping(self.bmcip, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
 
     def host_code_update(self, i_image, imagecomponent):
         '''
@@ -167,7 +166,7 @@ class OpTestHost():
         '''
         # Copy the hpm file to the tmp folder in the host
         try:
-            util.copyFilesToDest(i_image, self.user,
+            utils.copyFilesToDest(i_image, self.user,
                                       self.ip, "/tmp/", self.passwd)
         except:
             l_msg = "Copying hpm file to host failed"
@@ -830,7 +829,7 @@ class OpTestHost():
         i_image = os.path.join(self.conf.basedir, "test_binaries", "fake.gard")
         # Copy the fake.gard file to the tmp folder in the host
         try:
-            util.copyFilesToDest(i_image, self.user,
+            utils.copyFilesToDest(i_image, self.user,
                                       self.ip, "/tmp/", self.passwd)
         except:
             l_msg = "Copying fake.gard file to host failed"
@@ -841,7 +840,7 @@ class OpTestHost():
                                dstdir="/tmp/"):
         i_image = os.path.join(self.conf.basedir, sourcedir, filename)
         try:
-            util.copyFilesToDest(i_image, self.user,
+            utils.copyFilesToDest(i_image, self.user,
                                       self.ip, dstdir, self.passwd)
         except subprocess.CalledProcessError as e:
             l_msg = "Copying %s file to host failed" % filename
@@ -852,7 +851,7 @@ class OpTestHost():
         if sourcepath == "":
             sourcepath = self.conf.output
         try:
-            util.copyFilesFromDest(self.user,
+            utils.copyFilesFromDest(self.user,
                                         self.ip, destpath, self.passwd, sourcepath)
         except subprocess.CalledProcessError as e:
             l_msg = "Copying %s file(s) from host failed" % destpath

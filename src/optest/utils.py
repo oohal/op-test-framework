@@ -52,8 +52,8 @@ from .exceptions import CommandFailed, RecoverFailed, ConsoleSettings, OpTestErr
 from .exceptions import HostLocker, AES, ParameterCheck, HTTPCheck, UnexpectedCase
 
 import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 class OpTestUtil():
 

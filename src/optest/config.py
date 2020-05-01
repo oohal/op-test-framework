@@ -16,13 +16,14 @@ from datetime import datetime
 import optest
 
 import optest.system
-import optest.logger
 import optest.host
-import optest.util as util
+from . import utils
 
 from optest.exceptions import HostLocker, AES, ParameterCheck, OpExit
 from optest.constants import Constants as BMC_CONST
 
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 # system components
 #from optest.ipmi import OpTestIPMI, OpTestSMCIPMI

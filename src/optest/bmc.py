@@ -48,7 +48,7 @@ from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestError import OpTestError
 from .Exceptions import CommandFailed, SSHSessionDisconnected
 
-import optest.util as util
+from . import utils
 
 import logging
 from . import OpTestLogger
@@ -128,9 +128,9 @@ class OpTestBMC():
         self.ssh.close()
         log.info('Sent reboot command now waiting for reboot to complete...')
         # Wait for BMC to go down.
-        util.ping_fail_check(self.cv_bmcIP)
+        utils.ping_fail_check(self.cv_bmcIP)
         # Wait for BMC to ping back.
-        util.ping(self.cv_bmcIP, totalSleepTime=BMC_CONST.PING_RETRY_POWERCYCLE)
+        utils.ping(self.cv_bmcIP, totalSleepTime=BMC_CONST.PING_RETRY_POWERCYCLE)
         # Ping the system until it reboots
         while True:
             try:
@@ -164,7 +164,7 @@ class OpTestBMC():
         self.ssh.close()
         log.info('Sent reboot command...')
         # Wait for BMC to go down.
-        util.ping_fail_check(self.cv_bmcIP)
+        utils.ping_fail_check(self.cv_bmcIP)
         log.info('BMC rebooting')
 
     def image_transfer(self, i_imageName, copy_as=None):
