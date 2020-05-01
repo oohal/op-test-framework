@@ -167,7 +167,7 @@ class OpTestHost():
         '''
         # Copy the hpm file to the tmp folder in the host
         try:
-            self.util.copyFilesToDest(i_image, self.user,
+            util.copyFilesToDest(i_image, self.user,
                                       self.ip, "/tmp/", self.passwd)
         except:
             l_msg = "Copying hpm file to host failed"
@@ -830,7 +830,7 @@ class OpTestHost():
         i_image = os.path.join(self.conf.basedir, "test_binaries", "fake.gard")
         # Copy the fake.gard file to the tmp folder in the host
         try:
-            self.util.copyFilesToDest(i_image, self.user,
+            util.copyFilesToDest(i_image, self.user,
                                       self.ip, "/tmp/", self.passwd)
         except:
             l_msg = "Copying fake.gard file to host failed"
@@ -841,7 +841,7 @@ class OpTestHost():
                                dstdir="/tmp/"):
         i_image = os.path.join(self.conf.basedir, sourcedir, filename)
         try:
-            self.util.copyFilesToDest(i_image, self.user,
+            util.copyFilesToDest(i_image, self.user,
                                       self.ip, dstdir, self.passwd)
         except subprocess.CalledProcessError as e:
             l_msg = "Copying %s file to host failed" % filename
@@ -852,7 +852,7 @@ class OpTestHost():
         if sourcepath == "":
             sourcepath = self.conf.output
         try:
-            self.util.copyFilesFromDest(self.user,
+            util.copyFilesFromDest(self.user,
                                         self.ip, destpath, self.passwd, sourcepath)
         except subprocess.CalledProcessError as e:
             l_msg = "Copying %s file(s) from host failed" % destpath

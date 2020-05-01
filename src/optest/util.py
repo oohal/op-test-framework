@@ -310,7 +310,7 @@ class OpTestUtil():
                     # obmc-console.log will exist even if empty
                     console_entries = self.conf.bmc().run_command("cp /var/log/obmc-console.log /tmp/{}"
                                           .format(console_outfile))
-                    self.copyFilesFromDest(self.conf.args.bmc_username,
+                    copyFilesFromDest(self.conf.args.bmc_username,
                         self.conf.args.bmc_ip,
                         "/tmp/op-test*",
                         self.conf.args.bmc_password,
@@ -946,31 +946,6 @@ class OpTestUtil():
             log.debug("hostlocker_unlock tried to delete a lock but it was "
                       "NOT there, see Exception={}".format(e))
 
-    def copyFilesToDest(self, hostfile, destid, destName, destPath, passwd):
-        arglist = (
-            "sshpass",
-            "-p", passwd,
-            "/usr/bin/scp",
-            "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "StrictHostKeyChecking=no",
-            hostfile,
-            "{}@{}:{}".format(destid, destName, destPath))
-        log.debug(' '.join(arglist))
-        subprocess.check_call(arglist)
-
-    def copyFilesFromDest(self, destid, destName, destPath, passwd, sourcepath):
-        arglist = (
-            "sshpass",
-            "-p", passwd,
-            "/usr/bin/scp",
-            "-r",
-            "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "StrictHostKeyChecking=no",
-            "{}@{}:{}".format(destid, destName, destPath),
-            sourcepath)
-        log.debug(' '.join(arglist))
-        subprocess.check_output(arglist)
-
     def mambo_run_command(self, term_obj, command, timeout=60, retry=0):
         expect_prompt = "systemsim %"
         term_obj.get_console().sendline(command)
@@ -1334,3 +1309,30 @@ def ping_fail_check(i_ip):
         log.debug("IP %s keeps on pinging up" % i_ip)
         return False
     return True
+
+
+
+def copyFilesToDest(hostfile, destid, destName, destPath, passwd):
+    arglist = (
+        "sshpass",
+        "-p", passwd,
+        "/usr/bin/scp",
+        "-o", "UserKnownHostsFile=/dev/null",
+        "-o", "StrictHostKeyChecking=no",
+        hostfile,
+        "{}@{}:{}".format(destid, destName, destPath))
+    log.debug(' '.join(arglist))
+    subprocess.check_call(arglist)
+
+def copyFilesFromDest(destid, destName, destPath, passwd, sourcepath):
+    arglist = (
+        "sshpass",
+        "-p", passwd,
+        "/usr/bin/scp",
+        "-r",
+        "-o", "UserKnownHostsFile=/dev/null",
+        "-o", "StrictHostKeyChecking=no",
+        "{}@{}:{}".format(destid, destName, destPath),
+        sourcepath)
+    log.debug(' '.join(arglist))
+    subprocess.check_output(arglist)
