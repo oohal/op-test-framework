@@ -140,16 +140,23 @@ default_templates = {
 
 
 # FIXME: none of this is really used any more since pytest handles parsing arguments.
+# we're keeping it here mainly because it's used to populate the default values of
+# the config object (see below).
 #
-# we could port over all of them, but eh. pytest already has a million command
-# line options so the --help is borderline unreadable. Adding all the ones from
-# op-test is just going to make things worse. I'm keeping this stuff here since
-# it's the only existing documentation of what can go in a config file, but we
-# need to work out a better way.
+# we could port over all these command line options so that they're pytest command
+# line options, but eh... pytest already has a million command line options which
+# makes the --help is borderline unreadable as-is. Adding all the options from
+# op-test is just going to make things worse.
 #
 # IMO: a) only have --aes, --config-file, and --hostlocker as command line params
-# everything else comes from the config files. Maybe we can add a --sys-config option
-# to allow specific system settings to be overwritten from the command line.
+# everything else comes from the config files. Maybe we can add a --optest-config
+# command line option that allows specific settings to be override from the command
+# line.
+#
+# we also need to work out where the documentation of these should go since currently
+# that's provided by --help. Docstrings for the individual system classes might help,
+# but we'd like to have a complete list somewhere.
+#
 
 def get_parser():
     parser = argparse.ArgumentParser(
