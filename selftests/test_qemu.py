@@ -2,12 +2,15 @@ import pytest
 import optest
 
 from optest.qemu import QemuSystem
+from optest.petitboot import PetitbootHelper
 
 @pytest.fixture
-def qemu():
+def qemu_binary():
+    return "/home/oliver/code/qemu/ppc64-softmmu/qemu-system-ppc64"
+
+@pytest.fixture
+def qemu(qemu_binary):
     # FIXME: parameterise these
-    qemu_binary = "/home/oliver/code/qemu/ppc64-softmmu/qemu-system-ppc64"
-    qemu_binary = "qemu-system-ppc64"
     kernel      = "/home/oliver/code/op-test/selftests/test_data/vmlinux"
     initramfs   = "/home/oliver/code/op-test/selftests/test_data/petitfs"
     skiboot     = "test_data/skiboot.lid.nophbs"
@@ -20,10 +23,8 @@ def qemu():
 
     sys.host_power_off()
 
-def test_qemu_boot_nokernel():
-    sys = QemuSystem(
-            qemu_binary="/home/oliver/code/qemu-op/ppc64-softmmu/qemu-system-ppc64"
-        )
+def test_qemu_boot_nokernel(qemu_binary):
+    sys = QemuSystem(qemu_binary=qemu_binary)
     sys.host_power_off()
     sys.host_power_on()
     sys.get_console().connect()
@@ -36,3 +37,8 @@ def test_qemu_boot_nokernel():
 def test_qemu_boot_pb(qemu):
     qemu.waitfor('skiboot')
     qemu.waitfor('petitboot') # should fail with a timeout
+
+    pb = PetitbootHelper(qemu.get_console())
+    pb.goto_shell()
+
+    qemu.run_command("echo hi")

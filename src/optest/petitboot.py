@@ -1,16 +1,60 @@
 #!/usr/bin/env python3
 
+import pexpect
+
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
+
 # FIXME: port to the new framework
 
 class PetitbootHelper():
-    ''' helper functions for driving petitboot '''
-    def __init__(self, system):
-        self.sys = system
-        # verify that we're actually at petitboot
+    ''' helper class for driving petitboot '''
 
-    def petitboot_exit_to_shell(self):
-        sys_pty = self.console.get_console()
-        log.debug("USING PES Expect Buffer ID={}".format(hex(id(sys_pty))))
+    MENU = 0
+    SHELL = 1
+
+    def __init__(self, console):
+        self.c = console
+
+        pty = self.c.pty
+
+        pty.zap()
+
+        # NB: ctrl+l only refreshes on newer petitboot versions, might need to
+        # do something to support older ones.
+        pty.sendcontrol('l')
+        r = pty.expect(['Petitboot', 'exit=x', "# $", pexpect.TIMEOUT, pexpect.EOF], timeout=2)
+
+        if r in [0, 1]:
+            self.state = self.MENU
+        elif r == 2:
+            self.state = self.SHELL
+        else:
+            raise Exception("not at petitboot") # FIXME: subclass it
+
+
+    def goto_shell(self):
+        if self.state == self.SHELL:
+            return
+
+        sys_pty = self.c.pty
+
+        for i in range(3):
+            sys_pty.send('x')
+            pp = self.get_petitboot_prompt()
+            if pp == 1:
+                break
+        if pp != 1:
+            log.warning(
+                "OpTestSystem detected something, tried to recover, but still we have a problem, retry")
+            raise ConsoleSettings(before=sys_pty.before, after=sys_pty.after,
+                                  msg="System at Petitboot Menu unable to exit to shell after retry")
+    def goto_menu(self):
+        if self.state == self.MENU:
+            return
+
+        sys_pty = self.c.pty
+
         for i in range(3):
             sys_pty.send('x')
             pp = self.get_petitboot_prompt()
@@ -24,23 +68,19 @@ class PetitbootHelper():
 
     def get_petitboot_prompt(self):
         my_pp = 0
-        sys_pty = self.console.get_console()
+        sys_pty = self.c.pty
         log.debug("USING GPP Expect Buffer ID={}".format(hex(id(sys_pty))))
         sys_pty.sendline()
         pes_rc = sys_pty.expect(
-            [".*#", ".*# $", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+            [".*#", ".*# $", pexpect.TIMEOUT, pexpect.EOF], timeout=1)
+
         if pes_rc in [0, 1]:
-            if self.PS1_set != 1:
-                self.SUDO_set = self.LOGIN_set = self.PS1_set = self.util.set_PS1(
-                    self.console, sys_pty, self.util.build_prompt(self.prompt))
-            # unblock in case connections are lost during state=4 the get_console/connect can properly setup again
-            self.block_setup_term = 0
-            self.previous_state = OpSystemState.PETITBOOT_SHELL  # preserve state
+            self.c.shell_setup()
             my_pp = 1
         return my_pp
 
-    def exit_petitboot_shell(self):
-        sys_pty = self.console.get_console()
+    def to_menu(self):
+        sys_pty = self.c.pty
         log.debug("USING EPS 1 Expect Buffer ID={}".format(hex(id(sys_pty))))
         eps_rc = self.try_exit(sys_pty)
         if eps_rc == 0:  # Petitboot
@@ -50,7 +90,7 @@ class PetitbootHelper():
                 self.util.try_recover(self.console, counter=3)
                 # if we get back here we're good and at the prompt
                 # but we lost our sys_pty, so get a new one
-                sys_pty = self.console.get_console()
+                sys_pty = self.c
                 log.debug("USING EPS 2 Expect Buffer ID={}".format(
                     hex(id(sys_pty))))
                 sys_pty.sendline()
@@ -80,7 +120,7 @@ class PetitbootHelper():
             return -1
 
     def get_my_ip_from_host_perspective(self):
-        raw_pty = self.console.get_console()
+        raw_pty = self.c.pty
         # run any command to get the prompt setup
         hostname_output = self.console.run_command("hostname -i")
         log.debug("hostname_output={}".format(hostname_output))

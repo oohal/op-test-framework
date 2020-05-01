@@ -40,12 +40,13 @@ Connecting / Disconnecting from the actual console driver is handled by the
 actual drivers which inherit off this.
 '''
 
-import pexpect
+import random
 import time
 import sys
 import os
 import re
 
+import pexpect
 from .exceptions import CommandFailed, OpTestError
 
 from . import opexpect
@@ -65,7 +66,8 @@ class Console():
         self.state = ConsoleState.DISCONNECTED
 
         self.prompt = self.build_prompt(prompt)
-        self.expect_prompt = self.build_prompt(prompt) + "$" # the shell adds $ to the end
+        self.expect_prompt = self.prompt
+#        self.expect_prompt = self.build_prompt(prompt) + " $" # the shell adds $ to the end
         self.logfile = logfile
 
         # populated by the console driver when .connect() is called
@@ -99,10 +101,13 @@ class Console():
 
     # XXX: is there any point to this?
     def build_prompt(self, prompt=None):
+        # WARNING: this gets sent to a shell, which executes it so whatever
+        # pattern we specify here needs to remain the same in all cases.
+        # i.e. no special chars, no spaces
         if prompt:
             built_prompt = prompt
         else:
-            built_prompt = "\\[console-expect\\]#" # FIXME: that # is a bug waiting to happen
+            built_prompt = "console-expect1" # FIXME: that # is a bug waiting to happen
 
         return built_prompt
 
@@ -110,29 +115,38 @@ class Console():
         self.shell_setup_done = False
 
     def shell_setup(self):
-        patterns = [self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF]
+        patterns = [self.prompt, pexpect.TIMEOUT, pexpect.EOF]
 
-        self.pty.sendline("which bash && exec bash --norc --noprofile")
-        time.sleep(1)
-        self.pty.sendline('unset HISTFILE')
-        time.sleep(0.2)
-        self.pty.sendline('PS1=' + self.prompt)
-        time.sleep(0.2)
-        self.pty.sendline("which stty && stty cols 300; which stty && stty rows 30")
-        time.sleep(0.2)
+        self.pty.sendline('unset HISTFILE;') # FIXME: does this persist across the exec below?
+        self.pty.sendline("which sh && exec sh --norc --noprofile")
 
-        if self.disable_stty_echo: # FIXME: pass this in from the constructor
-            self.pty.sendline("which stty && stty -echo")
-            time.sleep(0.2)
-            rc = self.pty.expect(patterns, timeout=10)
+        # FIXME: do we even not have stty?
+        self.pty.sendline("which stty && stty cols 300; which stty && stty rows 30;")
 
-        self.pty.sendline("export LANG=C")
-        time.sleep(0.2)
+        # This is mainly for mambo where we can get two echos. One echo comes
+        # from the simulated system and another comes from the simulator
+        # itself.
+        if self.disable_stty_echo:
+            self.pty.sendline("which stty && stty -echo;")
 
-        self.pty.sendline()  # needed to sync buffers later on
-        time.sleep(0.2)
+        self.pty.sendline("export LANG=C;")
 
-        rc = self.pty.expect([self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+        # Clear any any accumulated output before we check for our new prompt.
+        # This needed because if we come into a system that just happens to
+        # have the prompt already configured (e.g. resuming an op-test run)
+        # the expect() here would match on the prompts which are displayed
+        # after running each command above
+        #
+        # see test_console_resetup in selftests for an example
+#        unique = "# {}".format(random.randint(0,0xffffffff))
+#        self.pty.sendline(unique)
+#        rc = self.pty.expect([unique, pexpect.EOF], timeout=5)
+
+        # now setup the prompt
+        self.pty.sendline('PS1={}'.format(self.prompt))
+        rc = self.pty.expect([self.prompt, pexpect.EOF], timeout=1) # matches on the echoed output of sendline()
+        rc = self.pty.expect([self.prompt, pexpect.EOF], timeout=1) # matches the actual prompt
+
         if rc != 0:
             raise ConsoleSettings(before=pty.before, after=pty.after,
                                   msg="Problem with logging in. Probably a "
@@ -234,9 +248,16 @@ class Console():
         if self.shell_setup_done == False:
             raise RuntimeError('.run_command() can only be used after .setup_term() is called')
 
+        self.pty.sendcontrol('u') # zap anything in the buffer, XXX: how universal is this?
+        self.pty.sendline() # refresh the prompt
         self.pty.sendline(command)
-        rc = self.pty.expect([self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF],
-                             timeout=timeout)
+
+        exp = "{}{}".format(self.prompt, command)
+        rc = self.pty.expect([exp, pexpect.TIMEOUT, pexpect.EOF], timeout=timeout)
+
+        # ok, now grab the output
+        rc = self.pty.expect([self.expect_prompt, pexpect.TIMEOUT, pexpect.EOF], timeout=timeout)
+
         # what is this a workaround for? \r\r\n is a very odd sequence
         output_list = self.pty.before.replace("\r\r\n", "\n").splitlines()
 
@@ -266,7 +287,7 @@ class Console():
             try:
                 echo_rc = int(echo_output[-1])
             except Exception as e:
-                log.debug("Error echoing command result. Output: {}". echo_output)
+                log.debug("Error echoing command result. Output: {}".format(echo_output))
                 echo_rc = -1
         else:
             raise CommandFailed(command, "run_command echo TIMEOUT, the command may have been ok,"
@@ -317,7 +338,7 @@ class Console():
 class FileConsole(Console):
     def __init__(self, inputfile, logfile=sys.stdout):
         super().__init__(logfile)
-        self.pty = OpExpect.spawn("cat {}".format(inputfile), logfile=self.logfile)
+        self.pty = opexpect.spawn("cat {}".format(inputfile), logfile=self.logfile)
 
     def connect(self):
         self.state = ConsoleState.CONNECTED
@@ -325,6 +346,22 @@ class FileConsole(Console):
     def close(self):
         self.state = ConsoleState.DISCONNECTED
         raise RuntimeError("FileConsoles can't be closed")
+        self.pty.close()
+        self.pty = None
+
+
+class CmdConsole(Console):
+    def __init__(self, cmd, logfile=sys.stdout):
+        super().__init__(logfile)
+        self.pty = opexpect.spawn(cmd, logfile=self.logfile)
+
+    def connect(self):
+        if not self.pty:
+            raise Exception("CmdConsoles can't be re-opened")
+        self.state = ConsoleState.CONNECTED
+
+    def close(self):
+        self.state = ConsoleState.DISCONNECTED
         self.pty.close()
         self.pty = None
 
@@ -362,7 +399,7 @@ class SSHConsole(Console):
         self.pty.close()
         self.pty = None
 
-    def connect(self, logger=None):
+    def connect(self, logfile=None):
         if self.state == ConsoleState.CONNECTED:
             raise RuntimeError("Console already connected")
 
@@ -385,20 +422,24 @@ class SSHConsole(Console):
 
         # For multi threades SSH sessions use individual logger and file handlers per session.
         # FIXME: this should be up to the caller
-        if logger:
+        if logfile:
             self.log = logger
         elif self.use_parent_logger:
             self.log = log
         else:
-            self.log = OpTestLogger.optest_logger_glob.get_custom_logger(
+            self.log = logger.optest_logger_glob.get_custom_logger(
                 __name__)
 
-        self.log.debug(cmd)
+        log.debug(cmd)
 
-        self.pty = OpExpect.spawn(cmd,
-                                  logfile=self.logfile)
-#                                  failure_callback=set_system_to_UNKNOWN_BAD,
-#                                 failure_callback_data=self.system)
+        self.pty = opexpect.spawn(cmd, logfile=self.logfile)
+
+
+        # FIXME: See qemu.py
+        # FIXME: how do we capture stderr? that's where the useful output is...
+        time.sleep(1)
+        if not self.pty.isalive():
+            raise CommandFailed(cmd, self.pty.after, self.pty.exitstatus)
 
         self.state = ConsoleState.CONNECTED
         # set for bash, otherwise it takes the 24x80 default
@@ -407,7 +448,7 @@ class SSHConsole(Console):
         if self.delaybeforesend:
             self.pty.delaybeforesend = self.delaybeforesend
 
-        self.pty.logfile_read = OpTestLogger.FileLikeLogger(self.log)
+        self.pty.logfile_read = logger.FileLikeLogger(self.log)
         # delay here in case messages like afstokenpassing unsupported show up which mess up setup_term
         time.sleep(2)
         log.debug("CONNECT starts Expect Buffer ID={}".format(hex(id(self.pty))))

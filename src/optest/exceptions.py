@@ -46,7 +46,7 @@ class CommandFailed(Exception):
     Running a command (BMC or Host) failed with non-zero exit code.
     '''
 
-    def __init__(self, command, output, exitcode):
+    def __init__(self, command, output, exitcode=0xffffffff):
         self.command = command
         self.output = output
         self.exitcode = exitcode

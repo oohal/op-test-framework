@@ -35,7 +35,10 @@ throws.
 """
 
 import pexpect
+
 from .exceptions import *
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 def handle_kernel_err(pty, p):
     log = str(pty.after)
@@ -48,7 +51,7 @@ def handle_kernel_err(pty, p):
                  "Watchdog .* Hard LOCKUP",
                  "Sending IPI to other CPUs",
                  ":mon>",
-                 "Rebooting in \d+ seconds",
+                 "Rebooting in \\d+ seconds",
                  "Kernel panic - not syncing: Fatal exception",
                  "Kernel panic - not syncing: Hard LOCKUP",
                  "opal_cec_reboot2", pexpect.TIMEOUT,
@@ -145,6 +148,14 @@ class spawn(pexpect.spawn):
         self.patterns = []
         self.cb = []
 
+    def zap(self):
+        try:
+            buf = self.read_nonblocking(16384, timeout = 1)
+            log.debug("zapping: {}".format(buf))
+        except pexpect.exceptions.TIMEOUT:
+            pass
+        return
+
     def expect(self, input_pattern, timeout=-1, searchwindowsize=-1):
         # HACK: just for now until I move this into OpTestSystem
         self.clear_patterns()
@@ -164,10 +175,10 @@ class spawn(pexpect.spawn):
         self.add_pattern(kern_err, "watchdog: BUG: soft lockup")
 
         opal_assert = lambda pty, pat: handle_opal_err(pty, True)
-        self.add_pattern(opal_assert, "\[[0-9. ]+,0\] Assert fail:")
+        self.add_pattern(opal_assert, "\\[[0-9. ]+,0\\] Assert fail:")
 
         opal_ex = lambda pty, pat: handle_opal_err(pty, False)
-        self.add_pattern(opal_ex, "\[[0-9. ]+,[0-9]\] Unexpected exception")
+        self.add_pattern(opal_ex, "\\[[0-9. ]+,[0-9]\\] Unexpected exception")
         self.add_pattern(opal_ex, "OPAL exiting with locks held")
         self.add_pattern(opal_ex, "LOCK ERROR: Releasing lock we don't hold")
 

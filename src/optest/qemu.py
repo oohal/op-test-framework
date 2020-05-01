@@ -39,11 +39,6 @@ from .console import Console, ConsoleState
 from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
 
-qemu_state_table = [
-    SysState('skiboot', False, system.skiboot_expect_table, 120),
-    SysState('petitboot', False, system.pb_expect_table, 120),
-]
-
 class QemuConsole(Console):
     def __init__(self):
         self.qemu_pty = None
@@ -65,6 +60,12 @@ class QemuConsole(Console):
         self.state = ConsoleState.DISCONNECTED
     def is_connected(self):
         return True
+
+
+qemu_state_table = [
+    SysState('skiboot', False, system.skiboot_expect_table, 120),
+    SysState('petitboot', False, system.pb_expect_table, 120),
+]
 
 class QemuSystem(BaseSystem):
     def __init__(self, **kwargs):
@@ -208,7 +209,7 @@ class QemuSystem(BaseSystem):
         if self.fru_path:
             cmd += ",frudatafile=" + self.fru_path
         cmd = cmd + " -device isa-ipmi-bt,bmc=bmc0,irq=10"
-        #cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
+        cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
         cmd = cmd + " -no-reboot"
 
         log.info("Qemu command: {}".format(cmd))

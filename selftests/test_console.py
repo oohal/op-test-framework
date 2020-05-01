@@ -10,35 +10,52 @@ import optest.console as con
 # to virtual serial ports. The latter will retain it's state provided
 # the shell isn't logged out and that drives the odd behaviour here.
 
-def test_nosetup_raises():
-    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
+@pytest.fixture
+def bash():
+    yield con.CmdConsole("sh")
+
+@pytest.fixture
+def ssh_shell():
+    yield con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
+
+def test_nosetup_raises(bash):
     with pytest.raises(RuntimeError):
-        ssh.run_command("ls -1")
+        bash.run_command("ls -1")
 
-def test_sudo_raises():
-    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
+def test_sudo_raises(bash):
     with pytest.raises(ValueError):
-        ssh.run_command("sudo ls -1")
+        bash.run_command("sudo ls -1")
 
-def test_ssh_shell():
-    ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
+def test_console_basic(bash):
+    bash.connect()
+    bash.shell_setup()
+    bash.run_command("ls -1")
+    bash.close()
 
-    ssh.connect()
-    ssh.shell_setup()
-    ssh.run_command("ls -1")
-    ssh.close()
+def test_console_image_cmd(bash):
+    bash.connect()
 
-    with pyexpect.raises():
-        ssh.run_command("ls -1")
+    bash.shell_setup()
+    o1 = bash.run_command("ls -1")
+    bash.pty.sendline("#ls -1")
+    o2 = bash.run_command("ls -1")
 
-    #  In this case it's up to the caller to configure the shell
-    ssh.connect()
-    ssh.shell_setup()
-    ssh.close()
+    assert o1 == o2
 
-# Hmm, how do we really test the setup behaviour?
+def test_console_resetup(bash):
+    bash.connect()
 
-def test_ssh_vserial():
+    bash.shell_setup()
+    o1 = bash.run_command("ls -1")
+
+    bash.shell_setup()
+    o2 = bash.run_command("ls -1")
+
+    assert o1 == o2
+    bash.close()
+
+'''
+def notest_console_ssh_vserial():
     ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc", port=2200)
 
     ssh.connect()
@@ -48,10 +65,11 @@ def test_ssh_vserial():
     # before closing grab the pexpect object directly and reset the shell
     ssh.pty.sendline("exit")
     time.sleep(1)
-    ssh.pty.sendline("x")
+#    ssh.pty.sendline("x")
     ssh.close()
 
     # since it's a virtual serial we expect the prompt to stay setup
     ssh.connect()
     ssh.run_command("ls -1", timeout=2) #
     ssh.close()
+'''
