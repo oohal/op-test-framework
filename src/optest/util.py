@@ -946,41 +946,6 @@ class OpTestUtil():
             log.debug("hostlocker_unlock tried to delete a lock but it was "
                       "NOT there, see Exception={}".format(e))
 
-    def mambo_run_command(self, term_obj, command, timeout=60, retry=0):
-        expect_prompt = "systemsim %"
-        term_obj.get_console().sendline(command)
-        rc = term_obj.get_console().expect(
-            [expect_prompt, pexpect.TIMEOUT, pexpect.EOF], timeout=timeout)
-        output_list = []
-        output_list += term_obj.get_console().before.replace("\r\r\n", "\n").splitlines()
-        try:
-            del output_list[:1]  # remove command from the list
-        except Exception as e:
-            pass  # nothing there
-        return output_list
-
-    def mambo_enter(self, term_obj):
-        term_obj.get_console().sendcontrol('c')
-        rc = term_obj.get_console().expect(
-            ["systemsim %", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        if rc != 0:
-            raise UnexpectedCase(state="Mambo", message="We tried to send control-C"
-                                 " to Mambo and we failed, probably just retry")
-
-    def mambo_exit(self, term_obj):
-        # this method will remove the mysim go from the output
-        expect_prompt = self.build_prompt(term_obj.prompt) + "$"
-        term_obj.get_console().sendline("mysim go")
-        rc = term_obj.get_console().expect(
-            ["mysim go", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        output_list = []
-        output_list += term_obj.get_console().before.replace("\r\r\n", "\n").splitlines()
-        try:
-            del output_list[:1]  # remove command from the list
-        except Exception as e:
-            pass  # nothing there
-        return output_list
-
 class Server(object):
     '''
     Generic Server Requests Session Object to abstract retry and error
