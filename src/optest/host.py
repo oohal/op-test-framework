@@ -31,28 +31,22 @@ This class encapsulates all function which deals with the Host
 in OpenPower systems
 '''
 
+import subprocess
+import logging
+import pexpect
+import time
 import sys
 import os
-import string
-import time
-import random
-import subprocess
 import re
-import telnetlib
-import socket
-import select
-import pty
-import pexpect
-import subprocess
 
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
-from .OpTestSSH import OpTestSSH
-from .Exceptions import CommandFailed, NoKernelConfig, KernelModuleNotLoaded, KernelConfigNotSet, ParameterCheck
+from .constants import Constants as BMC_CONST
+from .console import SSHConsole
 
-import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from .exceptions import CommandFailed, NoKernelConfig, KernelModuleNotLoaded
+from .exceptions import KernelConfigNotSet, ParameterCheck, OpTestError
+
+from . import logger
+log = logger.optest_logger_glob.get_logger(__name__)
 
 
 class OpTestHost():

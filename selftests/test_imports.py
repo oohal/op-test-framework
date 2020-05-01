@@ -17,8 +17,6 @@ import optest
 #import optest.asm
 #import optest.hmc
 
-#import optest.host # i need to figure out what this is supposed to do
-
 #import optest.installutil
 
 #import optest.thread
@@ -33,9 +31,15 @@ import optest.qemu
 import optest.opexpect
 import optest.petitboot
 import optest.console
+import optest.config
 
 import optest.constants
 import optest.keys     # should get folded into constants
+
+
+# TODO: figure out how this should be used
+import optest.host
+
 
 # FIXME: we really should rename this something better
 import optest.logger
