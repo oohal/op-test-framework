@@ -1,10 +1,9 @@
 import pytest
-
 import optest
 
+from optest import system
 from optest.system import BaseSystem
 from optest.console import FileConsole
-
 
 class StubSystem(BaseSystem):
     def __init__(self, input_file):
@@ -15,6 +14,9 @@ class StubSystem(BaseSystem):
         con = FileConsole(self.input_file)
 
         super().__init__(console=con)
+
+        for s in system.OpSystem.openpower_state_table:
+            self._add_state(s)
 
     # host stubs
     # FIXME: should con remain active even across host reboots? if the BMC dies it can go away

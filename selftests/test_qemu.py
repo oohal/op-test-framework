@@ -6,15 +6,22 @@ from optest.petitboot import PetitbootHelper
 
 @pytest.fixture
 def qemu_binary():
-    return "/home/oliver/code/qemu/ppc64-softmmu/qemu-system-ppc64"
+    yield "/home/oliver/code/qemu/ppc64-softmmu/qemu-system-ppc64"
 
 @pytest.fixture
-def qemu(qemu_binary):
+def skiboot_lid():
+    yield "test_data/skiboot.lid.nophbs"
+
+@pytest.fixture
+def qemu(qemu_binary, skiboot_lid):
     # FIXME: parameterise these
-    kernel      = "/home/oliver/code/op-test/selftests/test_data/vmlinux"
-    initramfs   = "/home/oliver/code/op-test/selftests/test_data/petitfs"
-    skiboot     = "test_data/skiboot.lid.nophbs"
-    sys = QemuSystem(kernel=kernel, initramfs=initramfs, qemu_binary=qemu_binary, skiboot=skiboot)
+    kernel      = "test_data/vmlinux"
+    initramfs   = "test_data/petitfs"
+    sys = QemuSystem(kernel=kernel,
+                     initramfs=initramfs,
+                     qemu_binary=qemu_binary,
+                     skiboot=skiboot_lid)
+
     sys.host_power_off()
     sys.host_power_on()
     sys.get_console().connect()
@@ -23,13 +30,12 @@ def qemu(qemu_binary):
 
     sys.host_power_off()
 
-def test_qemu_boot_nokernel(qemu_binary):
-    sys = QemuSystem(qemu_binary=qemu_binary)
+def test_qemu_boot_nokernel(qemu_binary, skiboot_lid):
+    sys = QemuSystem(qemu_binary=qemu_binary, skiboot=skiboot_lid)
     sys.host_power_off()
     sys.host_power_on()
     sys.get_console().connect()
 
-    sys.waitfor('skiboot')
     with pytest.raises(optest.SkibootAssert):
         sys.waitfor('petitboot') # should fail since there's no kernel image
     sys.host_power_off()
