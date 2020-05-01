@@ -175,7 +175,8 @@ class spawn(pexpect.spawn):
         self.add_pattern(kern_err, "watchdog: BUG: soft lockup")
 
         opal_assert = lambda pty, pat: handle_opal_err(pty, True)
-        self.add_pattern(opal_assert, "\\[[0-9. ]+,0\\] Assert fail:")
+        self.add_pattern(opal_assert, "\\[[0-9. ]+,0\\] Assert fail:")            # old assert
+        self.add_pattern(opal_assert, "\\[[0-9. ]+,[0-4]\\] < assert failed at ") # mouse assert
 
         opal_ex = lambda pty, pat: handle_opal_err(pty, False)
         self.add_pattern(opal_ex, "\\[[0-9. ]+,[0-9]\\] Unexpected exception")
