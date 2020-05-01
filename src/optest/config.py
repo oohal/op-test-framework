@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
 
-# This implements all the configuration needs for running a test
-# It includes command line argument parsing and keeping a set
-# of OpTestSystem and similar objects around for tests to use.
+import subprocess
+import configparser
+import traceback
+import argparse
+import logging
+import atexit
+import errno
+import time
+import sys
+import os
+
+from datetime import datetime
 
 import optest
+
+import optest.system
+import optest.logger
+import optest.host
 
 from optest.exceptions import HostLocker, AES, ParameterCheck, OpExit
 from optest.constants import Constants as BMC_CONST
 
-import optest.system
-import optest.host
 
 # system components
 #from optest.ipmi import OpTestIPMI, OpTestSMCIPMI
@@ -25,17 +36,6 @@ from optest.qemu import QemuSystem
 #from optest.fsp import OpTestFSP
 #from optest.openbmc import OpenBMCSystem
 
-import atexit
-import argparse
-import time
-import traceback
-from datetime import datetime
-import subprocess
-import sys
-import configparser
-import errno
-import optest.logger
-import logging
 
 # Look at the addons dir for any additional OpTest supported types
 # If new type was called Kona, the layout would be as follows
@@ -48,10 +48,6 @@ import logging
 # OpTestKonaSetup is unique for the addons and contains 2 helper functions:
 # addBMCType - used to populate the choices list for --bmc-type
 # createSystem - does creation of bmc and op_system objects
-
-import importlib
-import os
-import stat
 
 #import addons # FIXME:
 
@@ -213,16 +209,13 @@ def get_parser():
     aesgroup.add_argument(
         "--aes-no-proxy-ips", help="Allows dynamic determination if you are on proxy network then no proxy will be used")
 
-
-
-
     bmcgroup = parser.add_argument_group('BMC',
                                          'Options for Service Processor')
     # The default supported BMC choices in --bmc-type
     bmcChoices = ['AMI', 'SMC', 'FSP', 'FSP_PHYP', 'OpenBMC', 'qemu', 'mambo']
     # Loop through any addons let it append the extra bmcChoices
-    for opt in optAddons:
-        bmcChoices = optAddons[opt].addBMCType(bmcChoices)
+#    for opt in optAddons:
+#        bmcChoices = optAddons[opt].addBMCType(bmcChoices)
     bmcgroup.add_argument("--bmc-type",
                           choices=bmcChoices,
                           help="Type of service processor")
@@ -419,14 +412,20 @@ class OpTestConfiguration():
     def __init__(self, **kwargs):
         self.args = {}
 
-        # first, parse the per-user config stuff
-        if not kwargs.get('skip-user-conf'):
-            userfile = os.path.expanduser("~/.op-test-framework.conf")
-            self.args.update(self.parse_config_file(userfile, True))
+        # dumb hack to get the default values until we get rid of the stuff above
+        parser = get_parser()
+        self.defaults = vars(parser.parse_args(""))
+        self.args.update(self.defaults)
 
-        # second, look for a host reservation system
-        # NB: We don't actually lock anything here, we're just after
-        # the system configuration.
+        # first, parse the per-user config stuff
+        user_file = kwargs.get('user_config', "~/.op-test-framework.conf")
+        if user_file and not kwargs.get('skip_user_conf'):
+            user_file = os.path.expanduser(user_file)
+            self.user_conf = self.parse_config_file(user_file, True)
+            self.args.update(self.user_conf)
+
+        # second, check for host reservation systems and grab any config data
+        # NB: We don't make any reservations here
         if kwargs.get('hostlocker'):
             raise Exception('FIXME: implement hostlocker support')
         elif kwargs.get('aes'):
@@ -435,10 +434,10 @@ class OpTestConfiguration():
         # now take the args from the local config file (if there is one)
         # we do this after checking the lockers so that you can override the
         # args they provide with your own in the local config.
-        configfile = kwargs.get('config')
+        config_file = kwargs.get('config')
         if config_file:
-            cfg = self.parse_config_file(config_file)
-            self.args.update(cfg)
+            self.local_cfg = self.parse_config_file(config_file)
+            self.args.update(self.local_cfg)
 
         # now fold in the overrides
         overrides = kwargs.get('overrides')
@@ -446,10 +445,10 @@ class OpTestConfiguration():
             self.args.update(overrides)
 
         # peliminary validation
-        if not self.args['bmc_type']:
-            raise Exception("no machine type is set")
+        if not self.args.get('bmc_type'):
+            raise KeyError("A bmc_type must be set")
 
-        if not self.args.get('known_hosts_file') and \
+        if self.args.get('known_hosts_file') and \
            not self.args.get('check_ssh_keys'):
             raise Exception("known-hosts-file requires check-ssh-keys")
 
