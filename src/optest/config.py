@@ -549,72 +549,74 @@ class OpTestConfiguration():
         '''instantiates the correct system objected based on this config'''
 
         # before we get carried away verify that we can at least ping the bmc
-        try:
-            util.ping(self.args.bmc_ip, totalSleepTime=5)
-        except Exception as e:
-            log.info("Unable to ping the BMC at {}".format(self.args.bmc_ip))
-            raise e # FIXME: throw a new one? use a different exception type?
+        if self.args['bmc_ip']:
+            try:
+                utils.ping(self.args['bmc_ip'], totalSleepTime=5)
+            except Exception as e:
+                log.info("Unable to ping the BMC at {}".format(self.args['bmc_ip']))
+                raise e # FIXME: throw a new one? use a different exception type?
 
 
         # TODO: have a think about what the host object actually represents,
         #       and how it's different to the system object. It's a bit awkward
         #       right now...
-        host = optest.host.OpTestHost(self.args.host_ip,
-                                            self.args.host_user,
-                                            self.args.host_password,
-                                            self.args.bmc_ip,
-                                            self.output,
-                                            scratch_disk=self.args.host_scratch_disk,
-                                            proxy=self.args.proxy,
-                                            logfile=self.logfile,
-                                            check_ssh_keys=self.args.check_ssh_keys,
-                                            known_hosts_file=self.args.known_hosts_file,
+        host = optest.host.OpTestHost(None, # results dir, whatever that is
+                                            self.args['host_ip'],
+                                            self.args['host_user'],
+                                            self.args['host_password'],
+                                            self.args['bmc_ip'],
+#                                            self.output,
+                                            scratch_disk=self.args['host_scratch_disk'],
+                                            proxy=self.args['proxy'],
+#                                            logfile=self.logfile,
+                                            check_ssh_keys=self.args['check_ssh_keys'],
+                                            known_hosts_file=self.args['known_hosts_file'],
                                             conf=self)
 
-        if self.args.bmc_type in ['AMI', 'SMC']:
+        if self.args['bmc_type'] in ['AMI', 'SMC']:
             bmc = None
-            if self.args.bmc_type in ['AMI']:
+            if self.args['bmc_type'] in ['AMI']:
                 '''
                 # FIXME: ipmi and web should probably be instantiated in the
                 # BMC object's constructor
-                web = OpTestWeb(self.args.bmc_ip,
-                                self.args.bmc_usernameipmi,
-                                self.args.bmc_passwordipmi)
+                web = OpTestWeb(self.args['bmc_ip'],
+                                self.args['bmc_usernameipmi'],
+                                self.args['bmc_passwordipmi'])
 
-                ipmi = OpTestIPMI(self.args.bmc_ip,
-                                  self.args.bmc_usernameipmi,
-                                  self.args.bmc_passwordipmi,
+                ipmi = OpTestIPMI(self.args['bmc_ip'],
+                                  self.args['bmc_usernameipmi'],
+                                  self.args['bmc_passwordipmi'],
                                   host=host,
-                                  host_console_command=self.args.host_serial_console_command,
+                                  host_console_command=self.args['host_serial_console_command'],
                                   logfile=self.logfile,
                                   )
 
-                bmc = OpTestBMC(ip=self.args.bmc_ip,
-                                username=self.args.bmc_username,
-                                password=self.args.bmc_password,
+                bmc = OpTestBMC(ip=self.args['bmc_ip'],
+                                username=self.args['bmc_username'],
+                                password=self.args['bmc_password'],
                                 logfile=self.logfile,
                                 ipmi=ipmi,
                                 web=web,
-                                check_ssh_keys=self.args.check_ssh_keys,
-                                known_hosts_file=self.args.known_hosts_file
+                                check_ssh_keys=self.args['check_ssh_keys'],
+                                known_hosts_file=self.args['known_hosts_file']
                                 )
                 '''
                 raise "FIXME: support AMI"
-            elif self.args.bmc_type in ['SMC']:
+            elif self.args['bmc_type'] in ['SMC']:
                 raise "FIXME: support SMC"
                 '''
-                ipmi = OpTestSMCIPMI(self.args.bmc_ip,
-                                     self.args.bmc_usernameipmi,
-                                     self.args.bmc_passwordipmi,
+                ipmi = OpTestSMCIPMI(self.args['bmc_ip'],
+                                     self.args['bmc_usernameipmi'],
+                                     self.args['bmc_passwordipmi'],
                                      logfile=self.logfile,
                                      host=host,
                                      )
-                bmc = OpTestSMC(ip=self.args.bmc_ip,
-                                username=self.args.bmc_username,
-                                password=self.args.bmc_password,
+                bmc = OpTestSMC(ip=self.args['bmc_ip'],
+                                username=self.args['bmc_username'],
+                                password=self.args['bmc_password'],
                                 ipmi=ipmi,
-                                check_ssh_keys=self.args.check_ssh_keys,
-                                known_hosts_file=self.args.known_hosts_file
+                                check_ssh_keys=self.args['check_ssh_keys'],
+                                known_hosts_file=self.args['known_hosts_file']
                                 )
             self.op_system = optest.OpTestSystem.OpTestSystem(
                 state=self.startState,
@@ -625,17 +627,17 @@ class OpTestConfiguration():
             ipmi.set_system(self.op_system)
             bmc.set_system(self.op_system)
             '''
-        elif self.args.bmc_type in ['FSP']:
+        elif self.args['bmc_type'] in ['FSP']:
             raise "FIXME: support FSP"
             '''
-            ipmi = OpTestIPMI(self.args.bmc_ip,
+            ipmi = OpTestIPMI(self.args['bmc_ip'],
                               None,  # FSP does not use UID
-                              self.args.bmc_passwordipmi,
+                              self.args['bmc_passwordipmi'],
                               host=host,
                               logfile=self.logfile)
-            bmc = OpTestFSP(self.args.bmc_ip,
-                            self.args.bmc_username,
-                            self.args.bmc_password,
+            bmc = OpTestFSP(self.args['bmc_ip'],
+                            self.args['bmc_username'],
+                            self.args['bmc_password'],
                             ipmi=ipmi,
                             )
             self.op_system = optest.OpTestFSP.OpTestFSPSystem(
@@ -646,39 +648,39 @@ class OpTestConfiguration():
             )
             ipmi.set_system(self.op_system)
             '''
-        elif self.args.bmc_type in ['FSP_PHYP']:
+        elif self.args['bmc_type'] in ['FSP_PHYP']:
             raise "FIXME: support FSP_PHYP"
             '''
-            host = optest.OpTestHost.OpTestLPAR(self.args.host_ip,
-                                            self.args.host_user,
-                                            self.args.host_password,
-                                            self.args.bmc_ip,
+            host = optest.OpTestHost.OpTestLPAR(self.args['host_ip'],
+                                            self.args['host_user'],
+                                            self.args['host_password'],
+                                            self.args['bmc_ip'],
                                             self.output,
-                                            scratch_disk=self.args.host_scratch_disk,
-                                            proxy=self.args.proxy,
+                                            scratch_disk=self.args['host_scratch_disk'],
+                                            proxy=self.args['proxy'],
                                             logfile=self.logfile,
-                                            check_ssh_keys=self.args.check_ssh_keys,
-                                            known_hosts_file=self.args.known_hosts_file,
+                                            check_ssh_keys=self.args['check_ssh_keys'],
+                                            known_hosts_file=self.args['known_hosts_file'],
                                             conf=self)
             hmc = None
-            if all(v is not None for v in [self.args.hmc_ip, self.args.hmc_username, self.args.hmc_password,
-                                           self.args.system_name, self.args.lpar_name]):
-                hmc = OpTestHMC(self.args.hmc_ip,
-                                self.args.hmc_username,
-                                self.args.hmc_password,
-                                managed_system=self.args.system_name,
-                                lpar_name=self.args.lpar_name,
-                                lpar_vios=self.args.lpar_vios,
-                                lpar_prof=self.args.lpar_prof,
-                                lpar_user=self.args.host_user,
-                                lpar_password=self.args.host_password,
+            if all(v is not None for v in [self.args['hmc_ip'], self.args['hmc_username'], self.args['hmc_password'],
+                                           self.args['system_name'], self.args['lpar_name']]):
+                hmc = OpTestHMC(self.args['hmc_ip'],
+                                self.args['hmc_username'],
+                                self.args['hmc_password'],
+                                managed_system=self.args['system_name'],
+                                lpar_name=self.args['lpar_name'],
+                                lpar_vios=self.args['lpar_vios'],
+                                lpar_prof=self.args['lpar_prof'],
+                                lpar_user=self.args['host_user'],
+                                lpar_password=self.args['host_password'],
                                 logfile=self.logfile
                                 )
             else: # FIXME: param validation should be done in the system constructor
                 raise Exception("HMC IP, username and password is required")
-            bmc = OpTestFSP(self.args.bmc_ip,
-                            self.args.bmc_username,
-                            self.args.bmc_password,
+            bmc = OpTestFSP(self.args['bmc_ip'],
+                            self.args['bmc_username'],
+                            self.args['bmc_password'],
                             hmc=hmc,
                             )
             self.op_system = optest.OpTestHMC.OpTestLPARSystem(
@@ -689,26 +691,26 @@ class OpTestConfiguration():
             )
             hmc.set_system(self.op_system)
             '''
-        elif self.args.bmc_type in ['OpenBMC']:
+        elif self.args['bmc_type'] in ['OpenBMC']:
             raise "FIXME: support OpenBMC"
             '''
-            ipmi = OpTestIPMI(self.args.bmc_ip,
-                              self.args.bmc_usernameipmi,
-                              self.args.bmc_passwordipmi,
+            ipmi = OpTestIPMI(self.args['bmc_ip'],
+                              self.args['bmc_usernameipmi'],
+                              self.args['bmc_passwordipmi'],
                               host=host,
                               logfile=self.logfile)
             rest_api = HostManagement(conf=self,
-                                      ip=self.args.bmc_ip,
-                                      username=self.args.bmc_username,
-                                      password=self.args.bmc_password)
-            bmc = OpTestOpenBMC(ip=self.args.bmc_ip,
-                                username=self.args.bmc_username,
-                                password=self.args.bmc_password,
+                                      ip=self.args['bmc_ip'],
+                                      username=self.args['bmc_username'],
+                                      password=self.args['bmc_password'])
+            bmc = OpTestOpenBMC(ip=self.args['bmc_ip'],
+                                username=self.args['bmc_username'],
+                                password=self.args['bmc_password'],
                                 ipmi=ipmi,
                                 rest_api=rest_api,
                                 logfile=self.logfile,
-                                check_ssh_keys=self.args.check_ssh_keys,
-                                known_hosts_file=self.args.known_hosts_file)
+                                check_ssh_keys=self.args['check_ssh_keys'],
+                                known_hosts_file=self.args['known_hosts_file'])
             self.op_system = optest.OpTestOpenBMC.OpTestOpenBMCSystem(
                 host=host,
                 bmc=bmc,
@@ -717,38 +719,39 @@ class OpTestConfiguration():
             )
             bmc.set_system(self.op_system)
             '''
-        elif self.args.bmc_type in ['qemu']:
+        elif self.args['bmc_type'] in ['qemu']:
             sys = QemuSystem(conf=self,
-                             qemu_binary=self.args.qemu_binary,
-                             pnor=self.args.host_pnor,
-                             skiboot=self.args.flash_skiboot,
-                             kernel=self.args.flash_kernel,
-                             initramfs=self.args.flash_initramfs,
-                             cdrom=self.args.os_cdrom,
-                             logfile=self.logfile,
+                             qemu_binary=self.args['qemu_binary'],
+                             pnor=self.args['host_pnor'],
+                             skiboot=self.args['flash_skiboot'],
+                             kernel=self.args['flash_kernel'],
+                             initramfs=self.args['flash_initramfs'],
+                             cdrom=self.args['os_cdrom'],
+#                             logfile=self.logfile,
                              host=host)
-        elif self.args.bmc_type in ['mambo']:
+            self.op_system = sys
+        elif self.args['bmc_type'] in ['mambo']:
             raise "FIXME: support mambo"
             '''
             # FIXME: this stuff should be verified in the mambo constructor
-            if not (os.stat(self.args.mambo_binary).st_mode & stat.S_IXOTH):
+            if not (os.stat(self.args['mambo_binary']).st_mode & stat.S_IXOTH):
                 raise ParameterCheck(message="Check that the file exists with X permissions mambo-binary={}"
-                                     .format(self.args.mambo_binary))
-            if self.args.flash_skiboot is None \
-                    or not os.access(self.args.flash_skiboot, os.R_OK):
+                                     .format(self.args['mambo_binary']))
+            if self.args['flash_skiboot'] is None \
+                    or not os.access(self.args['flash_skiboot'], os.R_OK):
                 raise ParameterCheck(message="Check that the file exists with R permissions flash-skiboot={}"
-                                     .format(self.args.flash_skiboot))
-            if self.args.flash_kernel is None \
-                    or not os.access(self.args.flash_kernel, os.R_OK):
+                                     .format(self.args['flash_skiboot']))
+            if self.args['flash_kernel'] is None \
+                    or not os.access(self.args['flash_kernel'], os.R_OK):
                 raise ParameterCheck(message="Check that the file exists with R permissions flash-kernel={}"
-                                     .format(self.args.flash_kernel))
-            bmc = OpTestMambo(mambo_binary=self.args.mambo_binary,
-                              mambo_initial_run_script=self.args.mambo_initial_run_script,
-                              mambo_autorun=self.args.mambo_autorun,
-                              skiboot=self.args.flash_skiboot,
-                              kernel=self.args.flash_kernel,
-                              initramfs=self.args.flash_initramfs,
-                              timeout_factor=self.args.mambo_timeout_factor,
+                                     .format(self.args['flash_kernel']))
+            bmc = OpTestMambo(mambo_binary=self.args['mambo_binary'],
+                              mambo_initial_run_script=self.args['mambo_initial_run_script'],
+                              mambo_autorun=self.args['mambo_autorun'],
+                              skiboot=self.args['flash_skiboot'],
+                              kernel=self.args['flash_kernel'],
+                              initramfs=self.args['flash_initramfs'],
+                              timeout_factor=self.args['mambo_timeout_factor'],
                               logfile=self.logfile)
             self.op_system = optest.OpTestMambo.OpTestMamboSystem(host=host,
                                                                    bmc=bmc,
@@ -760,9 +763,9 @@ class OpTestConfiguration():
 
         # FIXME: address the addon stuff when we move this out of here.
         # Check that the bmc_type exists in our loaded addons then create our objects
-#        elif self.args.bmc_type in optAddons:
+#        elif self.args['bmc_type'] in optAddons:
 #            # FIXME: hmm, how do we support this sort of thing?
-#            (bmc, self.op_system) = optAddons[self.args.bmc_type].createSystem(
+#            (bmc, self.op_system) = optAddons[self.args['bmc_type']].createSystem(
 #                self, host)
         else:
             self.util.cleanup()
@@ -770,18 +773,18 @@ class OpTestConfiguration():
                             "upper/lower cases for bmc_type and verify "
                             "any credentials used from HostLocker or "
                             "AES Version (see aes_get_creds "
-                            "version_mappings)".format(self.args.bmc_type))
+                            "version_mappings)".format(self.args['bmc_type']))
 
         # FIXME: *grumble*
         host.set_system(self.op_system)
 
         # FIXME: All the cronus stuff is probably broken. Fix it up at some point.
         # FIXME: We should add a cronus / BML system type.
-#        if self.args.cronus_product:
+#        if self.args['cronus_product']:
 #            self.cronus = OpTestCronus(self.conf)
 
         print("created objects")
-        return
+        return self.op_system
 
     def bmc(self):
         raise Exception('fix this test')

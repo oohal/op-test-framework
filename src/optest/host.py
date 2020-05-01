@@ -85,7 +85,8 @@ class OpTestHost():
         return self.passwd
 
     def set_system(self, system):
-        self.ssh.set_system(system)
+        pass
+        #self.ssh.set_system(system)
 
     def get_scratch_disk(self):
         return self.scratch_disk
@@ -134,7 +135,6 @@ class OpTestHost():
         ssh = OpTestSSH(self.ip, self.user, self.passwd,
                         logfile=logfile, check_ssh_keys=self.check_ssh_keys,
                         known_hosts_file=self.known_hosts_file, use_parent_logger=False)
-        ssh.set_system(self.conf.op_system)
         return ssh
 
     def host_get_OS_Level(self, console=0):
