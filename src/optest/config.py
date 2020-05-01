@@ -717,20 +717,15 @@ class OpTestConfiguration():
             bmc.set_system(self.op_system)
             '''
         elif self.args.bmc_type in ['qemu']:
-            bmc = OpTestQemu(conf=self,
+            sys = QemuSystem(conf=self,
                              qemu_binary=self.args.qemu_binary,
                              pnor=self.args.host_pnor,
                              skiboot=self.args.flash_skiboot,
                              kernel=self.args.flash_kernel,
                              initramfs=self.args.flash_initramfs,
                              cdrom=self.args.os_cdrom,
-                             logfile=self.logfile)
-            self.op_system = optest.OpTestQemu.OpTestQemuSystem(host=host,
-                                                                  bmc=bmc,
-                                                                  state=self.startState,
-                                                                  conf=self,
-                                                                  )
-            bmc.set_system(self.op_system)
+                             logfile=self.logfile,
+                             host=host)
         elif self.args.bmc_type in ['mambo']:
             raise "FIXME: support mambo"
             '''
