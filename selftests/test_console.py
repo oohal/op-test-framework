@@ -1,22 +1,10 @@
 import time
-
 import pytest
-
 import optest.console as con
-
-# FIXME: this is all pretty crappy, better than nothing i guess
-
-# NB: We need to deal with "real" SSH shell sessions and SSH sessions
-# to virtual serial ports. The latter will retain it's state provided
-# the shell isn't logged out and that drives the odd behaviour here.
 
 @pytest.fixture
 def bash():
     yield con.CmdConsole("sh")
-
-@pytest.fixture
-def ssh_shell():
-    yield con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
 
 def test_nosetup_raises(bash):
     with pytest.raises(RuntimeError):
@@ -25,6 +13,8 @@ def test_nosetup_raises(bash):
 def test_sudo_raises(bash):
     with pytest.raises(ValueError):
         bash.run_command("sudo ls -1")
+
+# FIXME: how do we test the sudo-wrangling in escalate_shell()?
 
 def test_console_basic(bash):
     bash.connect()
@@ -47,7 +37,6 @@ def test_console_resetup(bash):
 
     bash.shell_setup()
     o1 = bash.run_command("ls -1")
-
     bash.shell_setup()
     o2 = bash.run_command("ls -1")
 
@@ -55,6 +44,11 @@ def test_console_resetup(bash):
     bash.close()
 
 '''
+# FIXME: maybe we can use qemu to do this?
+@pytest.fixture
+def ssh_shell():
+    yield con.SSHConsole("ozrom2-bmc", "root", "0penBmc")
+
 def notest_console_ssh_vserial():
     ssh = con.SSHConsole("ozrom2-bmc", "root", "0penBmc", port=2200)
 
