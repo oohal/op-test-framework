@@ -1,4 +1,4 @@
-## OpenPower Test Framework ##
+## OP-TEST: RELOADED: THE NEXT GENERATION: TAKE TWO: CHEESY SUBTITLE EDITION ##
 
 This repository provides a collection of tools that enable automated testing of
 OpenPower systems. The op-test suite is designed to test a machine
