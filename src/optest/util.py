@@ -24,43 +24,36 @@
 #
 # IBM_PROLOG_END_TAG
 
-import sys
-import os
+import subprocess
+import traceback
 import datetime
+import string
+import random
 import time
 import pwd
-import string
-import subprocess
-import random
+import sys
+import os
 import re
+
+
 import telnetlib
-import socket
-import select
-import time
-import pty
-import pexpect
-import subprocess
 import requests
-import traceback
+import pexpect
+import urllib3  # setUpChildLogger enables integrated logging with op-test
+import json
+
 from requests.adapters import HTTPAdapter
 #from requests.packages.urllib3.util import Retry
 from http.client import HTTPConnection
 # HTTPConnection.debuglevel = 1 # this will print some additional info to stdout
-import urllib3  # setUpChildLogger enables integrated logging with op-test
-import json
 
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
-from .Exceptions import CommandFailed, RecoverFailed, ConsoleSettings
-from .Exceptions import HostLocker, AES, ParameterCheck, HTTPCheck, UnexpectedCase
+from .constants import Constants as BMC_CONST
+from .exceptions import CommandFailed, RecoverFailed, ConsoleSettings, OpTestError
+from .exceptions import HostLocker, AES, ParameterCheck, HTTPCheck, UnexpectedCase
 
 import logging
 from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
-
-sudo_responses = ["not in the sudoers",
-                  "incorrect password"]
-
 
 class OpTestUtil():
 
@@ -298,7 +291,7 @@ class OpTestUtil():
             marker_time = (time.asctime(time.localtime())).replace(" ", "_")
             if self.conf.args.bmc_type in ['OpenBMC']:
                 try:
-                    self.PingMTUCheck(self.conf.args.bmc_ip, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
+                    ping_mtu_check(self.conf.args.bmc_ip, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
                 except Exception as e:
                     log.warning("Check that the BMC is healthy, maybe the Broadcom bug, Exception={}".format(e))
                 log.info("OpTestSystem Starting to Gather BMC logs")
@@ -953,94 +946,6 @@ class OpTestUtil():
             log.debug("hostlocker_unlock tried to delete a lock but it was "
                       "NOT there, see Exception={}".format(e))
 
-    ##
-    # @brief Pings 2 packages to system under test
-    #
-    # @param i_ip @type string: ip address of system under test
-    # @param i_try @type int: number of times the system is
-    #        pinged before returning Failed
-    #
-    # @return   BMC_CONST.PING_SUCCESS when PASSED or
-    #           raise OpTestError when FAILED
-    #
-    def PingFunc(self, i_ip, i_try=1, totalSleepTime=BMC_CONST.HOST_BRINGUP_TIME):
-        if i_ip == None:
-            raise ParameterCheck(message="PingFunc has i_ip set to 'None', "
-                                 "check your configuration and setup")
-        sleepTime = 0
-        while(i_try != 0):
-            p1 = subprocess.Popen(["ping", "-c 2", str(i_ip)],
-                                  stdin=subprocess.PIPE,
-                                  stdout=subprocess.PIPE,
-                                  universal_newlines=True,
-                                  encoding='utf-8')
-            stdout_value, stderr_value = p1.communicate()
-
-            if(stdout_value.__contains__("2 received")):
-                log.debug(i_ip + " is pinging")
-                return BMC_CONST.PING_SUCCESS
-
-            else:
-                # need to print message otherwise no interactive feedback
-                # and user left guessing something is not happening
-                log.info("PingFunc is not pinging '{}', waited {} of {}, {} "
-                         "more loop cycles remaining, you may start to check "
-                         "your configuration for bmc_ip or host_ip"
-                         .format(i_ip, sleepTime, totalSleepTime, i_try))
-                log.debug("%s is not pinging (Waited %d of %d, %d more "
-                          "loop cycles remaining)" % (i_ip, sleepTime,
-                                                      totalSleepTime, i_try))
-                time.sleep(1)
-                sleepTime += 1
-                if (sleepTime == totalSleepTime):
-                    i_try -= 1
-                    sleepTime = 0
-
-        log.error("'{}' is not pinging and we tried many times, "
-                  "check your configuration and setup.".format(i_ip))
-        raise ParameterCheck(message="PingFunc fails to ping '{}', "
-                             "check your configuration and setup and manually "
-                             "verify and release any reservations".format(i_ip))
-
-    def PingMTUCheck(self, i_ip, i_try=1, totalSleepTime=BMC_CONST.HOST_BRINGUP_TIME):
-        if i_ip == None:
-            raise ParameterCheck(message="PingMTUCheck has i_ip set to 'None', "
-                "check your configuration and setup")
-        sleepTime = 0;
-        while(i_try != 0):
-            p1 = subprocess.Popen(["ping", "-M", "do", "-s 1400", "-c 5", str(i_ip)],
-                                  stdin=subprocess.PIPE,
-                                  stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE,
-                                  universal_newlines=True,
-                                  encoding='utf-8')
-            stdout_value, stderr_value = p1.communicate()
-
-            if(stdout_value.__contains__("5 received")):
-                log.debug("Ping successfully verified MTU discovery check (prohibit fragmentation), ping -M do -s 1400 -c 5 {}".format(i_ip))
-                return BMC_CONST.PING_SUCCESS
-
-            else:
-                # need to print message otherwise no interactive feedback
-                # and user left guessing something is not happening
-                log.info("PingMTUCheck is not able to successfully verify '{}', waited {} of {}, {} "
-                         "more loop cycles remaining, you may start to check "
-                         "your configuration for bmc_ip or host_ip"
-                         .format(i_ip, sleepTime, totalSleepTime, i_try))
-                log.debug("%s is not able to successfully verify MTU discovery (Waited %d of %d, %d more "
-                          "loop cycles remaining)" % (i_ip, sleepTime,
-                          totalSleepTime, i_try))
-                time.sleep(1)
-                sleepTime += 1
-                if (sleepTime == totalSleepTime):
-                    i_try -= 1
-                    sleepTime = 0
-
-        log.warning("'{}' is not able to successfully verify MTU discovery (prohibit fragmentation) and we tried many times, "
-                  "check your configuration and setup.".format(i_ip))
-        raise ParameterCheck(message="PingMTUCheck fails to verify MTU discovery (prohibit fragmentation) '{}', "
-            "check your configuration and setup manually ".format(i_ip))
-
     def copyFilesToDest(self, hostfile, destid, destName, destPath, passwd):
         arglist = (
             "sshpass",
@@ -1065,22 +970,6 @@ class OpTestUtil():
             sourcepath)
         log.debug(' '.join(arglist))
         subprocess.check_output(arglist)
-
-    # It waits for a ping to fail, Ex: After a BMC/FSP reboot
-    def ping_fail_check(self, i_ip):
-        cmd = "ping -c 1 " + i_ip + " 1> /dev/null; echo $?"
-        count = 0
-        while count < 500:
-            output = subprocess.getstatusoutput(cmd)
-            if output[1] != '0':
-                log.debug("IP %s Comes down" % i_ip)
-                break
-            count = count + 1
-            time.sleep(2)
-        else:
-            log.debug("IP %s keeps on pinging up" % i_ip)
-            return False
-        return True
 
     def mambo_run_command(self, term_obj, command, timeout=60, retry=0):
         expect_prompt = "systemsim %"
@@ -1339,3 +1228,109 @@ class Server(object):
 
     def close(self):
         self.session.close()
+
+##
+# @brief Pings 2 packages to system under test
+#
+# @param i_ip @type string: ip address of system under test
+# @param i_try @type int: number of times the system is
+#        pinged before returning Failed
+#
+# @return   BMC_CONST.PING_SUCCESS when PASSED or
+#           raise OpTestError when FAILED
+#
+def ping(i_ip, i_try=1, totalSleepTime=BMC_CONST.HOST_BRINGUP_TIME):
+    if i_ip == None:
+        raise ParameterCheck(message="PingFunc has i_ip set to 'None', "
+                             "check your configuration and setup")
+    sleepTime = 0
+    while(i_try != 0):
+        p1 = subprocess.Popen(["ping", "-c 2", str(i_ip)],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              universal_newlines=True,
+                              encoding='utf-8')
+        stdout_value, stderr_value = p1.communicate()
+
+        if(stdout_value.__contains__("2 received")):
+            log.debug(i_ip + " is pinging")
+            return BMC_CONST.PING_SUCCESS
+
+        else:
+            # need to print message otherwise no interactive feedback
+            # and user left guessing something is not happening
+            log.info("PingFunc is not pinging '{}', waited {} of {}, {} "
+                     "more loop cycles remaining, you may start to check "
+                     "your configuration for bmc_ip or host_ip"
+                     .format(i_ip, sleepTime, totalSleepTime, i_try))
+            log.debug("%s is not pinging (Waited %d of %d, %d more "
+                      "loop cycles remaining)" % (i_ip, sleepTime,
+                                                  totalSleepTime, i_try))
+            time.sleep(1)
+            sleepTime += 1
+            if (sleepTime == totalSleepTime):
+                i_try -= 1
+                sleepTime = 0
+
+    log.error("'{}' is not pinging and we tried many times, "
+              "check your configuration and setup.".format(i_ip))
+    raise ParameterCheck(message="PingFunc fails to ping '{}', "
+                         "check your configuration and setup and manually "
+                         "verify and release any reservations".format(i_ip))
+
+
+#FIXME: fold this into the above?
+def ping_mtu_check(i_ip, i_try=1, totalSleepTime=BMC_CONST.HOST_BRINGUP_TIME):
+    if i_ip == None:
+        raise ParameterCheck(message="PingMTUCheck has i_ip set to 'None', "
+            "check your configuration and setup")
+    sleepTime = 0;
+    while(i_try != 0):
+        p1 = subprocess.Popen(["ping", "-M", "do", "-s 1400", "-c 5", str(i_ip)],
+                              stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              universal_newlines=True,
+                              encoding='utf-8')
+        stdout_value, stderr_value = p1.communicate()
+
+        if(stdout_value.__contains__("5 received")):
+            log.debug("Ping successfully verified MTU discovery check (prohibit fragmentation), ping -M do -s 1400 -c 5 {}".format(i_ip))
+            return BMC_CONST.PING_SUCCESS
+
+        else:
+            # need to print message otherwise no interactive feedback
+            # and user left guessing something is not happening
+            log.info("PingMTUCheck is not able to successfully verify '{}', waited {} of {}, {} "
+                     "more loop cycles remaining, you may start to check "
+                     "your configuration for bmc_ip or host_ip"
+                     .format(i_ip, sleepTime, totalSleepTime, i_try))
+            log.debug("%s is not able to successfully verify MTU discovery (Waited %d of %d, %d more "
+                      "loop cycles remaining)" % (i_ip, sleepTime,
+                      totalSleepTime, i_try))
+            time.sleep(1)
+            sleepTime += 1
+            if (sleepTime == totalSleepTime):
+                i_try -= 1
+                sleepTime = 0
+
+    log.warning("'{}' is not able to successfully verify MTU discovery (prohibit fragmentation) and we tried many times, "
+              "check your configuration and setup.".format(i_ip))
+    raise ParameterCheck(message="PingMTUCheck fails to verify MTU discovery (prohibit fragmentation) '{}', "
+        "check your configuration and setup manually ".format(i_ip))
+
+# It waits for a ping to fail, Ex: After a BMC/FSP reboot
+def ping_fail_check(i_ip):
+    cmd = "ping -c 1 " + i_ip + " 1> /dev/null; echo $?"
+    count = 0
+    while count < 500:
+        output = subprocess.getstatusoutput(cmd)
+        if output[1] != '0':
+            log.debug("IP %s Comes down" % i_ip)
+            break
+        count = count + 1
+        time.sleep(2)
+    else:
+        log.debug("IP %s keeps on pinging up" % i_ip)
+        return False
+    return True

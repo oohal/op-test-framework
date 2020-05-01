@@ -39,6 +39,8 @@ import sys
 import os
 import re
 
+from . import util
+
 from .constants import Constants as BMC_CONST
 from .console import SSHConsole
 
@@ -151,8 +153,7 @@ class OpTestHost():
         log.debug(("Applying Cold reset on host."))
         l_rc = self.ssh.run_command(BMC_CONST.HOST_COLD_RESET, timeout=60)
 
-        self.util.PingFunc(self.bmcip,
-                           totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
+        util.ping(self.bmcip, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
 
     def host_code_update(self, i_image, imagecomponent):
         '''

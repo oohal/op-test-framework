@@ -35,6 +35,8 @@ from .Exceptions import CommandFailed
 from .OpTestConstants import OpTestConstants as BMC_CONST
 from .OpTestSystem import OpTestSystem, OpSystemState
 
+import .util as util
+
 import logging
 from . import OpTestLogger
 log = OpTestLogger.optest_logger_glob.get_logger(__name__)
@@ -55,8 +57,7 @@ class HostManagement():
         self.hostname = ip
         self.username = username
         self.password = password
-        self.util.PingFunc(
-            self.hostname, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
+        util.ping(self.hostname, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
         if self.conf.util_bmc_server is None:
             self.conf.util.setup(config='REST')
         r = self.conf.util_bmc_server.login()
@@ -459,10 +460,9 @@ class HostManagement():
         r = self.conf.util_bmc_server.put(
             uri=uri, json=payload, minutes=minutes)
         # Wait for BMC to go down.
-        self.util.ping_fail_check(self.hostname)
+        util.ping_fail_check(self.hostname)
         # Wait for BMC to ping back.
-        self.util.PingFunc(
-            self.hostname, totalSleepTime=BMC_CONST.PING_RETRY_POWERCYCLE)
+        util.ping(self.hostname, totalSleepTime=BMC_CONST.PING_RETRY_POWERCYCLE)
         # Wait for BMC ready state.
         self.wait_for_bmc_runtime()
 

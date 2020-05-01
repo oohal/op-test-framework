@@ -697,7 +697,7 @@ class OpTestIPMI():
         if BMC_CONST.BMC_PASS_COLD_RESET in rc:
             self.console.close()
             time.sleep(BMC_CONST.SHORT_WAIT_IPL)
-            self.util.PingFunc(
+            util.ping(
                 self.cv_bmcIP, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
             self.ipmi_wait_for_bmc_runtime()
             l_finalstatus = self.ipmi_power_status()
@@ -758,7 +758,7 @@ class OpTestIPMI():
             log.info("Warm reset result: {}".format(rc))
             self.console.close()
             time.sleep(BMC_CONST.BMC_WARM_RESET_DELAY)
-            self.util.PingFunc(
+            util.ping(
                 self.cv_bmcIP, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
             l_finalstatus = self.ipmi_power_status()
             if (l_initstatus != l_finalstatus):

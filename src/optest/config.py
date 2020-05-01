@@ -18,6 +18,7 @@ import optest
 import optest.system
 import optest.logger
 import optest.host
+import optest.util as util
 
 from optest.exceptions import HostLocker, AES, ParameterCheck, OpExit
 from optest.constants import Constants as BMC_CONST
@@ -541,7 +542,7 @@ class OpTestConfiguration():
 
         # before we get carried away verify that we can at least ping the bmc
         try:
-            self.util.PingFunc(self.args.bmc_ip, totalSleepTime=5)
+            util.ping(self.args.bmc_ip, totalSleepTime=5)
         except Exception as e:
             log.info("Unable to ping the BMC at {}".format(self.args.bmc_ip))
             raise e # FIXME: throw a new one? use a different exception type?
