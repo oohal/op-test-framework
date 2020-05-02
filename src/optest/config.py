@@ -489,8 +489,11 @@ class OpTestConfiguration():
 
     def unlock(self):
         # FIXME: move the aes/hostlocker wrangling into here
-        if self.atexit_ready:
-            self.util.cleanup()
+        if False:
+            self.cleanup()
+
+    def cleanup(self):
+        self.unlock()
 
     # How much of this should be done here? might be better off in the test
     # harness, but then again it might be useful to someone as a part of

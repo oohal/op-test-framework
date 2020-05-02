@@ -35,6 +35,8 @@ import time
 from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
 
+class UnsupportedStateError(Exception):
+    pass
 class ErrorPattern(Exception):
     pass
 class MissedState(Exception):
@@ -114,16 +116,26 @@ class BaseSystem(object):
     def collect_debug(self):
         raise NotImplementedError()
 
-    def poweroff(self, soft_first=True):
-        ''' helper for powering off the host and reset our state tracking '''
+    def poweron(self):
         self.reset_states()
+        self.host_power_on()
 
-        self.host_power_off()
-        if soft_first:
+    def poweroff(self, softoff=True):
+        ''' helper for powering off the host and reset our state tracking '''
+        #self.reset_states()
+
+        self.power_off_delay = 30
+        if softoff:
+            self.host_power_off()
+
             for i in range(self.power_off_delay):
                 if not self.host_power_is_on():
                     return
-                time.sleep(1)
+
+                # run expect with no patterns so we get output during poweroff
+                # and so we catch any crashes that might happen while powering
+                # off
+                self.expect(timeout=1)
             log.info("Timeout while powering off host. Yanking power now")
 
         # try a little harder...
@@ -131,7 +143,11 @@ class BaseSystem(object):
         for i in range(self.power_yank_delay):
             if not self.host_power_is_on():
                 return
-        raise "host hasn't turned off after yanking power"
+
+            self.expect(timeout=1)
+
+        # FIXME: use a precise exception type
+        raise Exception("host hasn't turned off after yanking power")
 
 
     ############################################################################
@@ -206,7 +222,7 @@ class BaseSystem(object):
         # error pattern?
         cb = s.patterns[expect_table[r]]
         if cb:
-            raise "hit error pattern" # FIXME: halfassed
+            raise Exception("hit error pattern") # FIXME: halfassed
 
         self.set_state(s)
         log.info("Reached {}".format(target_state))
@@ -216,9 +232,36 @@ class BaseSystem(object):
             raise ValueError("state can't be waited at")
 
         self.waitfor(target)
-        self.states[target].interrupt()
+        self.states[target].stop()
 
+    def goto_off(self):
+        '''
+        Going to the off state is the only allowed "backwards" state transition
+        so it gets some special treatment. The main issue with it is that
+        because we don't (can't really) keep track of what the system the state
+        is in we don't know what's the "correct" way to power off the system
+        or how we're supposed to know the system is actually off.
 
+        For all the other boot states we can usually just sit and wait
+
+        There are some system specific sideband measures that we can use to
+        work this out though. For example, openbmc has the `obmcutil power`
+        command which tells you the state of the 
+        '''
+
+    def goto_state(self, target):
+        s = self.states[target]
+        supported_states = [s.name for s in self.state_table]
+        if target not in supported_states:
+            msg = "{} is not supported by this system type".format(target)
+            raise UnsupportedStateError(msg)
+
+        # for states that we've already visited we need power off
+        # the system
+        if self.visited[s]:
+            self.poweroff()
+            self.host_power_on()
+            self.waitat(target)
 
 # FIXME: seperate file?
 

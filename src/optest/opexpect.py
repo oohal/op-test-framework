@@ -158,6 +158,7 @@ class spawn(pexpect.spawn):
 
     def expect(self, input_pattern, timeout=-1, searchwindowsize=-1):
         # HACK: just for now until I move this into OpTestSystem
+        # FIXME: We *really* need to do that soon
         self.clear_patterns()
 
         qemu_err = lambda pty, pat: qemu_err(pty, pat)
