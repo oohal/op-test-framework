@@ -1,49 +1,99 @@
 ## OP-TEST: RELOADED: THE NEXT GENERATION: TAKE TWO: CHEESY SUBTITLE EDITION ##
 
-This repository provides a collection of tools that enable automated testing of
-OpenPower systems. The op-test suite is designed to test a machine
-largely out of band - that is, it is designed for tests that do things like
-power cycle the machine, test booting different configurations. As part of
-the op-test, we may run tests on the host itself (such as fwts
-and HTX)
+This repository provides a collection of tools to enable automated testing of
+OpenPower system firmware. You can use it for other things too. We're not
+going to stop you.
 
-The end goal is to have a collection of tests that can be run against any
-OpenPower system to validate it's function. The tests are automation/jenkins
-ready.
+Internally op-test is made up of two components:
+
+1) The optest package which implements a collection of helper logic useful
+   for interacting with OpenPower systems.
+
+2) A large test suite for regression and acceptance testing of OpenPower system
+   firmware.
+
+The test suite in 2) is implemented using the logic in 1) and uses pytest for
+the underlying test running infrastructure.
 
 For full documentation, visit http://open-power.github.io/op-test/
 
-### Quick Start ###
-
-OVERVIEW - Clone op-test on some linux box, like your laptop.
-
-git clone https://github.com/open-power/op-test
-
-Prepare the OpenPower system with needed software packages and build the
-needed tools (see below Target System Requirements).
-
-Run something (see below Running the tests).
-
 ### Requirements ###
 
-This framework runs on most Linux based systems.
+op-test should run on any modern Linux based system, and on a few not-so-modern ones.
 
-You need python 3.6 or greater as well as pip:
+ - python 3.6 or greater and the corresponding pip
+ - A qemu that supports the powernv model (optional)
+ - IBM power system functional simulator (Mambo) (optional)
+ - ipmitool v1.8.15 or greater
+ - sshpass
 
-    apt install python3 python3-pip
+Network access to the BMC of the system under test. Network access to the host
+is not *strictly* required, but the functionality of op-test is greatly limited
+without it.
 
-and to install the python dependencies:
+FIXME: Verify these
 
-    pip3 install -r requirements.txt
+### Quick Start ###
 
-    For qemu: apt install qemu-utils
+On Ubuntu:
 
-You will also need below packages to be installed
+	apt install python3 python3-pip qemu-utils sshpass
+	git clone https://github.com/open-power/op-test
 
-        sshpass and (recent) ipmitool - 1.8.15 or above should be adequate.
+We recommend using a python virtual environment for working with op-test to
+avoid conflicts with any python packages provided by the system (or more to
+the point, not provided):
 
-You will need to run the test suite on a machine that has access to both
-the BMC and the host of the machine(s) you're testing.
+	cd op-test/
+	python3 -m venv op-test-venv
+	source op-test-venv/bin/activate
+	pip3 install -r requirements.txt
+	pip3 install -e .
+
+This will setup a python venv, install the required packages with pip, and
+install the optest library into that virtual envionment so it can be used by
+the test suite.
+
+Actually running the test suite is handled through the pytest tool. We need to
+provide the details for the system under to test through pytest using a
+configuration file:
+
+    cat > qemu_system.conf <<EOF
+    [op-test]
+    bmc_type=qemu
+    qemu_binary=qemu-system-ppc64
+    flash_skiboot=test_data/skiboot.lid.nophbs
+    flash_kernel=test_data/vmlinux
+    flash_initramfs=test_data/petitfs
+    EOF
+
+    pytest --config-file ./qemu_system.conf -k boot_to_petitboot
+
+FIXME: validate this
+
+This will cause pytest to run the test verifying that the emulated system
+will boot to the petitboot environment. Other useful options for working
+with pytest are:
+
+    --collect-only    # only perform test discovery. this gives you a list of all the known tests
+    --pdb             # invoke the python debugger when a test fails. Useful for test development
+    --lf              # re-run the last failed test
+    -k <pattern>      # only run tests that match <pattern>
+
+The full list is available in `pytest --help` and on the documentation on the pytest
+website: https://docs.pytest.org/en/latest/usage.html
+
+Additionally, there's some extra command line options to pytest which are specific to op-test:
+
+    --hostlocker    Reserve and request the config from hostlocker (used at ozlabs)
+    --aes           Reserve and request the config from AES (used by IBM's firmware team)
+    --config-file   As above
+
+Per-user settings, such as AES login details, can be stored in ~/.op-test-framework.conf.
+
+Support for other reservation systems can be added if desired.
+
+##### old stuff I need to look at again starts here #####
 
 ### Preparation ###
 
