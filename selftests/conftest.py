@@ -33,30 +33,7 @@ trashfire if you don't.
 import pytest
 import pexpect
 
-#import optest
-
-#from optest.OpTestConsole import FileConsole
-
-# how do i parameterise this?
 @pytest.fixture()
 def console_input_file():
     yield "/home/oliver/bootlogs/boot-to-os"
 
-
-'''
-@pytest.fixture(autouse=True, scope='session')
-def optest_system():
-        OpTestConfiguration.conf = OpTestConfiguration.OpTestConfiguration()
-        OpTestConfiguration.conf.parse_args(sys.argv)
-        OpTestConfiguration.conf.do_testing_setup()
-
-        # this needs to die...
-        OpTestConfiguration.conf.objs()
-
-        print("heading to outta space")
-        yield
-        print("back from outta space")
-
-        # do all our cleanup, etc
-        OpTestConfiguration.conf.cleanup()
-'''
