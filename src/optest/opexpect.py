@@ -117,28 +117,40 @@ def handle_plat_err(pty, exp):
 def qemu_err(pty):
     raise CommandFailed(pty.command, "????", -1)
 
+
+import sys
+
 class spawn(pexpect.spawn):
     def __init__(self, command, args=[], maxread=8000,
-                 searchwindowsize=None, logfile=None, cwd=None, env=None,
+                 searchwindowsize=None, logfile=sys.stdout, cwd=None, env=None,
                  ignore_sighup=False, echo=True, preexec_fn=None,
                  encoding='utf-8', codec_errors='ignore', dimensions=None,
                  failure_callback=None, failure_callback_data=None):
-
 
         # deprecated
         assert not failure_callback
         assert not failure_callback_data
 
+        self.logfile = logfile
+
         self.command = command
         super(spawn, self).__init__(command, args=args,
                                     maxread=maxread,
                                     searchwindowsize=searchwindowsize,
-                                    logfile=logfile,
+                                    logfile=self.logfile,
                                     cwd=cwd, env=env,
                                     ignore_sighup=ignore_sighup,
                                     encoding=encoding,
                                     codec_errors=codec_errors)
         self.patterns = []
+
+    # XXX: this seems odd
+    def get_capture(self):
+        return self.logtee.get_capture()
+    def start_capture(self):
+        return self.logtee.start_capture()
+    def stop_capture(self):
+        return self.logtee.stop_capture()
 
     def add_pattern(self, cb, pattern):
         self.patterns.append(pattern)

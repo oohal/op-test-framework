@@ -40,9 +40,9 @@ from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
 
 class QemuConsole(Console):
-    def __init__(self):
+    def __init__(self, logfile):
         self.qemu_pty = None
-        super().__init__()
+        super().__init__(logfile=logfile)
 
     def set_pty(self, pty):
         self.qemu_pty = pty
@@ -84,10 +84,10 @@ class QemuSystem(BaseSystem):
         self.qemu_running = False
         self.mac_str = '52:54:00:22:34:56'
 
-        con = QemuConsole()
+        self.console = QemuConsole(self.logfile)
 
         # TODO: host object?
-        super().__init__(None, con)
+        super().__init__(None, self.console)
 
         for s in qemu_state_table:
             self._add_state(s)
@@ -217,7 +217,14 @@ class QemuSystem(BaseSystem):
 
         # ok, now run qemu and setup our console
         try:
-            pty = opexpect.spawn(cmd, logfile=self.logfile)
+            # HACK: Use the QemuConsole object's logfile so that the console
+            # recording facility works. This is a bit gross, but since the
+            # console is tied to the stdio of the main qemu process, which we
+            # launch here, we have to.
+            #
+            # We could fix this by making the qemu console a seperate pty and
+            # attach to it by having QemuConsole spawn screen.
+            pty = opexpect.spawn(cmd, logfile=self.console.logfile)
 
             # HACK: when passed a bad cmdline qemu can take a sec bail, so just wait
             # if we can make it start with the CPUs not executing we might be able to

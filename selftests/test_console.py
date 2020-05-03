@@ -3,45 +3,59 @@ import pytest
 import optest.console as con
 
 @pytest.fixture
-def bash():
+def shell():
     yield con.CmdConsole("sh")
 
-def test_nosetup_raises(bash):
+def test_nosetup_raises(shell):
     with pytest.raises(RuntimeError):
-        bash.run_command("ls -1")
+        shell.run_command("ls -1")
 
-def test_sudo_raises(bash):
+def test_sudo_raises(shell):
     with pytest.raises(ValueError):
-        bash.run_command("sudo ls -1")
+        shell.run_command("sudo ls -1")
 
 # FIXME: how do we test the sudo-wrangling in escalate_shell()?
 
-def test_console_basic(bash):
-    bash.connect()
-    bash.shell_setup()
-    bash.run_command("ls -1")
-    bash.close()
+def test_console_basic(shell):
+    shell.connect()
+    shell.shell_setup()
+    shell.run_command("ls -1")
+    shell.close()
 
-def test_console_image_cmd(bash):
-    bash.connect()
+def test_console_image_cmd(shell):
+    shell.connect()
 
-    bash.shell_setup()
-    o1 = bash.run_command("ls -1")
-    bash.pty.sendline("#ls -1")
-    o2 = bash.run_command("ls -1")
-
-    assert o1 == o2
-
-def test_console_resetup(bash):
-    bash.connect()
-
-    bash.shell_setup()
-    o1 = bash.run_command("ls -1")
-    bash.shell_setup()
-    o2 = bash.run_command("ls -1")
+    shell.shell_setup()
+    o1 = shell.run_command("ls -1")
+    shell.pty.sendline("#ls -1")
+    o2 = shell.run_command("ls -1")
 
     assert o1 == o2
-    bash.close()
+
+def test_console_resetup(shell):
+    shell.connect()
+
+    shell.shell_setup()
+    o1 = shell.run_command("ls -1")
+    shell.shell_setup()
+    o2 = shell.run_command("ls -1")
+
+    assert o1 == o2
+    shell.close()
+
+def test_console_record(shell):
+    shell.connect()
+
+    shell.start_capture()
+    shell.shell_setup()
+    o1 = shell.run_command("ls -1")
+    capture = shell.stop_capture()
+
+    assert "HISTFILE" in capture
+    print('xxxxxxxxxxxxxxxxxxxxxxx')
+    print(capture)
+    print('xxxxxxxxxxxxxxxxxxxxxxx')
+
 
 '''
 # FIXME: maybe we can use qemu to do this?

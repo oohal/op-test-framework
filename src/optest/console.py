@@ -60,6 +60,39 @@ class ConsoleState():
     DISCONNECTED = 0
     CONNECTED = 1
 
+class LogTee():
+    '''
+    Transparently records anything that gets written to the logfile by pexpect.
+    This is mainly to allow opexpect users access to get access to longer parts
+    of the session so they can do analysis on the whole.
+    '''
+    def __init__(self, output_file):
+        self.output_file = output_file
+        self.capture = []
+        self.recording = False
+
+    def get_capture(self):
+        return "".join(self.capture)
+
+    def start_capture(self):
+        self.recording = True
+        self.capture = []
+
+    def stop_capture(self):
+        self.recording = False
+        return self.get_capture()
+
+    # file interfaces used by pexpect
+    def write(self, data):
+        if self.recording:
+            # append so we're not constantly copy arounbd a giant string
+            self.capture.append(data)
+        return self.output_file.write(data)
+
+    def flush(self):
+        return self.output_file.flush()
+
+
 # FIXME: what should that log file be by default? Global logger?
 class Console():
     def __init__(self, logfile=sys.stdout, prompt=None, disable_echo=False):
@@ -68,7 +101,9 @@ class Console():
         self.prompt = self.build_prompt(prompt)
         self.expect_prompt = self.prompt
 #        self.expect_prompt = self.build_prompt(prompt) + " $" # the shell adds $ to the end
-        self.logfile = logfile
+
+        # some of the subclasses pass self.logfile to opexpect on connect.
+        self.logfile = LogTee(logfile)
 
         # populated by the console driver when .connect() is called
         self.pty = None
@@ -84,8 +119,15 @@ class Console():
         # console
         self.error_patterns = []
 
-
         self.disable_stty_echo = disable_echo
+
+
+    def get_capture(self):
+        return self.logfile.get_capture()
+    def start_capture(self):
+        return self.logfile.start_capture()
+    def stop_capture(self):
+        return self.logfile.stop_capture()
 
     # connection tracking is up to the derived class to implement
     def connect(self):
@@ -117,7 +159,7 @@ class Console():
     def shell_setup(self):
         patterns = [self.prompt, pexpect.TIMEOUT, pexpect.EOF]
 
-        self.pty.sendline('unset HISTFILE;') # FIXME: does this persist across the exec below?
+        self.pty.sendline('unset HISTFILE PS1;')
         self.pty.sendline("which sh && exec sh --norc --noprofile")
 
         # FIXME: do we even not have stty?
@@ -335,25 +377,40 @@ class Console():
         # raise an exception).
         return self.pty.expect(patterns, timeout)
 
+
+# TODO: Move this to the selftests directory? That's the only place it's used.
 class FileConsole(Console):
     def __init__(self, inputfile, logfile=sys.stdout):
         super().__init__(logfile)
-        self.pty = opexpect.spawn("cat {}".format(inputfile), logfile=self.logfile)
+
+        # For FileConsole we keep the same opexpect instance across connect
+        # so that we preserve the location we're up to in the file. That better
+        # models what a real host console would do. Disconnecting from the SoL
+        # console doesn't affect the system under test normally, but closing
+        # the pexpect instance of a FileConsole would reset to the start of the
+        # file.
+        self.pty = opexpect.spawn("cat {}".format(inputfile), logfile=logfile)
 
     def connect(self):
         self.state = ConsoleState.CONNECTED
 
     def close(self):
         self.state = ConsoleState.DISCONNECTED
+
+        # TODO: Raising here is not really needed and possibly a bad idea.
+        # We're doing it because none of the tests which use FileConsole should
+        # be hitting the close path. If we do it's probably a bug in the test.
         raise RuntimeError("FileConsoles can't be closed")
         self.pty.close()
         self.pty = None
 
 
+# TODO: Move to selftests? Everything said about FileConsole applies here too
 class CmdConsole(Console):
     def __init__(self, cmd, logfile=sys.stdout):
         super().__init__(logfile)
-        self.pty = opexpect.spawn(cmd, logfile=self.logfile)
+        # same logic as FileConsole applies here
+        self.pty = opexpect.spawn(cmd, logfile=logfile)
 
     def connect(self):
         if not self.pty:
