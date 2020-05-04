@@ -68,11 +68,6 @@ class OpTestUtil():
                                            minutes=None,
                                            proxy=self.build_proxy(self.conf.args.aes_proxy,
                                                                   self.conf.args.aes_no_proxy_ips))
-        elif config == 'REST':
-            rest_server = "https://{}".format(self.conf.args.bmc_ip)
-            self.conf.util_bmc_server = Server(url=rest_server,
-                                               username=self.conf.args.bmc_username,
-                                               password=self.conf.args.bmc_password)
         else:
             self.conf.util_server = Server(url=self.conf.args.hostlocker_server,
                                            base_url=self.conf.args.hostlocker_base_url,
@@ -967,8 +962,8 @@ class Server(object):
     make the GET/PUT/POST/DELETE call.
     '''
 
-    def __init__(self, url=None,
-                 base_url=None,
+    def __init__(self, url=None, # ???
+                 base_url=None,  # ???
                  proxy=None,
                  username=None,
                  password=None,
