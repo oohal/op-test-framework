@@ -559,6 +559,12 @@ class OpTestConfiguration():
                 log.info("Unable to ping the BMC at {}".format(self.args['bmc_ip']))
                 raise e # FIXME: throw a new one? use a different exception type?
 
+        # grab our serial console if we've got one...
+        console_cmd = self.args['host_serial_console_command']
+        if console_cmd:
+            console = console.CmdConsole(console_cmd)
+        else:
+            console = None
 
         # TODO: have a think about what the host object actually represents,
         #       and how it's different to the system object. It's a bit awkward
@@ -716,6 +722,7 @@ class OpTestConfiguration():
                                 known_hosts_file=self.args['known_hosts_file'])
             self.op_system = optest.OpTestOpenBMC.OpTestOpenBMCSystem(
                 host=host,
+                console=console,
                 bmc=bmc,
                 state=self.startState,
                 conf=self,
@@ -723,6 +730,8 @@ class OpTestConfiguration():
             bmc.set_system(self.op_system)
             '''
         elif self.args['bmc_type'] in ['qemu']:
+            if console:
+                raise Exception("qemu can't use a seperate console (yet)")
             sys = QemuSystem(conf=self,
                              qemu_binary=self.args['qemu_binary'],
                              pnor=self.args['host_pnor'],

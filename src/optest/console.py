@@ -409,20 +409,25 @@ class FileConsole(Console):
 class CmdConsole(Console):
     def __init__(self, cmd, logfile=sys.stdout):
         super().__init__(logfile)
-        # same logic as FileConsole applies here
-        self.pty = opexpect.spawn(cmd, logfile=logfile)
+        self.cmd = cmd
 
     def connect(self):
-        if not self.pty:
-            raise Exception("CmdConsoles can't be re-opened")
+        if self.pty:
+            raise Exception("Console is already connected")
+        self.pty = opexpect.spawn(self.cmd, logfile=self.logfile)
         self.state = ConsoleState.CONNECTED
 
     def close(self):
+        if not self.pty:
+            raise Exception("Console is already disconnected")
         self.state = ConsoleState.DISCONNECTED
         self.pty.close()
         self.pty = None
 
 
+# FIXME: see if we can replace this with a python native ssh library.
+# https://pexpect.readthedocs.io/en/stable/api/pxssh.html has some
+# suggestions
 class SSHConsole(Console):
     def __init__(self, host, username, password, logfile=sys.stdout, port=22,
                  prompt=None, check_ssh_keys=False, known_hosts_file=None,
