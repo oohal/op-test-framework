@@ -65,11 +65,12 @@ class TestBasicIPL():
         sys.waitfor('petitboot')
 
 
-        pb = PetitbootHelper(sys)
-        pb.exit_to_shell()
+        pb = PetitbootHelper(sys.get_console())
+        pb.goto_shell()
 
-        uname = sys.run_command("uname -r")
-        assert "openpower" in uname
+        uname, rc = sys.run_command("uname -r")
+        assert "openpower" in uname[0]
+        assert rc == 0
 
         log.debug("IPL: BootToPetitboot test passed")
 
