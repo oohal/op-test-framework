@@ -42,19 +42,15 @@ import pexpect
 import sys
 import re
 
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
-from .OpTestUtil import OpTestUtil
-from . import OpTestSystem
-from .Exceptions import CommandFailed
-from .Exceptions import BMCDisconnected
-from . import OpExpect
+from .constants import Constants as BMC_CONST
+#from .OpTestUtil import OpTestUtil
+#from . import OpTestSystem
+from .exceptions import CommandFailed, BMCDisconnected, OpTestError
+from . import opexpect
+from .console import Console, ConsoleState
 
-from .SerialConsole import SerialConsole
-
-import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from .logger import optest_logger_glob
+log = optest_logger_glob.get_logger(__name__)
 
 
 class IPMITool():
@@ -175,70 +171,15 @@ class pUpdate():
             return output
 
 
-class IPMIConsoleState():
-    DISCONNECTED = 0
-    CONNECTED = 1
-
-
-def set_system_to_UNKNOWN_BAD(system):
-    s = system.get_state()
-    system.set_state(OpTestSystem.OpSystemState.UNKNOWN_BAD)
-    return s
-
-
-class IPMIConsole():
+class IPMIConsole(Console):
     def __init__(self, ipmitool=None, logfile=sys.stdout, prompt=None,
-                 block_setup_term=None, delaybeforesend=None):
+                 delaybeforesend=None):
         self.logfile = logfile
         self.ipmitool = ipmitool
-        self.state = IPMIConsoleState.DISCONNECTED
         self.delaybeforesend = delaybeforesend
-        self.system = None
-        # OpTestUtil instance is NOT conf's
-        self.util = OpTestUtil()
-        self.prompt = prompt
-        self.expect_prompt = self.util.build_prompt(prompt) + "$"
-        self.pty = None
-        self.delaybeforesend = delaybeforesend
-        # allows caller specific control of when to block setup_term
-        self.block_setup_term = block_setup_term
-        # tells setup_term to not throw exceptions, like when system off
-        self.setup_term_quiet = 0
-        # flags the object to abandon setup_term operations, like when system off
-        self.setup_term_disable = 0
-
-        # FUTURE - System Console currently tracked in System Object
-        # state tracking, reset on boot and state changes
-        self.PS1_set = -1
-        self.LOGIN_set = -1
-        self.SUDO_set = -1
-
-    def set_system(self, system):
-        self.system = system
-
-    def set_system_setup_term(self, flag):
-        self.system.block_setup_term = flag
-
-    def get_system_setup_term(self):
-        return self.system.block_setup_term
-
-    def set_block_setup_term(self, flag):
-        self.block_setup_term = flag
-
-    def get_block_setup_term(self):
-        return self.block_setup_term
-
-    def enable_setup_term_quiet(self):
-        self.setup_term_quiet = 1
-        self.setup_term_disable = 0
-
-    def disable_setup_term_quiet(self):
-        self.setup_term_quiet = 0
-        self.setup_term_disable = 0
 
     def close(self):
-        self.util.clear_state(self)
-        if self.state == IPMIConsoleState.DISCONNECTED:
+        if self.state == ConsoleState.DISCONNECTED:
             return
         try:
             self.pty.send("\r")
@@ -247,7 +188,7 @@ class IPMIConsole():
                 ['[terminated ipmitool]', pexpect.TIMEOUT, pexpect.EOF], timeout=10)
             log.debug("CLOSE Expect Buffer ID={}".format(hex(id(self.pty))))
             rc_child = self.pty.close()
-            self.state = IPMIConsoleState.DISCONNECTED
+            self.state = ConsoleState.DISCONNECTED
             exitCode = signalstatus = None
             if self.pty.status != -1:  # leaving for future debug
                 if os.WIFEXITED(self.pty.status):
@@ -255,17 +196,15 @@ class IPMIConsole():
                 else:
                     signalstatus = os.WTERMSIG(self.pty.status)
         except pexpect.ExceptionPexpect:
-            self.state = IPMIConsoleState.DISCONNECTED
+            self.state = ConsoleState.DISCONNECTED
             raise OpTestError("IPMI: failed to close ipmi console")
         except Exception as e:
-            self.state = IPMIConsoleState.DISCONNECTED
+            self.state = ConsoleState.DISCONNECTED
             pass
 
     def connect(self, logger=None):
-        if self.state == IPMIConsoleState.CONNECTED:
+        if self.state == ConsoleState.CONNECTED:
             rc_child = self.close()
-        else:
-            self.util.clear_state(self)
 
         try:
             self.ipmitool.run('sol deactivate')
@@ -274,19 +213,17 @@ class IPMIConsole():
 
         cmd = self.ipmitool.binary_name() + self.ipmitool.arguments() + ' sol activate'
         try:
-            self.pty = OpExpect.spawn(cmd,
-                                      logfile=self.logfile,
-                                      failure_callback=set_system_to_UNKNOWN_BAD,
-                                      failure_callback_data=self.system)
+            self.pty = opexpect.spawn(cmd, logfile=self.logfile)
         except Exception as e:
-            self.state = IPMIConsoleState.DISCONNECTED
+            self.state = ConsoleState.DISCONNECTED
             raise CommandFailed(
-                'OpExpect.spawn', "OpExpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
+                'opexpect.spawn', "opexpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
 
         log.debug("#IPMI SOL CONNECT")
-        self.state = IPMIConsoleState.CONNECTED
+        self.state = ConsoleState.CONNECTED
         self.pty.setwinsize(1000, 1000)
 
+        # XXX: why is this setting .logfile_read and not .logfile?
         if logger:
             self.pty.logfile_read = OpTestLogger.FileLikeLogger(logger)
         else:
@@ -296,14 +233,14 @@ class IPMIConsole():
             self.pty.delaybeforesend = self.delaybeforesend
         rc = self.pty.expect_exact(
             ['[SOL Session operational.  Use ~? for help]', pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+
         log.debug("rc={}".format(rc))
         if rc == 0:
             if self.system.SUDO_set != 1 or self.system.LOGIN_set != 1 or self.system.PS1_set != 1:
                 self.util.setup_term(self.system, self.pty,
                                      None, self.system.block_setup_term)
             time.sleep(0.2)
-            log.debug("CONNECT starts Expect Buffer ID={}".format(
-                hex(id(self.pty))))
+            log.debug("CONNECT starts Expect Buffer ID={}".format(hex(id(self.pty))))
             return self.pty
         if rc == 1:
             self.pty.close()
@@ -320,35 +257,10 @@ class IPMIConsole():
                                 " to establish IPMI v2 / RMCP+ session, command was '{}'"
                                 .format(cmd), -1)
 
-    def get_console(self, logger=None):
-        if self.state == IPMIConsoleState.DISCONNECTED:
-            self.connect(logger)
-
-        count = 0
-        while (not self.pty.isalive()):
-            log.warning('# Reconnecting')
-            if (count > 0):
-                time.sleep(BMC_CONST.IPMI_SOL_ACTIVATE_TIME)
-            self.connect()
-            count += 1
-            if count > 120:
-                raise("IPMI: not able to get sol console")
-        if self.system.SUDO_set != 1 or self.system.LOGIN_set != 1 or self.system.PS1_set != 1:
-            self.util.setup_term(self.system, self.pty,
-                                 None, self.system.block_setup_term)
-
-        return self.pty
-
-    def run_command(self, command, timeout=60, retry=0):
-        return self.util.run_command(self, command, timeout, retry)
-
-    def run_command_ignore_fail(self, command, timeout=60, retry=0):
-        return self.util.run_command_ignore_fail(self, command, timeout, retry)
-
 
 class OpTestIPMI():
     def __init__(self, i_bmcIP, i_bmcUser, i_bmcPwd, logfile=sys.stdout,
-                 host=None, delaybeforesend=None, host_console_command=None):
+                 delaybeforesend=None):
         self.cv_bmcIP = i_bmcIP
         self.cv_bmcUser = i_bmcUser
         self.cv_bmcPwd = i_bmcPwd
@@ -362,22 +274,11 @@ class OpTestIPMI():
                                ip=i_bmcIP,
                                username=i_bmcUser,
                                password=i_bmcPwd)
-        if host_console_command:
-            self.console = SerialConsole(console_command=host_console_command,
-                                         logfile=self.logfile,
-                                         delaybeforesend=delaybeforesend)
-        else:
-            self.console = IPMIConsole(ipmitool=self.ipmitool,
-                                       logfile=self.logfile,
-                                       delaybeforesend=delaybeforesend)
-        # OpTestUtil instance is NOT conf's
-        self.util = OpTestUtil()
-        self.host = host
+        self.console = IPMIConsole(ipmitool=self.ipmitool,
+                                   logfile=self.logfile,
+                                   delaybeforesend=delaybeforesend)
 
-    def set_system(self, system):
-        self.console.set_system(system)
-
-    def get_host_console(self):
+    def get_sol_console(self):
         '''
         Get the IPMIConsole object, to run commands on the host etc.
         '''
