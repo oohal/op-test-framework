@@ -24,18 +24,33 @@ OpTestHostboot: Hostboot checks
 Perform various hostboot validations and checks
 '''
 
-import unittest
-import logging
 import pexpect
 import time
-import string
 
-import OpTestConfiguration
-import OpTestLogger
-from optest.OpTestSystem import OpSystemState
+from optest.logger import optest_logger_glob
 
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+log = optest_logger_glob.get_logger(__name__)
 
+
+import pytest
+
+@pytest.fixture
+def ipl_log(optest_system):
+    optest_system.poweroff()
+
+    optest_system.get_console().start_capture()
+    optest_system.host_power_on()
+    optest_system.waitfor('petitboot')
+    optest_system.get_console().stop_capture()
+
+    yield optest_system.get_console().get_capture()
+
+
+def test_check_ipl_errors(ipl_log):
+    ''' check for errors printed at ipl time '''
+    assert 'INIT: Starting kernel at ' in ipl_log
+
+"""
 
 class OpTestHostboot(unittest.TestCase):
     '''
@@ -196,3 +211,5 @@ def host_full_suite():
     '''
     tests = ['HostChecks']
     return unittest.TestSuite(list(map(HostBasicCheck, tests)))
+
+"""
