@@ -48,7 +48,7 @@ def optest_system_off(optest_system):
 
 
 class TestBasicIPL():
-    def test_bootToPetitboot(self, optest_system_off):
+    def test_boot_to_petitboot(self, optest_system_off):
         '''
         Boot to the Petitboot menu. It does *not* cancel any automatic boot
         countdown sequence.
