@@ -36,5 +36,10 @@ def test_config_qemu():
     qemu.host_power_on()
     qemu.waitfor('petitboot')
 
+def test_config_openbmc():
+    c = OpTestConfiguration(config="test_data/openbmc.conf",
+                            skip_user_config=True)
+    obmc = c.create_system()
+
 
 # hostlocker / aes tests?
