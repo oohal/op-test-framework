@@ -135,7 +135,7 @@ class BaseSystem(object):
                 # run expect with no patterns so we get output during poweroff
                 # and so we catch any crashes that might happen while powering
                 # off
-                self.expect(timeout=1)
+                self.expect(None, timeout=1)
             log.info("Timeout while powering off host. Yanking power now")
 
         # try a little harder...
@@ -316,10 +316,10 @@ class OpSystem(BaseSystem):
     ]
 
     def __init__(self, host=None, console=None, pdu=None):
-        super.__init__(host, console, pdu)
+        super().__init__(host, console, pdu)
 
         # build our state table
-        for s in self.state_table:
+        for s in self.openpower_state_table:
             self._add_state(s)
 
         # a list of error patterns to look for while expect()ing the

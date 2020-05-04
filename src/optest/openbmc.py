@@ -32,7 +32,8 @@ from .exceptions import HTTPCheck, CommandFailed
 from .constants import Constants as BMC_CONST
 
 from .console import Console, SSHConsole
-from .system import OpSystem
+from .system import BaseSystem, OpSystem
+from .ipmi import OpTestIPMI
 
 from . import utils
 
@@ -1193,28 +1194,29 @@ class OpenBMC():
 
 class OpenBMCSystem(OpSystem):
     '''
-    Implementation of an OpTestSystem for OpenBMC based platforms.
-
-    Near all IPMI functionality is done via the OpenBMC REST interface instead.
+    op-test system type for OpenBMC based platforms.
     '''
     def __init__(self, host=None, console=None, pdu=None,
-                 bmc_username=None, bmc_password=None,
-                 check_ssh_keys=None, known_host_file=None,
+                 username=None, password=None, hostname=None,
+                 check_ssh_keys=None, known_hosts_file=None,
                  ipmiusername=None, ipmipassword=None):
 
-        self.rest_api = HostManagement(bmc_host=bmc_hostname,
-                                       username=bmc_user,
-                                       password=bmc_pass)
+        self.logfile=None # HACK
+
+        self.rest = HostManagement(hostname=hostname,
+                                   username=username,
+                                   password=password)
 
         # do we do anything with this?
-        self.bmc = OpTestOpenBMC(hostname=bmc_hostname,
-                                 username=bmc_user,
-                                 password=bmc_pass,
-                                 logfile=self.logfile,
-                                 check_ssh_keys=self.args['check_ssh_keys'],
-                                 known_hosts_file=self.args['known_hosts_file'])
-        self.ipmi = OpTestIPMI(bmc_hostname, ipmiusername, ipmipassword)
-        super().__init__(host=host, console=console, pdu=pdu)
+        self.bmc = OpenBMC(ip=hostname,
+                           username=username,
+                           password=username,
+                           logfile=self.logfile,
+                           check_ssh_keys=check_ssh_keys,
+                           known_hosts_file=known_hosts_file)
+        self.ipmi = OpTestIPMI(hostname, ipmiusername, ipmipassword)
+
+        OpSystem.__init__(self, host=host, console=console, pdu=pdu)
 
     def bmc_is_alive(self):
         utils.ping(self.hostname)
@@ -1235,7 +1237,7 @@ class OpenBMCSystem(OpSystem):
         self.rest.power_off()
 
     def host_power_is_on(self): # -> Bool
-        raise NotImplementedError()
+        return 'State.Host.HostState.Running' in self.rest.get_host_state()
 
     def host_power_off_hard(self):
         self.rest.power_off()

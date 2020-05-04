@@ -21,6 +21,8 @@ from . import utils
 
 from optest.exceptions import HostLocker, AES, ParameterCheck, OpExit
 from optest.constants import Constants as BMC_CONST
+from .console import SSHConsole
+from .openbmc import OpenBMCSystem
 
 from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
@@ -701,14 +703,12 @@ class OpTestConfiguration():
             hmc.set_system(self.op_system)
             '''
         elif self.args['bmc_type'] in ['OpenBMC']:
-            raise "FIXME: support OpenBMC"
-
             # FIXME: should this be moved into the OpenBMCSystem constructor?
             if not console:
                 console = SSHConsole(self.args['bmc_ip'],
                                      self.args['bmc_username'],
                                      self.args['bmc_password'],
-                                     self.logfile,
+#                                     self.logfile,
                                      port=2200,
                                      check_ssh_keys=self.args['check_ssh_keys'],
                                      known_hosts_file=self.args['known_hosts_file'])
@@ -716,9 +716,10 @@ class OpTestConfiguration():
             self.op_system = OpenBMCSystem(
                         host=host,
                         console=console,
+                        hostname=self.args['bmc_ip'],
                         username=self.args['bmc_username'],
                         password=self.args['bmc_password'],
-                        logfile=self.logfile,
+#                        logfile=self.logfile,
                         check_ssh_keys=self.args['check_ssh_keys'],
                         known_hosts_file=self.args['known_hosts_file'],
             )

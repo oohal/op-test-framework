@@ -43,9 +43,9 @@ from optest.petitboot import PetitbootHelper
 # hmm, any way we get get this
 @pytest.fixture()
 def optest_system_off(optest_system):
+    optest_system.get_console().connect()
     optest_system.poweroff()
     yield optest_system
-
 
 class TestBasicIPL():
     def test_boot_to_petitboot(self, optest_system_off):
@@ -62,8 +62,7 @@ class TestBasicIPL():
 
         log.debug("IPL: starting BootToPetitboot test")
         sys.host_power_on()
-        sys.waitfor('petitboot')
-
+        sys.waitfor('petitboot') # FIXME: add the timeouts for the previous states to the timeout
 
         pb = PetitbootHelper(sys.get_console())
         pb.goto_shell()
