@@ -33,6 +33,7 @@ log = logger.optest_logger_glob.get_logger(__name__)
 #from optest.OpTestUtil import OpTestUtil
 #from optest.OpTestCronus import OpTestCronus
 from optest.qemu import QemuSystem
+#from optest.openbmc import OpenBMCSystem
 #from optest.mambo import OpTestMambo
 #from optest.bmc import BMCSystem, SMCSystem
 #from optest.fsp import OpTestFSP
@@ -579,8 +580,7 @@ class OpTestConfiguration():
                                             proxy=self.args['proxy'],
 #                                            logfile=self.logfile,
                                             check_ssh_keys=self.args['check_ssh_keys'],
-                                            known_hosts_file=self.args['known_hosts_file'],
-                                            conf=self)
+                                            known_hosts_file=self.args['known_hosts_file'])
 
         if self.args['bmc_type'] in ['AMI', 'SMC']:
             bmc = None
@@ -702,33 +702,26 @@ class OpTestConfiguration():
             '''
         elif self.args['bmc_type'] in ['OpenBMC']:
             raise "FIXME: support OpenBMC"
-            '''
-            ipmi = OpTestIPMI(self.args['bmc_ip'],
-                              self.args['bmc_usernameipmi'],
-                              self.args['bmc_passwordipmi'],
-                              host=host,
-                              logfile=self.logfile)
-            rest_api = HostManagement(conf=self,
-                                      ip=self.args['bmc_ip'],
-                                      username=self.args['bmc_username'],
-                                      password=self.args['bmc_password'])
-            bmc = OpTestOpenBMC(ip=self.args['bmc_ip'],
-                                username=self.args['bmc_username'],
-                                password=self.args['bmc_password'],
-                                ipmi=ipmi,
-                                rest_api=rest_api,
-                                logfile=self.logfile,
-                                check_ssh_keys=self.args['check_ssh_keys'],
-                                known_hosts_file=self.args['known_hosts_file'])
-            self.op_system = optest.OpTestOpenBMC.OpTestOpenBMCSystem(
-                host=host,
-                console=console,
-                bmc=bmc,
-                state=self.startState,
-                conf=self,
+
+            # FIXME: should this be moved into the OpenBMCSystem constructor?
+            if not console:
+                console = SSHConsole(self.args['bmc_ip'],
+                                     self.args['bmc_username'],
+                                     self.args['bmc_password'],
+                                     self.logfile,
+                                     port=2200,
+                                     check_ssh_keys=self.args['check_ssh_keys'],
+                                     known_hosts_file=self.args['known_hosts_file'])
+
+            self.op_system = OpenBMCSystem(
+                        host=host,
+                        console=console,
+                        username=self.args['bmc_username'],
+                        password=self.args['bmc_password'],
+                        logfile=self.logfile,
+                        check_ssh_keys=self.args['check_ssh_keys'],
+                        known_hosts_file=self.args['known_hosts_file'],
             )
-            bmc.set_system(self.op_system)
-            '''
         elif self.args['bmc_type'] in ['qemu']:
             if console:
                 raise Exception("qemu can't use a seperate console (yet)")
@@ -786,9 +779,6 @@ class OpTestConfiguration():
                             "any credentials used from HostLocker or "
                             "AES Version (see aes_get_creds "
                             "version_mappings)".format(self.args['bmc_type']))
-
-        # FIXME: *grumble*
-        host.set_system(self.op_system)
 
         # FIXME: All the cronus stuff is probably broken. Fix it up at some point.
         # FIXME: We should add a cronus / BML system type.

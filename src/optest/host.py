@@ -56,10 +56,11 @@ class OpTestHost():
     An object to manipulate and run things on the host.
     '''
 
+
     def __init__(self, i_hostip, i_hostuser, i_hostpasswd, i_bmcip, i_results_dir,
-                 scratch_disk="", proxy="", logfile=sys.stdout,
-                 check_ssh_keys=False, known_hosts_file=None, conf=None):
-        self.conf = conf
+                 scratch_disk="", proxy="", logfile=sys.stdout, system=None,
+                 check_ssh_keys=False, known_hosts_file=None):
+        self.conf = None # FIXME: remove this
         self.ip = i_hostip
         self.user = i_hostuser
         self.passwd = i_hostpasswd
@@ -75,6 +76,11 @@ class OpTestHost():
         self.check_ssh_keys = check_ssh_keys
         self.known_hosts_file = known_hosts_file
 
+        # FIXME: is this actually a good idea? this is mainly needed so that
+        # host_run_command() can fall back to using the host console if ssh
+        # isn't available (i.e. in the petitboot env).
+        self.system=system
+
     def hostname(self):
         return self.ip
 
@@ -83,10 +89,6 @@ class OpTestHost():
 
     def password(self):
         return self.passwd
-
-    def set_system(self, system):
-        pass
-        #self.ssh.set_system(system)
 
     def get_scratch_disk(self):
         return self.scratch_disk
@@ -196,8 +198,8 @@ class OpTestHost():
     def host_run_command(self, i_cmd, timeout=1500, retry=0, console=0):
         if self.ssh:
             return self.ssh.run_command(i_cmd, timeout, retry)
-        else:
-            return self.ssh.system.console.run_command(i_cmd, timeout, retry)
+        else: # fall back to using the host console
+            return self.console.run_command(i_cmd, timeout, retry)
 
     def host_gather_opal_msg_log(self, console=0):
         '''

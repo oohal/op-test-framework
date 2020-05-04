@@ -7,10 +7,10 @@ import optest
 
 #import optest.amiweb
 #import optest.bmc      # convert to new system, possibly split SMC and AMI BMCs, rename
-#import optest.openbmc  # convert to new system / console, etc
+import optest.openbmc  # convert to new system / console, etc
 #import optest.mambo    # convert to new system type
 
-#import optest.ipmi     # covert IPMIConsole
+import optest.ipmi
 #import optest.cronus
 
 #import optest.fsp # system conversion

@@ -28,20 +28,18 @@ import requests
 import cgi
 import os
 
-from .OpTestSSH import OpTestSSH
-from .OpTestBMC import OpTestBMC
-from .Exceptions import HTTPCheck
-from .Exceptions import CommandFailed
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestSystem import OpTestSystem, OpSystemState
+from .exceptions import HTTPCheck, CommandFailed
+from .constants import Constants as BMC_CONST
+
+from .console import Console, SSHConsole
+from .system import OpSystem
 
 from . import utils
 
-import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from .logger import optest_logger_glob
+log = optest_logger_glob.get_logger(__name__)
 
-# FIXME: Rename to something like RESTAPIClient
+# FIXME: is there any real point in having this seperate to the OpenBMC class?
 class HostManagement():
     '''
     HostManagement Class
@@ -755,17 +753,16 @@ class HostManagement():
         log.debug("Dump IDs: {}".format(dump_ids))
         return dump_ids
 
-    def download_dump(self, dump_id, minutes=BMC_CONST.HTTP_RETRY):
+    def download_dump(self, output_dir, dump_id, minutes=BMC_CONST.HTTP_RETRY):
         '''
         Download Dump
         GET
         https://bmcip/download/dump/<id>
         '''
         uri = "/download/dump/{}".format(dump_id)
-        r = self.conf.util_bmc_server.get(
-            uri=uri, stream=True, minutes=minutes)
+        r = self.util_bmc_server.get(uri=uri, stream=True, minutes=minutes)
         value, params = cgi.parse_header(r.headers.get('Content-Disposition'))
-        with open(os.path.join(self.conf.logdir, params.get('filename')), 'wb') as f:
+        with open(os.path.join(output_dir, params.get('filename')), 'wb') as f:
             f.write(r.content)
 
     def delete_dump(self, dump_id, minutes=BMC_CONST.HTTP_RETRY):
@@ -1044,8 +1041,8 @@ class HostManagement():
         '''
         self.configure_tpm_enable(0)
 
-
-class OpTestOpenBMC():
+# FIXME: Should we have a generic BMC base class to inherit off?
+class OpenBMC():
     def __init__(self, ip=None, username=None, password=None, ipmi=None,
                  rest_api=None, logfile=sys.stdout,
                  check_ssh_keys=False, known_hosts_file=None):
@@ -1056,15 +1053,16 @@ class OpTestOpenBMC():
         self.rest_api = rest_api
         self.has_vpnor = None
         self.logfile = logfile
-        self.console = OpTestSSH(ip, username, password, port=2200,
-                                 logfile=self.logfile, check_ssh_keys=check_ssh_keys,
-                                 known_hosts_file=known_hosts_file)
+        """
+        # FIXME: if this is doing anything useful we should probably be
+        # inheriting off it.
         self.bmc = OpTestBMC(ip=self.hostname,
                              username=self.username,
                              password=self.password,
                              logfile=self.logfile,
                              check_ssh_keys=check_ssh_keys,
                              known_hosts_file=known_hosts_file)
+        """
 
     def set_system(self, system):
         self.console.set_system(system)
@@ -1193,98 +1191,51 @@ class OpTestOpenBMC():
     def supports_ipmi_dcmi(self):
         return False
 
-class OpTestOpenBMCSystem(OpTestSystem):
+class OpenBMCSystem(OpSystem):
     '''
     Implementation of an OpTestSystem for OpenBMC based platforms.
 
     Near all IPMI functionality is done via the OpenBMC REST interface instead.
     '''
+    def __init__(self, host=None, console=None, pdu=None,
+                 bmc_username=None, bmc_password=None,
+                 check_ssh_keys=None, known_host_file=None,
+                 ipmiusername=None, ipmipassword=None):
 
-    def __init__(self,
-                 host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        # Ensure we grab host console early, in order to not miss
-        # any messages
-        self.console = bmc.get_host_console()
-        super(OpTestOpenBMCSystem, self).__init__(host=host,
-                                                  bmc=bmc,
-                                                  conf=conf,
-                                                  state=state)
-    # REST Based management
+        self.rest_api = HostManagement(bmc_host=bmc_hostname,
+                                       username=bmc_user,
+                                       password=bmc_pass)
 
-    def sys_inventory(self):
-        self.rest.get_inventory()
+        # do we do anything with this?
+        self.bmc = OpTestOpenBMC(hostname=bmc_hostname,
+                                 username=bmc_user,
+                                 password=bmc_pass,
+                                 logfile=self.logfile,
+                                 check_ssh_keys=self.args['check_ssh_keys'],
+                                 known_hosts_file=self.args['known_hosts_file'])
+        self.ipmi = OpTestIPMI(bmc_hostname, ipmiusername, ipmipassword)
+        super().__init__(host=host, console=console, pdu=pdu)
 
-    def sys_sensors(self):
-        self.rest.sensors()
+    def bmc_is_alive(self):
+        utils.ping(self.hostname)
+        #def sys_bmc_state(self):
+        #    self.rest.get_bmc_state()
+        raise NotImplementedError()
 
-    def sys_bmc_state(self):
-        self.rest.get_bmc_state()
+    # FIXME: implement
+    def collect_debug(self):
+        raise NotImplementedError()
 
-    def sys_power_on(self):
+    def host_power_on(self):
         self.rest.power_on()
 
-    def sys_power_off(self):
-        self.rest.power_off()
-
-    def sys_power_reset(self):
-        self.rest.hard_reboot()
-
-    def sys_power_cycle(self):
-        self.rest.soft_reboot()
-
-    def sys_power_soft(self):
+    def host_power_off(self):
+        # FIXME: Is this still true?
         # self.rest.power_soft() currently rest command for softPowerOff failing
         self.rest.power_off()
 
-    def sys_sdr_clear(self):
-        self.rest.clear_sel()
+    def host_power_is_on(self): # -> Bool
+        raise NotImplementedError()
 
-    def sys_get_sel_list(self):
-        self.rest.list_sel()
-
-    def sys_sel_elist(self, dump=False):
-        id_list, dict_list = self.rest.get_sel_ids(dump=dump)
-        output = self.rest.convert_esels_to_list(id_list=id_list, dict_list=dict_list)
-        return output
-
-    def sys_sel_check(self):
-        self.rest.list_sel()
-
-    def sys_wait_for_standby_state(self, i_timeout=120):
-        self.rest.wait_for_standby()
-        return 0
-
-    def wait_for_it(self, **kwargs):
-        # Ensure IPMI console is open so not to miss petitboot
-        sys_pty = self.console.get_console()
-        self.rest.wait_for_runtime()
-        return super(OpTestOpenBMCSystem, self).wait_for_it(**kwargs)
-
-    def sys_set_bootdev_setup(self):
-        self.rest.set_bootdev_to_setup()
-
-    def sys_set_bootdev_no_override(self):
-        self.rest.set_bootdev_to_none()
-
-    def sys_warm_reset(self):
-        self.console.close()
-        self.rest.bmc_reset()
-
-    def sys_cold_reset_bmc(self):
-        self.console.close()
-        self.rest.bmc_reset()
-
-    def sys_enable_tpm(self):
-        self.rest.enable_tpm()
-
-    def sys_disable_tpm(self):
-        self.rest.disable_tpm()
-
-    def sys_is_tpm_enabled(self):
-        return self.rest.is_tpm_enabled()
-
-    def cronus_capable(self):
-        return True
+    def host_power_off_hard(self):
+        self.rest.power_off()

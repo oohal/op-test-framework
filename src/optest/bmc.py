@@ -41,7 +41,7 @@ import os.path
 import subprocess
 from . import OpExpect
 
-from .OpTestIPMI import OpTestIPMI
+from .ipmi import OpTestIPMI
 from .OpTestSSH import OpTestSSH
 from .OpTestUtil import OpTestUtil
 from .OpTestConstants import OpTestConstants as BMC_CONST
@@ -72,6 +72,9 @@ class OpTestBMC():
         self.logfile = logfile
         self.check_ssh_keys = check_ssh_keys
         self.known_hosts_file = known_hosts_file
+
+        # FIXME: is there any reason to use this instead of pxssh? OpTestSSH
+        # is mainly there to add the host console pattern checking.
         self.ssh = OpTestSSH(ip, username, password, logfile, prompt=None,
                              block_setup_term=0, check_ssh_keys=check_ssh_keys, known_hosts_file=known_hosts_file)
         # OpTestUtil instance is NOT conf's
