@@ -344,20 +344,28 @@ def missed_state(pattern, context):
     raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
 
 # each expect table indicates when we've *entered* that state
-ipling_entry= {
+sbe_entry= {
     'istep 4.' : None,              # SBE entry
-    'Welcome to Hostboot' : None,   # hostboot entry
 }
-ipling_exit = {
+sbe_exit = {
     'SBE starting hostboot' : None,
 #    'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
 #TODO: find all the hostboot / SBE error patterns we might need to care about.
+}
+
+# each expect table indicates when we've *entered* that state
+hb_entry= {
+    'Welcome to Hostboot' : None,   # hostboot entry
+}
+hb_exit = {
+    'ISTEP 21. 3 - host_start_payload' : None,
 }
 
 skiboot_entry = {
     '] OPAL v6.' : None,
     '] OPAL v5.' : None, #
     '] SkiBoot' : None,  # old boot header
+    '] OPAL skiboot-v' : None, # occurs semi-frequently
 }
 skiboot_exit = {
     '] INIT: Starting kernel at' : None,
@@ -397,10 +405,11 @@ class OpSystem(BaseSystem):
     openpower_state_table = [
 #        ConsoleState('off',  None,           1),
         # there's a bit before we hit skiboot_entry
-        ConsoleState('ipling',    ipling_entry,  30, ipling_exit,  120),
-        ConsoleState('skiboot',   skiboot_entry, 10, skiboot_exit,  60),
-        ConsoleState('petitboot', pb_entry,      10, pb_exit,      120),
-        ConsoleState('login',     login_entry,   10, login_exit,   180),
+        ConsoleState('sbe',       sbe_entry,     60, sbe_exit,      60),
+        ConsoleState('hostboot',  hb_entry,      30, hb_exit,      180),
+        ConsoleState('skiboot',   skiboot_entry, 30, skiboot_exit,  60),
+        ConsoleState('petitboot', pb_entry,      30, pb_exit,      120),
+        ConsoleState('login',     login_entry,   30, login_exit,   180),
 #        ConsoleState('os',        os_entry,      10, os_exit,       30),
     ]
 
