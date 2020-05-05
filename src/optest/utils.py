@@ -971,7 +971,10 @@ class Server(object):
                  minutes=3,
                  timeout=30):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        OpTestLogger.optest_logger_glob.setUpChildLogger("urllib3")
+
+        # FIXME: dun work
+#        logger.optest_logger_glob.setUpChildLogger("urllib3")
+
         self.username = username
         self.password = password
         self.session = requests.Session()
