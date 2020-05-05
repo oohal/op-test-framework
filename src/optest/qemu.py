@@ -32,7 +32,7 @@ import os
 from . import opexpect
 from . import system
 
-from .system import OpSystemState, BaseSystem
+from .system import BaseSystem, ConsoleState as SysConsoleState
 from .exceptions import CommandFailed
 from .console import Console, ConsoleState
 
@@ -63,9 +63,9 @@ class QemuConsole(Console):
 
 
 qemu_state_table = [
-    OpSystemState('skiboot',   system.skiboot_entry, 10, system.skiboot_exit, 30),
+    SysConsoleState('skiboot',   system.skiboot_entry, 10, system.skiboot_exit, 30),
     # pb entry timeout is 60s because the default pb config is to supress
-    OpSystemState('petitboot', system.pb_entry,      60, system.pb_exit, 30)
+    SysConsoleState('petitboot', system.pb_entry,      60, system.pb_exit, 30)
 ]
 
 class QemuSystem(BaseSystem):
