@@ -181,7 +181,9 @@ class BaseSystem(object):
         ''' helper for powering off the host and reset our state tracking '''
         #self.reset_states()
 
-        self.power_off_delay = 30
+        # possibly excessive, but we've found some systems where it can take
+        # a while for the BMC to work again due to NC-SI issues.
+        self.power_off_delay = 120
         if softoff:
             self.host_power_off()
 
