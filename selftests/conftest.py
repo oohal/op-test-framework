@@ -33,7 +33,3 @@ trashfire if you don't.
 import pytest
 import pexpect
 
-@pytest.fixture()
-def console_input_file():
-    yield "/home/oliver/bootlogs/boot-to-os"
-

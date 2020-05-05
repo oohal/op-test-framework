@@ -29,17 +29,4 @@ def test_config_priority(tmpdir):
                             overrides=args)
     assert c.args.get('bmc_type') == '3'
 
-def test_config_qemu():
-    c = OpTestConfiguration(config="test_data/qemu.conf",
-                            skip_user_config=True)
-    qemu = c.create_system()
-    qemu.host_power_on()
-    qemu.waitfor('petitboot')
-
-def test_config_openbmc():
-    c = OpTestConfiguration(config="test_data/openbmc.conf",
-                            skip_user_config=True)
-    obmc = c.create_system()
-
-
 # hostlocker / aes tests?

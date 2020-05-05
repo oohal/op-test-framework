@@ -1,2 +1,3 @@
 *.pyc
 *~
+selftests/test_configs/*.conf

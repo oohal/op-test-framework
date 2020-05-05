@@ -1,0 +1,3 @@
+Configuration files for hardware that is used when testing the system types
+go in here. The contents of this directory should never be checked in since
+the configuration files will contains passwords, etc.

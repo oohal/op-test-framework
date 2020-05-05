@@ -4,43 +4,34 @@ import optest
 from optest.qemu import QemuSystem
 from optest.petitboot import PetitbootHelper
 
-@pytest.fixture
-def qemu_binary():
-    yield "/home/oliver/code/qemu/ppc64-softmmu/qemu-system-ppc64"
+import misc
 
 @pytest.fixture
-def skiboot_lid():
-    yield "test_data/skiboot.lid.nophbs"
+def qemu():
+    config = misc.get_config('qemu')
 
-@pytest.fixture
-def qemu(qemu_binary, skiboot_lid):
-    # FIXME: parameterise these
-    kernel      = "test_data/vmlinux"
-    initramfs   = "test_data/petitfs"
-    sys = QemuSystem(kernel=kernel,
-                     initramfs=initramfs,
-                     qemu_binary=qemu_binary,
-                     skiboot=skiboot_lid)
+    qemu = config.create_system()
+    qemu.get_console().connect()
 
-    sys.host_power_off()
-    sys.host_power_on()
-    sys.get_console().connect()
+    yield qemu
 
-    yield sys
+    qemu.host_power_off()
+    config.cleanup()
 
-    sys.host_power_off()
+def test_qemu_boot_nokernel(qemu):
 
-def test_qemu_boot_nokernel(qemu_binary, skiboot_lid):
-    sys = QemuSystem(qemu_binary=qemu_binary, skiboot=skiboot_lid)
-    sys.host_power_off()
-    sys.host_power_on()
-    sys.get_console().connect()
+    # HACK: zap the kernel (and pnor) so we crash at boot
+    qemu.kernel = None
+    qemu.pnor = None
+
+    qemu.host_power_on()
 
     with pytest.raises(optest.SkibootAssert):
-        sys.waitfor('petitboot') # should fail since there's no kernel image
-    sys.host_power_off()
+        qemu.waitfor('petitboot') # should fail since there's no kernel image
+    qemu.host_power_off()
 
 def test_qemu_boot_pb(qemu):
+    qemu.host_power_on()
     qemu.waitfor('skiboot')
     qemu.waitfor('petitboot') # should fail with a timeout
 
