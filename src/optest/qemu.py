@@ -32,7 +32,7 @@ import os
 from . import opexpect
 from . import system
 
-from .system import SysState, BaseSystem
+from .system import OpSystemState, BaseSystem
 from .exceptions import CommandFailed
 from .console import Console, ConsoleState
 
@@ -63,8 +63,9 @@ class QemuConsole(Console):
 
 
 qemu_state_table = [
-    SysState('skiboot', False, system.skiboot_expect_table, 120),
-    SysState('petitboot', False, system.pb_expect_table, 120),
+    OpSystemState('skiboot',   system.skiboot_entry, 10, system.skiboot_exit, 30),
+    # pb entry timeout is 60s because the default pb config is to supress
+    OpSystemState('petitboot', system.pb_entry,      60, system.pb_exit, 30)
 ]
 
 class QemuSystem(BaseSystem):
@@ -244,11 +245,14 @@ class QemuSystem(BaseSystem):
         self.qemu_running = True
 
     def host_power_off(self):
-        # FIXME: kill qemu
-        pass
+        if self.qemu_running:
+            self.console.pty.close()
+            self.qemu_running = False
 
     def host_power_is_on(self):
-        return self.qemu_running
+        if self.qemu_running:
+            return self.console.pty.isalive()
+        return False
 
 
 # stuff from the old qemu that we should probably delete

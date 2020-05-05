@@ -48,3 +48,9 @@ def test_qemu_boot_pb(qemu):
     pb.goto_shell()
 
     qemu.run_command("echo hi")
+
+
+def test_qemu_goto_state(qemu):
+    qemu.goto_state('petitboot')
+    pb = PetitbootHelper(qemu.get_console())
+    pb.goto_shell()

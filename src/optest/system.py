@@ -31,6 +31,7 @@
 #  automated flashing and testing of OpenPower systems.
 
 import time
+import pexpect
 
 from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
@@ -44,21 +45,36 @@ class MissedState(Exception):
 
 class SysState():
     '''
-    defines one of the states a system can be in. Note that the OpTestSystem
-    requires a linear flow of states and you can only reach one system state
-    by going through all the previous ones.
+    Defines one of the states a system can be in.
 
-    Making this assumption allows us to simplify the internal state machine
-    considerably since we don't need to deal with arbitrary movements
-    between states. If a prior state is requested we can handle it by
-    powering the system off and re-IPLing.
+    We make a few assumptions about system states can work, namely:
+
+    1. There's a linear flow of states. We always go through the previous
+       states before entering the next one. This is a bit awkward for things
+       like mpipl where there are unusual state transitions. However, it
+       simplifies the general case so punting that work to the test case is
+       probably a reasonable trade off.
+
+    2. After powering on the host the system will boot automatically. The state
+       machinery here just observes the boot process rather than driving it.
+
+       The exception to the above is states which define an .action() function.
+       That is used for things like the OS login prompt where some action is
+       needed to continue the boot process.
+
+        FIXME: hmm, we might be able to wrap that up in wait_entry(), maybe not since
+               we want to support waitat()
     '''
-    def __init__(self, name, wait, patterns, timeout, stop_fn=None):
+    def __init__(self, name):
         self.name = name
-        self.patterns = patterns # patterns we're looking for to indicate this state was reached
-        self.wait = wait # indicates if this is a transient or wait state, FIXME: think harder about this
-        self.timeout = timeout   # how long this state is expected to last
-        self.stop_fn = stop_fn   # function to call to stop the IPL in this state
+        # patterns we're looking on the console indicate this state was
+        # reached.
+        #
+        # FIXME: Doesn't work terribly well for FSP systems
+#        self.patterns = entry_patterns
+#        self.pause  = pause  # function to call to pause the IPL at this state
+#        self.resume = resume # function to call continue the IPL from this state
+#        self.verify = verify # function to call to check that we're in this state
 
     def __hash__(self):
         return self.name.__hash__()
@@ -67,6 +83,47 @@ class SysState():
         if isinstance(other, SysState):
             return self.name == other.name
         return False
+
+    def wait_entry(self):
+        raise NotImplementedError()
+
+    def wait_exit(self):
+        raise NotImplementedError()
+
+class ConsoleState(SysState):
+    '''
+    Many system states we can detect by just watching the system console. This
+    helper implements a pile of expect logic to detect when we've entered into
+    and exited a given state.
+    '''
+    def __init__(self, name,
+                 entry_patterns, entry_timeout, exit_patterns, exit_timeout):
+        self.entry_timeout = entry_timeout
+        self.entry_patterns = entry_patterns
+
+        self.exit_timeout = exit_timeout
+        self.exit_patterns = exit_patterns
+
+        super().__init__(name)
+
+    def _watch_for(self, system, patterns, timeout):
+        expect_table = list(patterns.keys())
+
+        r = system.console.expect(expect_table, timeout=timeout)
+        cb = patterns[expect_table[r]]
+        if cb:
+            raise Exception("hit error pattern") # FIXME: maybe we should... call the callback?
+
+    def wait_entry(self, system, waitat=False):
+        self._watch_for(system, self.entry_patterns, self.entry_timeout)
+
+#        if self.action:
+#            self.action(system)
+        if waitat:
+            raise "implement me"
+
+    def wait_exit(self, system):
+        self._watch_for(system, self.exit_patterns, self.exit_timeout)
 
 
 class BaseSystem(object):
@@ -135,7 +192,7 @@ class BaseSystem(object):
                 # run expect with no patterns so we get output during poweroff
                 # and so we catch any crashes that might happen while powering
                 # off
-                self.expect(None, timeout=1)
+                self.expect([pexpect.TIMEOUT], timeout=1)
             log.info("Timeout while powering off host. Yanking power now")
 
         # try a little harder...
@@ -214,16 +271,8 @@ class BaseSystem(object):
         if self.visited[s]:
             raise ValueError('State already visited. Poweroff required')
 
-        expect_table = list(s.patterns.keys())
-
-        # raises an exception on timeout, EOF, or any of our error patterns
-        r = self.console.expect(expect_table, timeout=s.timeout)
-
-        # error pattern?
-        cb = s.patterns[expect_table[r]]
-        if cb:
-            raise Exception("hit error pattern") # FIXME: halfassed
-
+        log.info('waiting to enter {}'.format(s.name))
+        s.wait_entry(self, False)
         self.set_state(s)
         log.info("Reached {}".format(target_state))
 
@@ -237,8 +286,10 @@ class BaseSystem(object):
     def goto_off(self):
         '''
         Going to the off state is the only allowed "backwards" state transition
-        so it gets some special treatment. The main issue with it is that
-        because we don't (can't really) keep track of what the system the state
+        so it gets some special treatment. The main problem is that we can't
+        keep track of what state the system is in since the current test is
+        free to change it under our feet.
+
         is in we don't know what's the "correct" way to power off the system
         or how we're supposed to know the system is actually off.
 
@@ -246,7 +297,7 @@ class BaseSystem(object):
 
         There are some system specific sideband measures that we can use to
         work this out though. For example, openbmc has the `obmcutil power`
-        command which tells you the state of the 
+        command which tells you the state of the
         '''
 
     def goto_state(self, target):
@@ -256,14 +307,23 @@ class BaseSystem(object):
             msg = "{} is not supported by this system type".format(target)
             raise UnsupportedStateError(msg)
 
-        # for states that we've already visited we need power off
-        # the system
-        if self.visited[s]:
-            self.poweroff()
-            self.host_power_on()
-            self.waitat(target)
+        log.debug('goto_state target {}'.format(target))
+        self.poweroff()
+        self.host_power_on()
 
-# FIXME: seperate file?
+        for s in self.state_table:
+            log.info('waiting to enter {}'.format(s.name))
+            s.wait_entry(self, False)
+            self.set_state(s)
+
+            # landed at our target state...
+            if s.name == target:
+                log.info("Reached target state of {}".format(target))
+                return
+
+            log.debug('waiting to exit {}'.format(s.name))
+            s.wait_exit(self)
+            log.debug('waiting to exit {}'.format(s.name))
 
 # called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
 def error_pattern(pattern, context):
@@ -273,18 +333,24 @@ def missed_state(pattern, context):
     raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
 
 # each expect table indicates when we've *entered* that state
-ipling_expect_table = {
-    'istep 4.' : None,
-    'Welcome to Hostboot' : None,
+ipling_entry= {
+    'istep 4.' : None,              # SBE entry
+    'Welcome to Hostboot' : None,   # hostboot entry
+}
+ipling_exit = {
+    'SBE starting hostboot' : None,
 }
 
-skiboot_expect_table = {
-    'OPAL v6.' : None,
-    'OPAL v5.' : None, #
-    'SkiBoot' : None,  # old boot header
+skiboot_entry = {
+    '] OPAL v6.' : None,
+    '] OPAL v5.' : None, #
+    '] SkiBoot' : None,  # old boot header
+}
+skiboot_exit = {
+    '] INIT: Starting kernel at' : None,
 }
 
-pb_expect_table = {
+pb_entry = {
     'Petitboot': None,
     'x=exit': None,
     '/ #': None,
@@ -295,24 +361,34 @@ pb_expect_table = {
 #    'System shutting down with error status': guard_callback,
     'Aborting!': error_pattern,
 }
-
-login_expect_table = {
+pb_exit = {
     'login: ': None,
     '/ #': error_pattern,
     'mon> ': error_pattern,
 #    'dracut:/#': dracut_callback,
 }
 
+login_entry = {
+    'login: ': None,
+    '/ #': error_pattern,
+    'mon> ': error_pattern,
+#    'dracut:/#': dracut_callback,
+}
+login_exit = {
+    '# ' : None,
+    # FIXME: Add other shell patterns
+}
 
 class OpSystem(BaseSystem):
     # ordered list of possible states for this system
     openpower_state_table = [
-            SysState('off',       True,   None,           1),
-            SysState('ipling',    False,  ipling_expect_table,    120),
-            SysState('skiboot',   False,  skiboot_expect_table,   60),
-            SysState('petitboot', True,   pb_expect_table, 60),
-            SysState('login',     True,   login_expect_table, 180), # network cards suck
-    #        SysState('os',       True,   os_patterns,    30),
+#        ConsoleState('off',  None,           1),
+        # there's a bit before we hit skiboot_entry
+        ConsoleState('ipling',    ipling_entry,  30, ipling_exit,  120),
+        ConsoleState('skiboot',   skiboot_entry, 10, skiboot_exit,  60),
+        ConsoleState('petitboot', pb_entry,      10, pb_exit,      120),
+        ConsoleState('login',     login_entry,   10, login_exit,   180),
+#        ConsoleState('os',        os_entry,      10, os_exit,       30),
     ]
 
     def __init__(self, host=None, console=None, pdu=None):

@@ -143,6 +143,8 @@ class spawn(pexpect.spawn):
                                     encoding=encoding,
                                     codec_errors=codec_errors)
         self.patterns = []
+        if not self.isalive():
+            raise Exception("im dead")
 
     # XXX: this seems odd
     def get_capture(self):
