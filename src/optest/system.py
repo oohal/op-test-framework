@@ -348,6 +348,8 @@ ipling_entry= {
 }
 ipling_exit = {
     'SBE starting hostboot' : None,
+#    'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
+#TODO: find all the hostboot / SBE error patterns we might need to care about.
 }
 
 skiboot_entry = {
@@ -363,7 +365,7 @@ pb_entry = {
     'Petitboot': None,
     'x=exit': None,
     '/ #': None,
-    'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
+#    'shutdown requested': error_pattern, # FIXME: too broad, see GH issue
     'login: ': missed_state,
 #    'mon> ': xmon_callback,
 #    'dracut:/#': dracut_callback,
