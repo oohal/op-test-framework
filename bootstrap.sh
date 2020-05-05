@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
 if ! [ -f qemu/ppc64-softmmu/qemu-system-ppc64 ] ; then
-	git clone https://github.com/qemu/qemu.git --depth=1
+	if ! [ -d qemu ] ; then
+		git clone https://github.com/qemu/qemu.git --depth=1
+	fi
 	cd qemu
 	./configure --target-list=ppc64-softmmu
 	make -j`nproc`
