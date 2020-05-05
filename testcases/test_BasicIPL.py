@@ -61,8 +61,8 @@ class TestBasicIPL():
         assert sys.host_power_is_on() == False
 
         log.debug("IPL: starting BootToPetitboot test")
-        sys.host_power_on()
-        sys.waitfor('petitboot') # FIXME: add the timeouts for the previous states to the timeout
+
+        sys.goto_state('petitboot')
 
         pb = PetitbootHelper(sys.get_console())
         pb.goto_shell()
