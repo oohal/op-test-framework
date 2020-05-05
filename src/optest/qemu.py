@@ -42,25 +42,40 @@ log = logger.optest_logger_glob.get_logger(__name__)
 class QemuConsole(Console):
     def __init__(self, logfile):
         self.qemu_pty = None
+
+        # The "host console" for a QemuSystem comes from the pty created by
+        # pexpect for the qemu process. To match the behaviour of a "real" host
+        # console we need to blackhole any writes made while the host is off
+        # (i.e. qemu isn't running). To do that we have a seperate pty with
+        # cat and we swap between the two as qemu starts and stops.
+        self.cat_pty = pexpect.spawn("cat - >/dev/null", echo=False)
+
         super().__init__(logfile=logfile)
 
     def set_pty(self, pty):
         self.qemu_pty = pty
+        # hmm, maybe we should check the connected state?
         self.pty = pty
 
     def connect(self):
-        # TODO: since this is a host console we should be able to connect
+        # TODO: Since this is a host console we should be able to connect
         # even when the host is "off". We'd need to ensure that we blackhole
         # any terminal interactions because the pexpect session lifetime is
         # tied to that of the qemu process (i think? it might just EOF)
-        if not self.qemu_pty:
-            raise Exception("Can't connect the console unless Qemu is running")
-        self.state = ConsoleState.CONNECTED
-    def close(self):
-        self.state = ConsoleState.DISCONNECTED
-    def is_connected(self):
-        return True
+        if self.qemu_pty:
+            self.pty = self.qemu_pty
+        else:
+            self.pty = self.cat_pty
 
+        self.state = ConsoleState.CONNECTED
+
+    def close(self):
+        self.pty = None
+        self.state = ConsoleState.DISCONNECTED
+        # FIXME: do we need to call super().close()?
+
+    def is_connected(self):
+        return self.state == ConsoleState.CONNECTED
 
 qemu_state_table = [
     SysConsoleState('skiboot',   system.skiboot_entry, 10, system.skiboot_exit, 30),
@@ -241,6 +256,7 @@ class QemuSystem(BaseSystem):
             log.info("Qemu command failed")
             raise e
 
+        # update the pty in the qemu console so it's pointing at the right place
         self.console.set_pty(pty)
         self.qemu_running = True
 

@@ -214,8 +214,17 @@ class BaseSystem(object):
     #
     ############################################################################
 
-    # return the underlying console object, useful for wrangling expect
+    # return the host console object
     def get_console(self):
+        ''' returns the system's host console.
+
+        NB: This always works, even if the host is off. Actual interactions
+        throught the console require the host to be powered on though. Might
+        seem obvious, but I'm putting it in writing so the expectation for
+        simulated systems is clear. In the case of Qemu at least there's no
+        underlying pty object unless qemu is actually running.
+        '''
+
         return self.console
 
     def run_command(self, cmd, timeout=60):
