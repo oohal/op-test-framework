@@ -36,18 +36,21 @@ commands that require the NFS mount and ones that don't, we
 assume (and check for) the NFS mount.
 '''
 
-import time
 import subprocess
-import os
 import pexpect
+import time
 import sys
-import subprocess
+import os
 
-from .OpTestTConnection import TConnection
-from .OpTestASM import OpTestASM
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
-from .OpTestSystem import OpTestSystem, OpSystemState
+from .asm import OpTestASM
+from .telnet import TConnection
+from .constants import Constants as BMC_CONST
+from .exceptions import OpTestError
+
+from . import system
+from . import logger
+
+log = logger.optest_logger_glob.get_logger(__name__)
 
 Possible_Hyp_value = {'01': 'PowerVM', '03': 'PowerKVM'}
 Possible_Sys_State = {'terminated': 0, 'standby': 1,
@@ -59,15 +62,19 @@ class OpTestFSP():
     Contains most of the common methods to interface with FSP.
     '''
 
-    def __init__(self, i_fspIP, i_fspUser, i_fspPasswd, ipmi=None, hmc=None, rest=None):
+    def __init__(self, i_fspIP, i_fspUser, i_fspPasswd, ipmi=None):
         self.host_name = i_fspIP
         self.user_name = i_fspUser
         self.password = i_fspPasswd
         self.prompt = "$"
-        self.cv_ASM = OpTestASM(i_fspIP, i_fspUser, i_fspPasswd)
+
         self.cv_IPMI = ipmi
-        self.cv_HMC = hmc
-        self.rest = rest
+        self.ipmi = ipmi
+        self.cv_ASM = OpTestASM(i_fspIP, i_fspUser, i_fspPasswd)
+
+        # Open the FSP console. We might want to add support for getting a
+        # console via debug tty at some point.
+        self.fsp_get_console()
 
     def bmc_host(self):
         return self.cv_ASM.host_name
@@ -75,31 +82,22 @@ class OpTestFSP():
     def get_ipmi(self):
         return self.cv_IPMI
 
-    def get_hmc(self):
-        return self.cv_HMC
-
-    def get_rest_api(self):
-        return self.rest
-
-    def get_host_console(self):
-        if self.cv_IPMI:
-            return self.cv_IPMI.get_host_console()
-        else:
-            return self.cv_HMC.get_host_console()
-
     def fsp_get_console(self):
         '''
         Get FSP telnet console
         '''
-        print("Disabling the firewall before running any FSP commands")
+        log.info("Disabling the firewall before running any FSP commands")
         self.cv_ASM.disablefirewall()
+
+        # NB: Tconnection has different semantics to the other op-test console
+        # types. We should fix that...
         self.fspc = TConnection(
             self.host_name, self.user_name, self.password, self.prompt)
         self.fspc.login()
         self.fsp_name = self.fspc.run_command("hostname")
-        print(("Established Connection with FSP: {0} ".format(self.fsp_name)))
+        log.info(("Established Connection with FSP: {0} ".format(self.fsp_name)))
 
-    def fsp_run_command(self, command):
+    def run_command(self, command):
         '''
         Execute and return the output of an FSP command
         '''
@@ -126,30 +124,31 @@ class OpTestFSP():
         else:
             return str(tmp)
 
-    def get_sys_status(self):
+    def get_state(self):
         '''
         Get current system status (same as 'smgr mfgState' on FSP).
         '''
         state = self.fspc.run_command("smgr mfgState")
         state = state.rstrip('\n')
+        log.debug("fsp state: {}".format(state))
         return state
 
     def progress_line(self):
-        return "progress code {1}, system state: {0}".format(self.get_sys_status(), self.get_progress_code())
+        return "progress code {1}, system state: {0}".format(self.get_state(), self.get_progress_code())
 
     def is_sys_powered_on(self):
         '''
         Check for system runtime state.
         Returns True if runtime, else False.
         '''
-        return self.get_sys_status() == "runtime"
+        return self.get_state() == "runtime"
 
     def is_sys_standby(self):
         '''
         Check for system standby state.
         Returns True if system is in standby state else False.
         '''
-        return self.get_sys_status() == "standby"
+        return self.get_state() == "standby"
 
     def get_opal_console_log(self):
         '''
@@ -178,74 +177,6 @@ class OpTestFSP():
         self.fspc.run_command("sysdump -idall")
         return True
 
-    def power_off_sys(self):
-        '''
-        Power off the system and wait for standby state.
-        Returns True if successfully powered off, False if for some
-        reason we failed to power off the system.
-        '''
-        state = self.get_sys_status()
-        if state == 'standby':
-            return True
-        elif state == 'runtime' or state == 'ipling':
-            print(("Powering off, current state: "+state))
-            output = self.fspc.run_command("panlexec -f 8")
-            output = output.rstrip('\n')
-            if output.find("success"):
-                print("Waiting for system to reach standby...")
-                while not self.is_sys_standby():
-                    time.sleep(5)
-                print("Powered OFF")
-                return True
-            else:
-                print("Power OFF failed")
-                print(output)
-                return False
-        else:
-            return False
-
-    def power_on_sys(self):
-        '''
-        Power on the system and wait for system to reach runtime in
-        OPAL mode (will switch HypMode before IPL if needed).
-        Returns True if we reach Runtime state, False otherwise.
-        '''
-        state = self.get_sys_status()
-        time_me = 0
-        if state == 'standby':
-            # just make sure we are booting in OPAL mode
-            if self.fspc.run_command("registry -Hr menu/HypMode") != '03':
-                print("Not in OPAL mode, switching to OPAL Hypervisor mode")
-                self.fspc.run_command("registry -Hw menu/HypMode 03")
-            print(("Powering on the system: " + state))
-            output = self.fspc.run_command("plckIPLRequest 0x01")
-            output = output.rstrip('\n')
-            if output.find("success"):
-                print("Waiting for system to reach runtime...")
-                while not self.is_sys_powered_on():
-                    print(self.progress_line())
-                    time_me += 5
-                    if time_me > 1200:
-                        print("System not yet runtime even after 20minutes?")
-                        print("Lets consider this as failed case and return")
-                        return False
-                    else:
-                        time.sleep(5)
-                print("PowerOn Successful")
-                print(self.progress_line())
-
-                return True
-            else:
-                print("Poweron Failed")
-                print(("Last know Progress code:"+self.get_progress_code()))
-                print(output)
-                return False
-
-        elif state in ['runtime', 'terminated', 'prestandby']:
-            return False
-        else:
-            return False
-
     def fsp_reset(self):
         '''
         FSP Tool Reset.
@@ -267,6 +198,7 @@ class OpTestFSP():
             print("NFS mount is not available in FSP")
             return False
 
+    """
     def wait_for_standby(self, timeout=10):
         '''
         Wait for system standby state. Returns 0 on success,
@@ -292,7 +224,9 @@ class OpTestFSP():
                 raise OpTestError(l_msg)
             time.sleep(BMC_CONST.SHORT_WAIT_STANDBY_DELAY)
         return BMC_CONST.FW_SUCCESS
+    """
 
+    """
     def wait_for_ipling(self, timeout=10):
         '''
         Wait for system to reach ipling state.
@@ -302,41 +236,29 @@ class OpTestFSP():
         while True:
             print(self.progress_line())
 
-            if self.get_sys_status() == "ipling":
+            if self.get_state() == "ipling":
                 break
             if time.time() > timeout:
                 l_msg = "IPL timeout"
                 raise OpTestError(l_msg)
             time.sleep(5)
         return BMC_CONST.FW_SUCCESS
+    """
 
+    '''
     def wait_for_dump_to_start(self):
         count = 0
         # Dump maximum can start in one minute(So lets wait for 3 mins)
         while count < 3:
-            if self.get_sys_status() == "dumping":
+            if self.get_state() == "dumping":
                 return True
             count += 1
             time.sleep(60)
         else:
             print(self.progress_line())
             raise OpTestError("System dump not started even after 3 minutes")
+    '''
 
-    def wait_for_runtime(self, timeout=10):
-        '''
-        Wait for system to reach runtime. Throws exception on error.
-        '''
-        timeout = time.time() + 60*timeout
-        while True:
-            print(self.progress_line())
-
-            if self.is_sys_powered_on():
-                break
-            if time.time() > timeout:
-                l_msg = "IPL timeout"
-                raise OpTestError(l_msg)
-            time.sleep(5)
-        return BMC_CONST.FW_SUCCESS
 
     def enable_system_dump(self):
         print("Enabling the system dump policy")
@@ -364,6 +286,8 @@ class OpTestFSP():
         else:
             raise OpTestError("Check LCB nfs mount point and retry")
 
+    # XXX: kill this? we shouldn't do any waiting here since it doesn't update
+    # the console
     def wait_for_systemdump_to_finish(self):
         '''
         Wait for a system dump to finish. Throws exception on error/timeout.
@@ -463,17 +387,6 @@ class OpTestFSP():
             "registry -r svpd/Raw_MachineTypeModel")
         return self.fsp_MTM
 
-    def fsp_issue_power_on(self):
-        '''
-        Issue Power On for system from FSP (IPL type 0x01).
-        '''
-        print("PowerOn Machine")
-        output = self.fspc.run_command("plckIPLRequest 0x01")
-        if "SUCCESS" in output:
-            return
-        else:
-            raise OpTestError("Failed to power on the machine from FSP")
-
     def has_inband_bootdev(self):
         return True
 
@@ -493,7 +406,40 @@ class OpTestFSP():
         return False
 
 
-class OpTestFSPSystem(OpTestSystem):
+class FSPIPLState(system.SysState):
+    '''
+    Many system states we can detect by just watching the system console. This
+    helper implements a pile of expect logic to detect when we've entered into
+    and exited a given state.
+    '''
+    def __init__(self, name, ipl_start_timeout, ipl_timeout):
+        self.ipl_start_timeout = ipl_start_timeout
+        self.ipl_timeout = ipl_timeout
+
+        super().__init__(name)
+
+    def wait_entry(self, system, waitat=False):
+        for i in range(self.ipl_start_timeout):
+            state = system.fsp.get_state()
+            if state == 'ipling':
+                return
+            time.sleep(1)
+        raise "ipl timeout"
+
+    def wait_exit(self, system):
+        for i in range(self.ipl_timeout):
+            progress = system.fsp.progress_line() # display the current IPL status
+            log.info(progress)
+            print(progress) # FIXME: mirror the log to stdout imo...
+
+            if 'runtime' in progress:
+                return
+
+            time.sleep(1)
+        raise "ipl timeout"
+
+
+class FSPSystem(system.BaseSystem):
     '''
     Implementation of an OpTestSystem for IBM FSP based systems (such as Tuleta and ZZ)
 
@@ -501,37 +447,80 @@ class OpTestFSPSystem(OpTestSystem):
     rather than via IPMI due to differences in functionality.
     '''
 
+    # on FSP systems we don't get any console output for the IPLing process, so we just
+    # have to wait on petitboot, which usually takes 5 minutes or so
+    fsp_state_table = [
+        FSPIPLState('ipling', 30, 300),# 30s to enter ipling, 300s for runtime
+        system.ConsoleState('petitboot', system.pb_entry, 60, system.pb_exit, 30)
+    ]
+
     def __init__(self,
                  host=None,
-                 bmc=None,
-                 conf=None,
-                 state=OpSystemState.UNKNOWN):
-        bmc.fsp_get_console()
-        super(OpTestFSPSystem, self).__init__(host=host,
-                                              bmc=bmc,
-                                              conf=conf,
-                                              state=state)
+                 console=None,
+                 pdu=None,
+                 ipmi=None,
+                 fsp=None):
 
-    def sys_wait_for_standby_state(self, i_timeout=120):
-        return self.cv_BMC.wait_for_standby(i_timeout)
+        self.fsp = fsp
+        self.ipmi = ipmi
 
-    def wait_for_it(self, **kwargs):
-        # Ensure IPMI console is open so not to miss petitboot
-        sys_pty = self.console.get_console()
-        self.cv_BMC.wait_for_runtime()
-        return super(OpTestFSPSystem, self).wait_for_it(**kwargs)
+        # XXX: we might want to support using the debug tty for the host
+        # console rather than just IPMI.
+        if not console:
+            console = ipmi.get_sol_console()
 
-    def skiboot_log_on_console(self):
-        return False
+        super().__init__(host, console, pdu)
 
-    def has_host_accessible_eeprom(self):
-        return False
+        for s in self.fsp_state_table:
+            self._add_state(s)
 
-    def has_host_led_support(self):
+    def host_power_on(self):
+        state = self.fsp.get_state()
+        if state != 'standby':
+            raise 'bad state'
+
+        # just make sure we are booting in OPAL mode, FIXME: move this?
+        if self.fsp.run_command("registry -Hr menu/HypMode") != '03':
+            log.info("Not in OPAL mode, switching to OPAL Hypervisor mode")
+            self.fsp.run_command("registry -Hw menu/HypMode 03")
+
+        log.info("Powering on the system: " + state)
+        output = self.fsp.run_command("plckIPLRequest 0x01")
+        output = output.rstrip('\n')
+        if not output.find("success"):
+            raise "poweron error"
+
+        # let the FSPs internal machinery wake up
+        time.sleep(0.5)
+        if self.fsp.get_state() != 'ipling':
+            raise "power error"
+
+    def host_power_off(self):
+        state = self.fsp.get_state()
+        if state in ['prestandby', 'standby']:
+            return
+
+        log.info("Powering off, current state: " + state)
+
+        output = self.fsp.run_command("panlexec -f 8")
+        output = output.rstrip('\n')
+        if 'SUCCESS' not in output and \
+           '0800A096' not in output: # complaining aborting an in-progress IPL. It'll still power off.
+            raise "power off error"
+
+    def host_power_off_hard(self):
+        self.host_power_off() # use toolReset?
+
+    def host_power_is_on(self): # -> Bool
+        state = self.fsp.get_state()
+        if state in ['prestandby', 'standby']:
+            return False
         return True
 
-    def has_centaurs_in_dt(self):
-        return False
+    def bmc_is_alive(self):
+        # FIXME: 1. check it pings, 2. check we're out of prestandby
+        raise NotImplementedError()
 
-    def has_mtd_pnor_access(self):
-        return False
+    def collect_debug(self):
+        raise NotImplementedError()
+

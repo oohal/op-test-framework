@@ -640,26 +640,25 @@ class OpTestConfiguration():
                 pdu=pdu,
             )
         elif self.args['bmc_type'] in ['FSP']:
-            raise "FIXME: support FSP"
-            '''
-            ipmi = OpTestIPMI(self.args['bmc_ip'],
-                              None,  # FSP does not use UID
-                              self.args['bmc_passwordipmi'],
-                              host=host,
-                              logfile=self.logfile)
-            bmc = OpTestFSP(self.args['bmc_ip'],
-                            self.args['bmc_username'],
-                            self.args['bmc_password'],
-                            ipmi=ipmi,
-                            )
-            self.op_system = optest.OpTestFSP.OpTestFSPSystem(
-                state=self.startState,
-                bmc=bmc,
-                host=host,
-                conf=self,
-            )
-            ipmi.set_system(self.op_system)
-            '''
+
+            ipmi = optest.ipmi.OpTestIPMI(self.args['bmc_ip'],
+                                          None,  # FSP does not use UID
+                                          self.args['bmc_passwordipmi'],
+#                                         logfile=self.logfile,
+                                         )
+
+            fsp = optest.fsp.OpTestFSP(self.args['bmc_ip'],
+                                       self.args['bmc_username'],
+                                       self.args['bmc_password'],
+                                       ipmi=ipmi,
+                                      )
+
+            self.op_system = optest.fsp.FSPSystem(host=host,
+                                                  console=console,
+                                                  pdu=pdu,
+                                                  fsp=fsp,
+                                                  ipmi=ipmi,
+                                                 )
         elif self.args['bmc_type'] in ['FSP_PHYP']:
             raise "FIXME: support FSP_PHYP"
             '''

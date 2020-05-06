@@ -13,7 +13,7 @@ import optest.openbmc  # convert to new system / console, etc
 import optest.ipmi
 #import optest.cronus
 
-#import optest.fsp # system conversion
+import optest.fsp # system conversion
 #import optest.asm
 #import optest.hmc
 
