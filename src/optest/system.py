@@ -356,9 +356,10 @@ sbe_exit = {
 # each expect table indicates when we've *entered* that state
 hb_entry= {
     'Welcome to Hostboot' : None,   # hostboot entry
+    '|ISTEP 6.4' : None,
 }
 hb_exit = {
-    'ISTEP 21. 3 - host_start_payload' : None,
+    'ISTEP 21. 3' : None, # host start payload
 }
 
 skiboot_entry = {
@@ -405,7 +406,7 @@ class OpSystem(BaseSystem):
     openpower_state_table = [
 #        ConsoleState('off',  None,           1),
         # there's a bit before we hit skiboot_entry
-        ConsoleState('sbe',       sbe_entry,     60, sbe_exit,      60),
+#        ConsoleState('sbe',       sbe_entry,     60, sbe_exit,      60),
         ConsoleState('hostboot',  hb_entry,      30, hb_exit,      180),
         ConsoleState('skiboot',   skiboot_entry, 30, skiboot_exit,  60),
         ConsoleState('petitboot', pb_entry,      30, pb_exit,      120),
