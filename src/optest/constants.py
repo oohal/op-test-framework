@@ -66,10 +66,6 @@ class Constants():
     GOLDEN_SIDE = "0x0180"
 
     # BMC COMMANDS
-    BMC_COLD_RESET = " mc reset cold"
-    BMC_PASS_COLD_RESET = "Sent cold reset command to MC"
-    BMC_WARM_RESET = " mc reset warm"
-    BMC_PASS_WARM_RESET = "Sent warm reset command to MC"
     BMC_PRESRV_LAN = " raw 0x32 0xba 0x18 0x00"
     BMC_MCHBLD = " raw 0x3a 0x0b 0x56 0x45 0x52 0x53 0x49 " \
                  "0x4f 0x4e 0x00 0x00 0x00 0x00 0x00 0x00 " \

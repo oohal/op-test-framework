@@ -89,7 +89,7 @@ class IPMITool():
         :throws: :class:`common.Execptions.CommandFailed`
         '''
         if cmdprefix:
-            cmd = cmdprefix + self.binary + self.arguments() + cmd
+            cmd = cmdprefix + self.binary + " " + self.arguments() + cmd
         else:
             cmd = self.binary + self.arguments() + cmd
         log.info(cmd)
@@ -111,7 +111,9 @@ class IPMITool():
             except:
                 raise CommandFailed(cmd, "Failed to spawn subprocess", -1)
             output = cmd.communicate()[0]
-            log.debug("pUpdate output={}".format(output))
+
+            # strip to remove spurious newlines in the logfile
+            log.info("ipmitool output={}".format(output).strip())
             return output
 
 
@@ -594,8 +596,8 @@ class OpTestIPMI():
         '''
         l_initstatus = self.ipmi_power_status()
         log.debug("Applying Cold reset.")
-        rc = self.ipmitool.run(BMC_CONST.BMC_COLD_RESET)
-        if BMC_CONST.BMC_PASS_COLD_RESET in rc:
+        rc = self.ipmitool.run(" mc reset cold")
+        if "Sent cold reset command to MC" in rc:
             self.console.close()
             time.sleep(BMC_CONST.SHORT_WAIT_IPL)
             utils.ping(
@@ -651,13 +653,16 @@ class OpTestIPMI():
         Performs a warm reset onto the bmc
         '''
         l_initstatus = self.ipmi_power_status()
-        l_cmd = BMC_CONST.BMC_WARM_RESET
+
         log.info("Applying Warm reset. Wait for "
                  + str(BMC_CONST.BMC_WARM_RESET_DELAY) + "sec")
-        rc = self.ipmitool.run(l_cmd)
-        if BMC_CONST.BMC_PASS_WARM_RESET in rc:
+
+        rc = self.ipmitool.run("mc reset warm")
+        if "Sent warm reset command to MC" in rc:
             log.info("Warm reset result: {}".format(rc))
+
             self.console.close()
+
             time.sleep(BMC_CONST.BMC_WARM_RESET_DELAY)
             utils.ping(
                 self.cv_bmcIP, totalSleepTime=BMC_CONST.PING_RETRY_FOR_STABILITY)
