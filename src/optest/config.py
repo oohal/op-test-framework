@@ -28,7 +28,6 @@ from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
 
 # system components
-#from optest.ipmi import OpTestIPMI, OpTestSMCIPMI
 #from optest.hmc import OpTestHMC
 #from optest.openbmc import HostManagement
 #from optest.amiweb import AMIWeb
@@ -38,6 +37,9 @@ from optest.qemu import QemuSystem
 #from optest.openbmc import OpenBMCSystem
 #from optest.mambo import OpTestMambo
 #from optest.bmc import BMCSystem, SMCSystem
+import optest.bmc
+import optest.ipmi
+
 #from optest.fsp import OpTestFSP
 #from optest.openbmc import OpenBMCSystem
 
@@ -565,9 +567,12 @@ class OpTestConfiguration():
         # grab our serial console if we've got one...
         console_cmd = self.args['host_serial_console_command']
         if console_cmd:
-            console = console.CmdConsole(console_cmd)
+            console = optest.console.CmdConsole(console_cmd)
         else:
             console = None
+
+        # FIXME: implement pdu support
+        pdu = None
 
         # TODO: have a think about what the host object actually represents,
         #       and how it's different to the system object. It's a bit awkward
@@ -614,30 +619,26 @@ class OpTestConfiguration():
                 '''
                 raise "FIXME: support AMI"
             elif self.args['bmc_type'] in ['SMC']:
-                raise "FIXME: support SMC"
-                '''
-                ipmi = OpTestSMCIPMI(self.args['bmc_ip'],
+                ipmi = optest.ipmi.OpTestSMCIPMI(self.args['bmc_ip'],
                                      self.args['bmc_usernameipmi'],
                                      self.args['bmc_passwordipmi'],
-                                     logfile=self.logfile,
-                                     host=host,
+#                                     logfile=self.logfile,
+#                                     host=host,
                                      )
-                bmc = OpTestSMC(ip=self.args['bmc_ip'],
+                bmc = optest.bmc.OpTestSMC(ip=self.args['bmc_ip'],
                                 username=self.args['bmc_username'],
                                 password=self.args['bmc_password'],
                                 ipmi=ipmi,
                                 check_ssh_keys=self.args['check_ssh_keys'],
                                 known_hosts_file=self.args['known_hosts_file']
                                 )
-            self.op_system = optest.OpTestSystem.OpTestSystem(
-                state=self.startState,
-                bmc=bmc,
+            self.op_system = optest.bmc.IPMISystem(
                 host=host,
-                conf=self,
+                ipmi=ipmi,
+                bmc=bmc,
+                console=console,
+                pdu=pdu,
             )
-            ipmi.set_system(self.op_system)
-            bmc.set_system(self.op_system)
-            '''
         elif self.args['bmc_type'] in ['FSP']:
             raise "FIXME: support FSP"
             '''

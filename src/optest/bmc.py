@@ -39,20 +39,18 @@ import time
 import pexpect
 import os.path
 import subprocess
-from . import OpExpect
 
-from .ipmi import OpTestIPMI
-from .OpTestSSH import OpTestSSH
-from .OpTestUtil import OpTestUtil
-from .OpTestConstants import OpTestConstants as BMC_CONST
-from .OpTestError import OpTestError
-from .Exceptions import CommandFailed, SSHSessionDisconnected
-
+from . import opexpect
 from . import utils
 
-import logging
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+from .ipmi import OpTestIPMI
+from .system import OpSystem
+from .console import SSHConsole
+from .constants import Constants as BMC_CONST
+from .exceptions import CommandFailed, SSHSessionDisconnected, OpTestError
+
+from .logger import optest_logger_glob
+log = optest_logger_glob.get_logger(__name__)
 
 
 class OpTestBMC():
@@ -61,51 +59,32 @@ class OpTestBMC():
     '''
 
     def __init__(self, ip=None, username=None, password=None,
-                 logfile=sys.stdout, ipmi=None, rest=None,
+                 logfile=sys.stdout, ipmi=None,
                  web=None, check_ssh_keys=False, known_hosts_file=None):
         self.cv_bmcIP = ip
         self.cv_bmcUser = username
         self.cv_bmcPasswd = password
         self.cv_IPMI = ipmi
-        self.rest = rest
         self.cv_WEB = web
         self.logfile = logfile
         self.check_ssh_keys = check_ssh_keys
         self.known_hosts_file = known_hosts_file
 
-        # FIXME: is there any reason to use this instead of pxssh? OpTestSSH
-        # is mainly there to add the host console pattern checking.
-        self.ssh = OpTestSSH(ip, username, password, logfile, prompt=None,
-                             block_setup_term=0, check_ssh_keys=check_ssh_keys, known_hosts_file=known_hosts_file)
-        # OpTestUtil instance is NOT conf's
-        self.util = OpTestUtil()
-
-    def set_system(self, system):
-        self.ssh.set_system(system)
+        self.ssh = SSHConsole(ip, username, password, logfile, prompt=None,
+                              check_ssh_keys=check_ssh_keys, known_hosts_file=known_hosts_file)
 
     def bmc_host(self):
         return self.cv_bmcIP
-
-    def get_ipmi(self):
-        '''
-        Get an object that can be used to do things over IPMI
-        '''
-        return self.cv_IPMI
-
-    def get_rest_api(self):
-        '''
-        OpenBMC specific REST API.
-        '''
-        return self.rest
-
-    def get_host_console(self):
-        return self.cv_IPMI.get_host_console()
 
     def run_command(self, command, timeout=60, retry=0):
         '''
         Run a command on the BMC itself.
         '''
         return self.ssh.run_command(command, timeout, retry)
+
+
+    # FIXME: What essential ops do we need to implement for a BMC?
+    # copying files would be one... applying a vendor FW update?
 
     ##
     # @brief
@@ -191,7 +170,7 @@ class OpTestBMC():
             rsync_cmd = rsync_cmd + '/' + copy_as
 
         log.debug(rsync_cmd)
-        rsync = OpExpect.spawn(rsync_cmd)
+        rsync = opexpect.spawn(rsync_cmd)
         rsync.logfile = OpTestLogger.FileLikeLogger(log)
         r = rsync.expect(['assword: ', 'total size is',
                           'error while loading shared lib', pexpect.EOF], timeout=1800)
@@ -213,14 +192,14 @@ class OpTestBMC():
             scp_cmd = scp_cmd + " {}@{} dd of=/tmp/{} < {}\"".format(
                 self.cv_bmcUser, self.cv_bmcIP, copy_as, img_path)
             log.debug(scp_cmd)
-            scp = OpExpect.spawn(scp_cmd, timeout=120)
+            scp = opexpect.spawn(scp_cmd, timeout=120)
             scp.expect(pexpect.EOF)
             scp.wait()
             scp.close()
             chmod_cmd = "sshpass -p {} ssh {} {}@{} chmod +x /tmp/{}".format(
                 self.cv_bmcPasswd, ssh_opts, self.cv_bmcUser, self.cv_bmcIP, copy_as)
             log.debug(chmod_cmd)
-            chmod = OpExpect.spawn(chmod_cmd)
+            chmod = opexpect.spawn(chmod_cmd)
             chmod.expect(pexpect.EOF)
             chmod.wait()
             chmod.close()
@@ -388,3 +367,42 @@ class OpTestSMC(OpTestBMC):
             log.error(l_msg)
             return False
         return True
+
+
+class IPMISystem(OpSystem):
+    '''
+    op-test system type for BMC systems driven by IPMI
+    '''
+    def __init__(self, host=None, console=None, pdu=None, ipmi=None, bmc=None):
+
+        self.logfile=None # HACK: I forget what this does...
+        self.host = host
+
+        self.ipmi = ipmi
+        self.bmc = bmc
+
+        if not console:
+            console = ipmi.get_sol_console()
+
+        super().__init__(host=host, console=console, pdu=pdu)
+
+    def bmc_is_alive(self):
+        utils.ping(self.bmc.hostname)
+        #def sys_bmc_state(self):
+        raise NotImplementedError()
+
+    # FIXME: implement
+    def collect_debug(self):
+        raise NotImplementedError()
+
+    def host_power_on(self):
+        self.ipmi.ipmi_power_on()
+
+    def host_power_off(self):
+        self.ipmi.ipmi_power_soft()
+
+    def host_power_is_on(self): # -> Bool
+        return self.ipmi.ipmi_power_status()
+
+    def host_power_off_hard(self):
+        self.ipmi.ipmi_power_off()

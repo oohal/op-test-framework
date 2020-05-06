@@ -176,9 +176,9 @@ class pUpdate():
 class IPMIConsole(Console):
     def __init__(self, ipmitool=None, logfile=sys.stdout, prompt=None,
                  delaybeforesend=None):
-        self.logfile = logfile
         self.ipmitool = ipmitool
         self.delaybeforesend = delaybeforesend
+        super().__init__(logfile, None)
 
     def close(self):
         if self.state == ConsoleState.DISCONNECTED:
@@ -206,6 +206,7 @@ class IPMIConsole(Console):
 
     def connect(self, logger=None):
         if self.state == ConsoleState.CONNECTED:
+            raise 're-opening connected console'  # FIXME: handle properly
             rc_child = self.close()
 
         try:
@@ -222,14 +223,14 @@ class IPMIConsole(Console):
                 'opexpect.spawn', "opexpect.spawn encountered a problem, command was '{}'".format(cmd), -1)
 
         log.debug("#IPMI SOL CONNECT")
-        self.state = ConsoleState.CONNECTED
         self.pty.setwinsize(1000, 1000)
 
-        # XXX: why is this setting .logfile_read and not .logfile?
-        if logger:
-            self.pty.logfile_read = OpTestLogger.FileLikeLogger(logger)
-        else:
-            self.pty.logfile_read = OpTestLogger.FileLikeLogger(log)
+        self.pty.logfile = self.logfile
+#        # XXX: why is this setting .logfile_read and not .logfile?
+#        if logger:
+#            self.pty.logfile_read = OpTestLogger.FileLikeLogger(logger)
+#        else:
+#            self.pty.logfile_read = OpTestLogger.FileLikeLogger(log)
 
         if self.delaybeforesend:
             self.pty.delaybeforesend = self.delaybeforesend
@@ -238,12 +239,11 @@ class IPMIConsole(Console):
 
         log.debug("rc={}".format(rc))
         if rc == 0:
-            if self.system.SUDO_set != 1 or self.system.LOGIN_set != 1 or self.system.PS1_set != 1:
-                self.util.setup_term(self.system, self.pty,
-                                     None, self.system.block_setup_term)
             time.sleep(0.2)
             log.debug("CONNECT starts Expect Buffer ID={}".format(hex(id(self.pty))))
+            self.state = ConsoleState.CONNECTED
             return self.pty
+
         if rc == 1:
             self.pty.close()
             time.sleep(60)  # give things a minute to clear
