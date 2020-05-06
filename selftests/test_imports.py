@@ -6,7 +6,7 @@ import optest
 # list as they get ported over to the new system model
 
 #import optest.amiweb
-#import optest.bmc      # convert to new system, possibly split SMC and AMI BMCs, rename
+import optest.bmc      # convert to new system, possibly split SMC and AMI BMCs, rename
 import optest.openbmc  # convert to new system / console, etc
 #import optest.mambo    # convert to new system type
 
