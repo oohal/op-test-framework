@@ -56,6 +56,10 @@ class ASM:
     def __init__(self, i_fspIP, i_fspUser, i_fspPasswd):
         self.host_name = i_fspIP
         self.user_name = i_fspUser
+
+        if i_fspUser == 'root':
+            raise OpTestError('root cannot login to ASM! You probably want dev')
+
         self.password = i_fspPasswd
         self.url = "https://%s/cgi-bin/cgi?" % self.host_name
         self.cj = http.cookiejar.CookieJar()
