@@ -1,0 +1,279 @@
+  5.80804|Ignoring boot flags, incorrect version 0x0
+  6.02082|ISTEP  6. 3
+  6.66939|ISTEP  6. 4
+  6.67190|ISTEP  6. 5
+  9.25600|HWAS|PRESENT> DIMM[03]=00AA00AA00AA00AA
+  9.25600|HWAS|PRESENT> Membuf[04]=4444000000000000
+  9.25601|HWAS|PRESENT> Proc[05]=C000000000000000
+ 14.62587|ISTEP  6. 6
+ 14.70849|ISTEP  6. 7
+ 17.41234|ISTEP  6. 8
+ 17.57437|ISTEP  6. 9
+ 18.14543|ISTEP  6.10
+ 18.22309|ISTEP  6.11
+ 19.97851|ISTEP  6.12
+ 19.98176|ISTEP  6.13
+ 19.98413|ISTEP  7. 1
+ 20.20303|ISTEP  7. 2
+ 20.41264|ISTEP  7. 3
+ 20.44658|ISTEP  7. 4
+ 20.49771|ISTEP  7. 5
+ 20.77597|ISTEP  7. 6
+ 20.85344|ISTEP  7. 7
+ 21.08229|ISTEP  7. 8
+ 21.50422|ISTEP  7. 9
+ 21.50662|ISTEP  8. 1
+ 21.75471|ISTEP  8. 2
+ 22.68308|ISTEP  8. 3
+ 22.69485|ISTEP  8. 4
+ 22.96848|ISTEP  8. 5
+ 22.97117|ISTEP  8. 6
+ 24.19842|ISTEP  8. 7
+ 24.20059|ISTEP  8. 8
+ 24.27941|ISTEP  9. 1
+ 24.78705|ISTEP  9. 2
+ 25.85583|ISTEP 10. 1
+ 26.27254|ISTEP 10. 2
+ 27.28043|ISTEP 10. 3
+ 27.28297|ISTEP 10. 4
+ 27.28522|ISTEP 10. 5
+ 27.28773|ISTEP 10. 6
+ 27.29022|ISTEP 10. 7
+ 27.29253|ISTEP 10. 8
+ 27.29498|ISTEP 10. 9
+ 27.29764|ISTEP 10.10
+ 27.30023|ISTEP 10.11
+ 27.30254|ISTEP 10.12
+ 27.30490|ISTEP 10.13
+ 27.30749|ISTEP 10.14
+ 27.30982|ISTEP 11. 1
+ 27.70376|ISTEP 11. 2
+ 27.70605|ISTEP 11. 3
+ 27.89673|ISTEP 11. 4
+ 28.01257|ISTEP 11. 5
+ 28.20623|ISTEP 11. 6
+ 29.39789|ISTEP 11. 7
+ 29.40062|ISTEP 11. 8
+ 29.78012|ISTEP 11. 9
+ 29.78333|ISTEP 11.10
+ 29.92501|ISTEP 11.11
+ 29.92782|ISTEP 11.12
+ 29.93019|ISTEP 11.13
+ 29.97283|ISTEP 12. 1
+ 30.43810|ISTEP 12. 2
+ 30.64592|ISTEP 12. 3
+ 30.68908|ISTEP 12. 4
+ 31.18886|ISTEP 12. 5
+ 31.19135|ISTEP 13. 1
+ 31.56015|ISTEP 13. 2
+ 31.65504|ISTEP 13. 3
+ 31.65794|ISTEP 13. 4
+ 31.69093|ISTEP 13. 5
+ 31.69615|ISTEP 13. 6
+ 32.72899|ISTEP 13. 7
+ 32.93136|ISTEP 13. 8
+ 33.25032|ISTEP 13. 9
+ 34.38338|ISTEP 13.10
+ 48.84849|ISTEP 13.11
+ 48.96173|ISTEP 13.12
+ 48.96437|ISTEP 14. 1
+ 49.68376|ISTEP 14. 2
+ 49.70613|ISTEP 14. 3
+ 60.52338|ISTEP 14. 4
+ 60.59801|ISTEP 14. 5
+ 60.83676|ISTEP 14. 6
+ 60.83933|ISTEP 14. 7
+ 61.08438|ISTEP 14. 8
+ 61.08786|ISTEP 15. 1
+ 62.46529|ISTEP 15. 2
+ 62.48867|ISTEP 15. 3
+ 62.66765|ISTEP 16. 1
+ 63.87945|ISTEP 16. 2
+ 64.48133|ISTEP 16. 3
+ 64.55564|ISTEP 16. 4
+ 64.56494|ISTEP 18.13
+ 64.74202|ISTEP 18.14
+ 64.72984|ISTEP 20. 1
+ 65.82108|ISTEP 21. 1
+ 75.92327|htmgt|OCCs are now running in ACTIVE state
+ 84.28058|ISTEP 21. 2
+ 84.27868|ISTEP 21. 3
+[   84.312739041,5] OPAL v6.5-60-g6bb6ec382e0e starting...
+[   84.312744635,7] initial console log level: memory 7, driver 5
+[   84.312748364,6] CPU: P8 generation processor (max 8 threads/core)
+[   84.312751614,7] CPU: Boot CPU PIR is 0x0420 PVR is 0x004d0200
+[   84.312756398,7] OPAL table: 0x30113630 .. 0x30113ba0, branch table: 0x30002000
+[   84.312762241,7] Assigning physical memory map table for unused
+[   84.312767438,7] FDT: Parsing fdt @0xff00000
+[   84.315127228,3] DT: dt_attach_root failed, duplicate sensor@9
+[   84.315131318,3] DT: Found duplicate node: sensor@9
+[   84.318510703,6] CHIP: Initialised chip 0 from xscom@3fc0000000000
+[   84.318523153,6] CHIP: Initialised chip 8 from xscom@3fc4000000000
+[   84.318632206,5] CHIP: Chip ID 0000 type: P8 DD2.00
+[   84.318635974,7] XSCOM: Base address: 0x3fc0000000000
+[   84.318645970,5] CHIP: Chip ID 0008 type: P8 DD2.00
+[   84.318649347,7] XSCOM: Base address: 0x3fc4000000000
+[   84.318656315,7] XSTOP: XSCOM addr = 0x2010c82, FIR bit = 31
+[   84.318660475,6] MFSI 0:0: Initialized
+[   84.318663111,6] MFSI 0:2: Initialized
+[   84.318665660,6] MFSI 0:1: Initialized
+[   84.318668736,6] MFSI 8:0: Initialized
+[   84.318671248,6] MFSI 8:2: Initialized
+[   84.318673766,6] MFSI 8:1: Initialized
+[   84.319123333,5] LPC: LPC[000]: Initialized, access via XSCOM @0xb0020
+[   84.319136578,7] LPC: Default bus on chip 0x0
+[   84.319197162,7] CPU: New max PIR set to 0x477
+[   84.319379490,6] MEM: parsing reserved memory from node /ibm,hostboot/reserved-memory
+[   84.319398235,7] HOMER: Init chip 0
+[   84.319401668,7]   PBA BAR0 : 0x0000007ffd800000
+[   84.319404872,7]   PBA MASK0: 0x0000000000300000
+[   84.319408031,7]   HOMER Image at 0x7ffd800000 size 4MB
+[   84.319412584,7]   PBA BAR2 : 0x4000007ffda00000
+[   84.319415868,7]   PBA MASK2: 0x0000000000000000
+[   84.319418869,7]   SLW Image at 0x7ffda00000 size 1MB
+[   84.319423031,7]   PBA BAR3 : 0x0000007fff800000
+[   84.319426117,7]   PBA MASK3: 0x0000000000700000
+[   84.319429150,7]   OCC Common Area at 0x7fff800000 size 8MB
+[   84.319432690,7] HOMER: Init chip 8
+[   84.319435903,7]   PBA BAR0 : 0x0000007ffdc00000
+[   84.319438956,7]   PBA MASK0: 0x0000000000300000
+[   84.319442024,7]   HOMER Image at 0x7ffdc00000 size 4MB
+[   84.319446248,7]   PBA BAR2 : 0x4000007ffde00000
+[   84.319449394,7]   PBA MASK2: 0x0000000000000000
+[   84.319452431,7]   SLW Image at 0x7ffde00000 size 1MB
+[   84.319456433,7]   PBA BAR3 : 0x0000007fff800000
+[   84.319459421,7]   PBA MASK3: 0x0000000000700000
+[   84.319462524,7]   OCC Common Area at 0x7fff800000 size 8MB
+[   84.319479434,6] CPU: CPU from DT PIR=0x0008 Server#=0x8 State=3
+[   84.319491884,6] CPU:  8 secondary threads
+[   84.319498402,6] CPU: CPU from DT PIR=0x0010 Server#=0x10 State=3
+[   84.319510499,6] CPU:  8 secondary threads
+[   84.319516854,6] CPU: CPU from DT PIR=0x0018 Server#=0x18 State=3
+[   84.319528755,6] CPU:  8 secondary threads
+[   84.319535136,6] CPU: CPU from DT PIR=0x0028 Server#=0x28 State=3
+[   84.319546991,6] CPU:  8 secondary threads
+[   84.319553496,6] CPU: CPU from DT PIR=0x0030 Server#=0x30 State=3
+[   84.319565201,6] CPU:  8 secondary threads
+[   84.319571463,6] CPU: CPU from DT PIR=0x0048 Server#=0x48 State=3
+[   84.319583341,6] CPU:  8 secondary threads
+[   84.319589711,6] CPU: CPU from DT PIR=0x0058 Server#=0x58 State=3
+[   84.319601173,6] CPU:  8 secondary threads
+[   84.319607621,6] CPU: CPU from DT PIR=0x0060 Server#=0x60 State=3
+[   84.319619287,6] CPU:  8 secondary threads
+[   84.319625683,6] CPU: CPU from DT PIR=0x0068 Server#=0x68 State=3
+[   84.319637412,6] CPU:  8 secondary threads
+[   84.319643753,6] CPU: CPU from DT PIR=0x0070 Server#=0x70 State=3
+[   84.319655449,6] CPU:  8 secondary threads
+[   84.319661764,6] CPU: CPU from DT PIR=0x0408 Server#=0x408 State=3
+[   84.319673917,6] CPU:  8 secondary threads
+[   84.319680295,6] CPU: CPU from DT PIR=0x0410 Server#=0x410 State=3
+[   84.319692317,6] CPU:  8 secondary threads
+[   84.319698573,6] CPU: CPU from DT PIR=0x0418 Server#=0x418 State=3
+[   84.319710447,6] CPU:  8 secondary threads
+[   84.319716917,6] CPU: CPU from DT PIR=0x0420 Server#=0x420 State=3
+[   84.319728300,6] CPU:  8 secondary threads
+[   84.319734524,6] CPU: CPU from DT PIR=0x0428 Server#=0x428 State=3
+[   84.319746343,6] CPU:  8 secondary threads
+[   84.319752663,6] CPU: CPU from DT PIR=0x0430 Server#=0x430 State=3
+[   84.319764495,6] CPU:  8 secondary threads
+[   84.319770817,6] CPU: CPU from DT PIR=0x0458 Server#=0x458 State=3
+[   84.319782607,6] CPU:  8 secondary threads
+[   84.319789033,6] CPU: CPU from DT PIR=0x0460 Server#=0x460 State=3
+[   84.319800986,6] CPU:  8 secondary threads
+[   84.319807260,6] CPU: CPU from DT PIR=0x0468 Server#=0x468 State=3
+[   84.319818987,6] CPU:  8 secondary threads
+[   84.319825237,6] CPU: CPU from DT PIR=0x0470 Server#=0x470 State=3
+[   84.319837020,6] CPU:  8 secondary threads
+[   84.320269849,5] PLAT: Using SuperIO UART
+[   84.320447923,7] UART: Using LPC IRQ 4
+[   85.031152831,5] PLAT: Detected p8dtu2u platform
+[   85.033269370,5] PLAT: Detected BMC platform SMC
+[   85.040887219,5] CENTAUR: Found centaur for chip 0x0 channel 1
+[   85.043466469,5] CENTAUR:   FSI host: 0x0 cMFSI0 port 2
+[   85.046298978,5] CENTAUR: Found centaur for chip 0x0 channel 5
+[   85.049104815,5] CENTAUR:   FSI host: 0x0 cMFSI0 port 6
+[   85.051935358,5] CENTAUR: Found centaur for chip 0x8 channel 1
+[   85.054743062,5] CENTAUR:   FSI host: 0x8 cMFSI0 port 2
+[   85.057573632,5] CENTAUR: Found centaur for chip 0x8 channel 5
+[   85.060380288,5] CENTAUR:   FSI host: 0x8 cMFSI0 port 6
+[   85.065559453,5] CPU: All 160 processors called in...
+[   88.326619900,5] FLASH: Found system flash: Macronix MXxxL25635F id:0
+[   90.088303375,5] SLW: HB-provided idle states property found
+[   90.090919871,5] OCC: All Chip Rdy after 0 ms
+[   90.103650719,5] Chip 0 Found PBCQ0 at /xscom@3fc0000000000/pbcq@2012000
+[   90.104813759,7] FLASH: CAPP partition has ECC
+[   90.106298969,7] FLASH: CAPP partition isn't signed
+[   90.106300087,7] FLASH: flash subpartition eyecatcher CAPP
+[   90.106301138,7] FLASH: Computed CAPP partition size: 40960 (subpart 131306 size 36432 offset 4096)
+[   90.121074239,3] STB: CAPP verification FAILED. log=0xffffffffffff8420
+[   90.122929972,7] FLASH: BOOTKERNEL partition doesn't have ECC
+[   90.124255527,7] FLASH: BOOTKERNEL partition isn't signed
+[   90.124256447,7] FLASH: computed BOOTKERNEL size 15616344
+[   99.506404223,3] STB: BOOTKERNEL verification FAILED. log=0xffffffffffff8420
+[   99.508350600,7] FLASH: No ROOTFS partition
+[  100.019732663,5] Chip 0 Found PBCQ1 at /xscom@3fc0000000000/pbcq@2012400
+[  100.023281006,5] Chip 0 Found PBCQ2 at /xscom@3fc0000000000/pbcq@2012800
+[  100.026830241,5] Chip 8 Found PBCQ0 at /xscom@3fc4000000000/pbcq@2012000
+[  100.030372803,5] Chip 8 Found PBCQ1 at /xscom@3fc4000000000/pbcq@2012400
+[  100.033917466,5] Chip 8 Found PBCQ2 at /xscom@3fc4000000000/pbcq@2012800
+[  100.414747983,5] PCI: Resetting PHBs and training links...
+[  103.468056607,5] PCI: Probing slots...
+[  104.013753306,5] PCI Summary:
+[  104.014632524,5] PHB#0000:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..04 SLOT=UIO Slot1 
+[  104.018888482,5] PHB#0000:01:00.0 [SWUP] 10b5 8718 R:ab C:060400 B:02..04 LOC_CODE=UIO Slot1
+[  104.023147631,5] PHB#0000:02:01.0 [SWDN] 10b5 8718 R:ab C:060400 B:03..03 SLOT=S000003 
+[  104.027403162,5] PHB#0000:03:00.0 [EP  ] 19e5 0123 R:45 C:010802 (  mass-storage) LOC_CODE=S000003
+[  104.031673807,5] PHB#0000:02:02.0 [SWDN] 10b5 8718 R:ab C:060400 B:04..04 SLOT=S000004 
+[  104.035926043,5] PHB#0000:04:00.0 [EP  ] 144d a808 R:00 C:010802 (  mass-storage) LOC_CODE=S000004
+[  104.040885431,5] PHB#0001:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..0d SLOT=PLX Switch 
+[  104.045144535,5] PHB#0001:01:00.0 [SWUP] 10b5 8725 R:ca C:060400 B:02..0d LOC_CODE=PLX Switch
+[  104.049407377,5] PHB#0001:02:01.0 [SWDN] 10b5 8725 R:ca C:060400 B:03..03 SLOT=PLX Slot1 
+[  104.053659679,5] PHB#0001:03:00.0 [EP  ] 1000 0097 R:02 C:010700 (           sas) LOC_CODE=PLX Slot1
+[  104.057926617,5] PHB#0001:02:08.0 [SWDN] 10b5 8725 R:ca C:060400 B:04..08 
+[  104.061483869,5] PHB#0001:02:09.0 [SWDN] 10b5 8725 R:ca C:060400 B:09..09 SLOT=Onboard USB 
+[  104.065738253,5] PHB#0001:09:00.0 [EP  ] 104c 8241 R:02 C:0c0330 (      usb-xhci) LOC_CODE=Onboard USB
+[  104.070704527,5] PHB#0001:02:0a.0 [SWDN] 10b5 8725 R:ca C:060400 B:0a..0a SLOT=Onboard SATA1 
+[  104.074962428,5] PHB#0001:0a:00.0 [LGCY] 1b4b 9230 R:11 C:010601 (          sata) LOC_CODE=Onboard SATA1
+[  104.079933353,5] PHB#0001:02:0b.0 [SWDN] 10b5 8725 R:ca C:060400 B:0b..0c SLOT=Onboard BMC 
+[  104.084195350,5] PHB#0001:0b:00.0 [ETOX] 1a03 1150 R:03 C:060400 B:0c..0c LOC_CODE=Onboard BMC
+[  104.088558054,5] PHB#0001:0c:00.0 [PCID] 1a03 2000 R:30 C:030000 (           vga) LOC_CODE=Onboard BMC
+[  104.093421551,5] PHB#0001:02:0c.0 [SWDN] 10b5 8725 R:ca C:060400 B:0d..0d SLOT=Onboard SATA2 
+[  104.097681011,5] PHB#0001:0d:00.0 [LGCY] 1b4b 9230 R:11 C:010601 (          sata) LOC_CODE=Onboard SATA2
+[  104.101956083,5] PHB#0001:01:00.1 [EP  ] 10b5 87d0 R:ca C:088000 (system-peripheral) LOC_CODE=PLX Switch
+[  104.106919099,5] PHB#0001:01:00.2 [EP  ] 10b5 87d0 R:ca C:088000 (system-peripheral) LOC_CODE=PLX Switch
+[  104.111884178,5] PHB#0001:01:00.3 [EP  ] 10b5 87d0 R:ca C:088000 (system-peripheral) LOC_CODE=PLX Switch
+[  104.116851511,5] PHB#0001:01:00.4 [EP  ] 10b5 87d0 R:ca C:088000 (system-peripheral) LOC_CODE=PLX Switch
+[  104.121818857,5] PHB#0002:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..01 SLOT=UIO Network 
+[  104.126080431,5] PHB#0002:01:00.0 [EP  ] 8086 1589 R:02 C:020000 (      ethernet) LOC_CODE=UIO Network
+[  104.130345614,5] PHB#0002:01:00.1 [EP  ] 8086 1589 R:02 C:020000 (      ethernet) LOC_CODE=UIO Network
+[  104.135311798,5] PHB#0002:01:00.2 [EP  ] 8086 1589 R:02 C:020000 (      ethernet) LOC_CODE=UIO Network
+[  104.140278784,5] PHB#0002:01:00.3 [EP  ] 8086 1589 R:02 C:020000 (      ethernet) LOC_CODE=UIO Network
+[  104.144554183,5] PHB#0020:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..04 SLOT=WIO Slot1 
+[  104.148808270,5] PHB#0020:01:00.0 [SWUP] 10b5 8718 R:ab C:060400 B:02..04 LOC_CODE=WIO Slot1
+[  104.153075339,5] PHB#0020:02:01.0 [SWDN] 10b5 8718 R:ab C:060400 B:03..03 SLOT=S002003 
+[  104.157327580,5] PHB#0020:03:00.0 [EP  ] 144d a808 R:00 C:010802 (  mass-storage) LOC_CODE=S002003
+[  104.162284610,5] PHB#0020:02:02.0 [SWDN] 10b5 8718 R:ab C:060400 B:04..04 SLOT=S002004 
+[  104.165850934,5] PHB#0020:04:00.0 [EP  ] 1344 5192 R:02 C:010802 (  mass-storage) LOC_CODE=S002004
+[  104.170805711,5] PHB#0021:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..ff SLOT=WIO Slot3 
+[  104.175063343,5] PHB#0022:00:00.0 [ROOT] 1014 03dc R:00 C:060400 B:01..01 SLOT=WIO Slot2 
+[  104.179324396,5] PHB#0022:01:00.0 [EP  ] 8086 10d3 R:00 C:020000 (      ethernet) LOC_CODE=WIO Slot2
+[  104.183690174,5] INIT: Waiting for kernel...
+[  104.185716370,5] INIT: 64-bit LE kernel discovered
+[  104.200961403,5] INIT: Starting kernel at 0x20010000, fdt at 0x30823790 137107 bytes
+
+zImage starting: loaded at 0x0000000020010000 (sp: 0x0000000020ee2ed8)
+Allocating 0x15b57d4 bytes for kernel ...
+gunzipping (0x0000000000000000 <- 0x000000002001d000:0x0000000020ee00a7)...done 0x1430300 bytes
+
+Linux/PowerPC load: 
+Finalizing device tree... flat tree at 0x20eef520
+ -> smp_release_cpus()
+spinning_secondaries = 159
+ <- smp_release_cpus()
+ <- setup_system()
+
+(B)0[1;24r[m[?7h[?1h=[H[J[H[J Petitboot (v1.3.1-16d4a73)[1B [0mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq[2B  [0mSystem information[1B  System configuration[1B  Language[1B  Rescan devices[1B  Retrieve config from URL[1B *[0;7mExit to shell           [13B[25D[0mqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq[1B [0mEnter=accept, e=edit, n=new, x=exit, l=language, h=help[1B Welcome to Petitboot Info: Waiting for server[18DConnected to server![1;55HCSE-829U C829UAF04B00084[24;28H[3;21r[3;1HMM[1;24r[3;3H[Disk: sda2 / 28b9b94d-6ef3-4fe4-8341-593abd1f4fe2][1B[49DUbuntu[11;27H[0;7m                           [24;28H[m[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-ge6e90cc45eb3-dirty[12;54H[0;7m     [24;28H[m[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-ge6e90cc45eb3-dirty (recovery mode)[13;59H[0;7m                [24;28H[m[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-gd172541678a3-dirty[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-gd172541678a3-dirty (recovery mode)[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-gd172541678a3[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-gd172541678a3 (recovery mode)[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-g1ee009b48e17[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.3.0-rc5-00031-g1ee009b48e17 (recovery mode)[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.1.1-ajd-00000-v5.1.1[24;28H[4;21r[4;1HM[1;24r[4;5HUbuntu, with Linux 5.1.1-ajd-00000-v5.1.1 (recovery mode)[24;28H[21A    Ubuntu, with Linux 4.19.0-rc3-le-thp_kvm-tce-errors_aikATvpl1[24;28H[3A[47C[0;7m     [24;28H[m[3;15r[15;1H
+
+[1;24r[13;3H[Network: enP2p1s0f0 / 0c:c4:7a:b7:fc:74][1B[39DInstall Ubuntu 18.04[24;28H[3;13r[13;1H
+[1;24r[13;5HDRAGONS BE HERE[24;28H[3;12r[12;1H
+[1;24r[12;5HDRAGONS DONT BE HERE[24;28H

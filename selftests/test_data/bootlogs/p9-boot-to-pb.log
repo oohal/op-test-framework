@@ -1,0 +1,295 @@
+ Running /bin/sh...[K[H[J[24;1H[?25h[?0cc(B[m[J[?25hExiting petitboot. Type 'exit' to return.
+You may run 'pb-sos' to gather diagnostic data
+No password set, running as root. You may set a password in the System Configuration screen.
+# 
+# halt
+# Requesting system halt
+[24371.319736] reboot: System halted
+[24448.329689633,5] OPAL: Shutdown request type 0x0...
+
+--== Welcome to SBE - CommitId[0x9346ae92] ==--
+istep 3.19
+istep 3.20
+istep 3.21
+istep 3.22
+istep 4.1
+istep 4.2
+istep 4.3
+istep 4.4
+istep 4.5
+istep 4.6
+istep 4.7
+istep 4.8
+istep 4.9
+istep 4.10
+istep 4.11
+istep 4.12
+istep 4.13
+istep 4.14
+istep 4.15
+istep 4.16
+istep 4.17
+istep 4.18
+istep 4.19
+istep 4.20
+istep 4.21
+istep 4.22
+istep 4.23
+istep 4.24
+istep 4.25
+istep 4.26
+istep 4.27
+istep 4.28
+istep 4.29
+istep 4.30
+istep 4.31
+istep 4.32
+istep 4.33
+istep 4.34
+istep 5.1
+istep 5.2
+SBE starting hostboot
+
+
+--== Welcome to Hostboot hostboot-f41f717/hbicore.bin ==--
+
+  7.52286|secure|SecureROM valid - enabling functionality
+  9.67454|Booting from SBE side 0 on master proc=00050000
+  9.71715|ISTEP  6. 5 - host_init_fsi
+  9.94666|ISTEP  6. 6 - host_set_ipl_parms
+ 10.33382|ISTEP  6. 7 - host_discover_targets
+ 13.48705|HWAS|PRESENT> DIMM[03]=A0A0A0A000000000
+ 13.48706|HWAS|PRESENT> Proc[05]=8800000000000000
+ 13.48708|HWAS|PRESENT> Core[07]=FFC3FC3FF3FC0000
+ 13.58163|ISTEP  6. 8 - host_update_master_tpm
+ 14.58720|SECURE|Security Access Bit> 0x0000000000000000
+ 14.58721|SECURE|Secure Mode Disable (via Jumper)> 0xC000000000000000
+ 14.58735|ISTEP  6. 9 - host_gard
+ 14.91910|HWAS|FUNCTIONAL> DIMM[03]=A0A0A0A000000000
+ 14.91911|HWAS|FUNCTIONAL> Proc[05]=8800000000000000
+ 14.91912|HWAS|FUNCTIONAL> Core[07]=FFC3FC3FF3FC0000
+ 14.92298|ISTEP  6.11 - host_start_occ_xstop_handler
+ 16.54703|ISTEP  6.12 - host_voltage_config
+ 16.66589|ISTEP  7. 1 - mss_attr_cleanup
+ 17.21413|ISTEP  7. 2 - mss_volt
+ 17.38504|ISTEP  7. 3 - mss_freq
+ 17.69564|ISTEP  7. 4 - mss_eff_config
+ 18.30933|ISTEP  7. 5 - mss_attr_update
+ 18.33898|ISTEP  8. 1 - host_slave_sbe_config
+ 18.50241|ISTEP  8. 2 - host_setup_sbe
+ 18.50389|ISTEP  8. 3 - host_cbs_start
+ 18.54822|ISTEP  8. 4 - proc_check_slave_sbe_seeprom_complete
+ 23.61274|ISTEP  8. 5 - host_attnlisten_proc
+ 23.63964|ISTEP  8. 6 - host_p9_fbc_eff_config
+ 23.64514|ISTEP  8. 7 - host_p9_eff_config_links
+ 23.66555|ISTEP  8. 8 - proc_attr_update
+ 23.66719|ISTEP  8. 9 - proc_chiplet_fabric_scominit
+ 23.71583|ISTEP  8.10 - proc_xbus_scominit
+ 24.97578|ISTEP  8.11 - proc_xbus_enable_ridi
+ 24.99913|ISTEP  8.12 - host_set_voltages
+ 25.08493|ISTEP  9. 1 - fabric_erepair
+ 25.19779|ISTEP  9. 2 - fabric_io_dccal
+ 25.96225|ISTEP  9. 3 - fabric_pre_trainadv
+ 25.96852|ISTEP  9. 4 - fabric_io_run_training
+ 26.11744|ISTEP  9. 5 - fabric_post_trainadv
+ 26.14139|ISTEP  9. 6 - proc_smp_link_layer
+ 26.14663|ISTEP  9. 7 - proc_fab_iovalid
+ 26.42695|ISTEP  9. 8 - host_fbc_eff_config_aggregate
+ 26.45593|ISTEP 10. 1 - proc_build_smp
+ 26.70994|ISTEP 10. 2 - host_slave_sbe_update
+ 28.03956|ISTEP 10. 4 - proc_cen_ref_clk_enable
+ 28.06290|ISTEP 10. 5 - proc_enable_osclite
+ 28.06402|ISTEP 10. 6 - proc_chiplet_scominit
+ 28.13013|ISTEP 10. 7 - proc_abus_scominit
+ 28.13171|ISTEP 10. 8 - proc_obus_scominit
+ 28.13335|ISTEP 10. 9 - proc_npu_scominit
+ 28.16096|ISTEP 10.10 - proc_pcie_scominit
+ 28.25389|ISTEP 10.11 - proc_scomoverride_chiplets
+ 28.27776|ISTEP 10.12 - proc_chiplet_enable_ridi
+ 28.29334|ISTEP 10.13 - host_rng_bist
+ 28.30764|ISTEP 10.14 - host_update_redundant_tpm
+ 28.31189|ISTEP 11. 1 - host_prd_hwreconfig
+ 28.36151|ISTEP 11. 2 - cen_tp_chiplet_init1
+ 28.36615|ISTEP 11. 3 - cen_pll_initf
+ 28.37088|ISTEP 11. 4 - cen_pll_setup
+ 28.37589|ISTEP 11. 5 - cen_tp_chiplet_init2
+ 28.38217|ISTEP 11. 6 - cen_tp_arrayinit
+ 28.38750|ISTEP 11. 7 - cen_tp_chiplet_init3
+ 28.39228|ISTEP 11. 8 - cen_chiplet_init
+ 28.39720|ISTEP 11. 9 - cen_arrayinit
+ 28.40186|ISTEP 11.10 - cen_initf
+ 28.40830|ISTEP 11.11 - cen_do_manual_inits
+ 28.41291|ISTEP 11.12 - cen_startclocks
+ 28.41764|ISTEP 11.13 - cen_scominits
+ 28.42275|ISTEP 12. 1 - mss_getecid
+ 28.61582|ISTEP 12. 2 - dmi_attr_update
+ 28.62046|ISTEP 12. 3 - proc_dmi_scominit
+ 28.65030|ISTEP 12. 4 - cen_dmi_scominit
+ 28.65542|ISTEP 12. 5 - dmi_erepair
+ 28.71952|ISTEP 12. 6 - dmi_io_dccal
+ 28.72346|ISTEP 12. 7 - dmi_pre_trainadv
+ 28.72820|ISTEP 12. 8 - dmi_io_run_training
+ 28.74688|ISTEP 12. 9 - dmi_post_trainadv
+ 28.75195|ISTEP 12.10 - proc_cen_framelock
+ 28.75673|ISTEP 12.11 - host_startprd_dmi
+ 28.76310|ISTEP 12.12 - host_attnlisten_memb
+ 28.76733|ISTEP 12.13 - cen_set_inband_addr
+ 28.77174|ISTEP 13. 1 - host_disable_memvolt
+ 28.89558|ISTEP 13. 2 - mem_pll_reset
+ 28.93888|ISTEP 13. 3 - mem_pll_initf
+ 28.98181|ISTEP 13. 4 - mem_pll_setup
+ 29.01984|ISTEP 13. 6 - mem_startclocks
+ 29.03646|ISTEP 13. 7 - host_enable_memvolt
+ 29.05337|ISTEP 13. 8 - mss_scominit
+ 29.54237|ISTEP 13. 9 - mss_ddr_phy_reset
+ 29.65799|ISTEP 13.10 - mss_draminit
+ 29.76163|ISTEP 13.11 - mss_draminit_training
+ 34.00135|ISTEP 13.12 - mss_draminit_trainadv
+ 34.25341|ISTEP 13.13 - mss_draminit_mc
+ 34.30230|ISTEP 14. 1 - mss_memdiag
+ 40.00717|ISTEP 14. 2 - mss_thermal_init
+ 40.04560|ISTEP 14. 3 - proc_pcie_config
+ 40.08196|ISTEP 14. 4 - mss_power_cleanup
+ 40.08768|ISTEP 14. 5 - proc_setup_bars
+ 40.12622|ISTEP 14. 6 - proc_htm_setup
+ 40.14028|ISTEP 14. 7 - proc_exit_cache_contained
+ 40.20862|ISTEP 15. 1 - host_build_stop_image
+ 43.72698|ISTEP 15. 2 - proc_set_pba_homer_bar
+ 43.78420|ISTEP 15. 3 - host_establish_ex_chiplet
+ 43.83002|ISTEP 15. 4 - host_start_stop_engine
+ 44.01836|ISTEP 16. 1 - host_activate_master
+ 45.18971|ISTEP 16. 2 - host_activate_slave_cores
+ 45.66795|ISTEP 16. 3 - host_secure_rng
+ 45.63592|ISTEP 16. 4 - mss_scrub
+ 45.68303|ISTEP 16. 5 - host_load_io_ppe
+ 45.69577|ISTEP 16. 6 - host_ipl_complete
+ 46.23836|ISTEP 18.11 - proc_tod_setup
+ 46.32804|ISTEP 18.12 - proc_tod_init
+ 46.34442|ISTEP 20. 1 - host_load_payload
+ 46.93784|ISTEP 20. 2 - host_load_hdat
+ 48.74809|ISTEP 21. 1 - host_runtime_setup
+ 60.36449|htmgt|OCCs are now running in ACTIVE state
+ 65.12485|ISTEP 21. 2 - host_verify_hdat
+ 65.16935|ISTEP 21. 3 - host_start_payload
+[   66.163296871,5] OPAL v6.6-rc1-14-g7ba82ac7feeb-oliver-dirty-8c8e940 starting...
+[   66.163302416,7] initial console log level: memory 7, driver 5
+[   66.163304520,6] CPU: P9 generation processor (max 4 threads/core)
+[   66.163306490,7] CPU: Boot CPU PIR is 0x0020 PVR is 0x004e1202
+[   66.163309092,7] OPAL table: 0x30117630 .. 0x30117bf0, branch table: 0x30002000
+[   66.163312358,7] Assigning physical memory map table for nimbus
+[   66.163314922,7] Parsing HDAT...
+[   66.163316168,7] SPIRA-S found.
+[   66.163318785,6] BMC #0: HW version 3, SW version 2, chip DD1.0
+[   66.163345978,4] SENSORS: Duplicate sensor ID : 0
+[   66.163347854,4] SENSORS: Duplicate sensor ID : 0
+[   66.163356062,4] SENSORS: Duplicate sensor ID : 0
+[   66.163361536,4] SENSORS: Duplicate sensor ID : 0
+[   66.163457051,6] SP Family is ibm,ast2500,openbmc
+[   66.163462432,7] LPC: IOPATH chip id = 0
+[   66.163463862,7] LPC: FW BAR       = f0000000
+[   66.163465463,7] LPC: MEM BAR      = e0000000
+[   66.163466992,7] LPC: IO BAR       = d0010000
+[   66.163468505,7] LPC: Internal BAR = c0012000
+[   66.163480051,7] LPC UART: base addr = 3f8 (3f8) size = 1 clk = 1843200, baud = 115200
+[   66.163482967,7] LPC: BT [0, 0] sms_int: 0, bmc_int: 0
+[   66.165699117,5] HDAT I2C: found e3p1 - unknown@1c dp:ff (ff:)
+[   66.165771696,5] HDAT I2C: found e3p1 - unknown@1d dp:ff (ff:)
+[   66.165809692,5] HDAT I2C: found e3p0 - unknown@19 dp:ff (ff:)
+[   66.165872111,5] HDAT I2C: found e3p1 - unknown@1e dp:ff (ff:)
+[   66.165909669,5] HDAT I2C: found e3p0 - unknown@1b dp:ff (ff:)
+[   66.165942149,5] HDAT I2C: found e3p1 - unknown@1f dp:ff (ff:)
+[   66.165992634,5] HDAT I2C: found e3p0 - unknown@1a dp:ff (ff:)
+[   66.166032398,5] HDAT I2C: found e3p0 - unknown@18 dp:ff (ff:)
+[   66.166141550,5] HDAT I2C: found e3p1 - unknown@1c dp:ff (ff:)
+[   66.166179002,5] HDAT I2C: found e3p1 - unknown@1d dp:ff (ff:)
+[   66.166212313,5] HDAT I2C: found e3p0 - unknown@19 dp:ff (ff:)
+[   66.166250862,5] HDAT I2C: found e3p1 - unknown@1e dp:ff (ff:)
+[   66.166285638,5] HDAT I2C: found e3p0 - unknown@1b dp:ff (ff:)
+[   66.166320501,5] HDAT I2C: found e3p1 - unknown@1f dp:ff (ff:)
+[   66.166376702,5] HDAT I2C: found e3p0 - unknown@1a dp:ff (ff:)
+[   66.166424098,5] HDAT I2C: found e3p0 - unknown@18 dp:ff (ff:)
+[   66.166488446,3] MS AREA: No OCMB MMIO array at MS Area 0x31203980
+[   66.166592371,3] MS AREA: No OCMB MMIO array at MS Area 0x31203bc0
+[   66.166680622,3] MS AREA: No OCMB MMIO array at MS Area 0x31203e00
+[   66.166778383,3] MS AREA: No OCMB MMIO array at MS Area 0x31204040
+[   66.166864734,3] MS AREA: No OCMB MMIO array at MS Area 0x31204280
+[   66.166976454,3] MS AREA: No OCMB MMIO array at MS Area 0x312044c0
+[   66.167068773,3] MS AREA: No OCMB MMIO array at MS Area 0x31204700
+[   66.167170453,3] MS AREA: No OCMB MMIO array at MS Area 0x31204940
+[   66.168281293,5] CHIP: Chip ID 0000 type: P9N DD2.21
+[   66.168361875,5] CHIP: Chip ID 0008 type: P9N DD2.21
+[   66.169254451,5] PLAT: Detected Romulus platform
+[   66.169321435,5] PLAT: Detected BMC platform ast2500:openbmc
+[   66.205625502,5] CPU: All 144 processors called in...
+[   68.077849192,7] LPC: Routing irq 10, policy: 0 (r=1)
+[   68.077850508,7] LPC: SerIRQ 10 using route 0 targetted at OPAL
+[   68.124124194,5] HIOMAP: Negotiated hiomap protocol v2
+[   68.124195832,5] HIOMAP: Block size is 64KiB
+[   68.124236713,5] HIOMAP: BMC suggested flash timeout of 8s
+[   68.124320204,5] HIOMAP: Flash size is 64MiB
+[   68.124349960,5] HIOMAP: Erase granule size is 64KiB
+[   68.241803197,5] FLASH: Found system flash: (unnamed) id:0
+[   68.382346579,7] LPC: Routing irq 4, policy: 0 (r=1)
+[   68.382348005,7] LPC: SerIRQ 4 using route 1 targetted at OPAL
+[   68.382605475,5] OCC: All Chip Rdy after 0 ms
+[   68.415397078,3] STB: VERSION verification FAILED. log=0xffffffffffff8160
+[   68.482492726,3] STB: IMA_CATALOG verification FAILED. log=0xffffffffffff8160
+[   69.054708576,3] STB: CAPP verification FAILED. log=0xffffffffffff8160
+[   69.077860551,5] PCI: Resetting PHBs and training links...
+[   71.118964178,5] PCI: Probing slots...
+[   71.175345241,5] PCI Summary:
+[   71.175436762,5] PHB#0000:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..01 SLOT=CPU1 Slot2 (16x) 
+[   71.175563190,5] PHB#0000:01:00.0 [LGCY] 1002 7300 R:ca C:030000 (           vga) LOC_CODE=CPU1 Slot2 (16x)
+[   71.175675842,5] PHB#0000:01:00.1 [LGCY] 1002 aae8 R:00 C:040300 (multimedia-device) LOC_CODE=CPU1 Slot2 (16x)
+[   71.175853105,5] PHB#0001:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..01 SLOT=CPU1 Slot1 (8x) 
+[   71.175984957,5] PHB#0001:01:00.0 [EP  ] 1c58 0003 R:05 C:010802 (  mass-storage) LOC_CODE=CPU1 Slot1 (8x)
+[   71.176165094,5] PHB#0002:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..01 SLOT=Builtin RAID 
+[   71.176274823,5] PHB#0002:01:00.0 [EP  ] 9005 028d R:01 C:010700 (           sas) LOC_CODE=Builtin RAID
+[   71.176394379,5] PHB#0003:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..01 SLOT=Builtin USB 
+[   71.176522628,5] PHB#0003:01:00.0 [EP  ] 104c 8241 R:02 C:0c0330 (      usb-xhci) LOC_CODE=Builtin USB
+[   71.176655158,5] PHB#0004:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..01 SLOT=Builtin Ethernet 
+[   71.176789681,5] PHB#0004:01:00.0 [EP  ] 14e4 1657 R:01 C:020000 (      ethernet) LOC_CODE=Builtin Ethernet
+[   71.176919355,5] PHB#0004:01:00.1 [EP  ] 14e4 1657 R:01 C:020000 (      ethernet) LOC_CODE=Builtin Ethernet
+[   71.177083309,5] PHB#0005:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..02 SLOT=BMC 
+[   71.177206874,5] PHB#0005:01:00.0 [ETOX] 1a03 1150 R:04 C:060400 B:02..02 LOC_CODE=BMC
+[   71.177315185,5] PHB#0005:02:00.0 [PCID] 1a03 2000 R:41 C:030000 (           vga) LOC_CODE=BMC
+[   71.177419766,5] PHB#0030:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..ff SLOT=CPU2 Slot2 (16x) 
+[   71.177559814,5] PHB#0031:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..01 SLOT=CPU2 Slot3 (8x) 
+[   71.177680117,5] PHB#0031:01:00.0 [EP  ] 14e4 1657 R:01 C:020000 (      ethernet) LOC_CODE=CPU2 Slot3 (8x)
+[   71.177825641,5] PHB#0031:01:00.1 [EP  ] 14e4 1657 R:01 C:020000 (      ethernet) LOC_CODE=CPU2 Slot3 (8x)
+[   71.177933811,5] PHB#0031:01:00.2 [EP  ] 14e4 1657 R:01 C:020000 (      ethernet) LOC_CODE=CPU2 Slot3 (8x)
+[   71.178037443,5] PHB#0031:01:00.3 [EP  ] 14e4 1657 R:01 C:020000 (      ethernet) LOC_CODE=CPU2 Slot3 (8x)
+[   71.178144198,5] PHB#0033:00:00.0 [ROOT] 1014 04c1 R:00 C:060400 B:01..ff SLOT=CPU2 Slot1 (16x) 
+[   71.178281697,4] WARNING! Skiboot version does not match VERSION partition!
+[   71.200483626,5] INIT: Waiting for kernel...
+[   75.402557314,3] STB: BOOTKERNEL verification FAILED. log=0xffffffffffff8160
+[   75.403783720,5] INIT: 64-bit LE kernel discovered
+[   75.469916037,5] IPMI: Resetting boot count on successful boot
+[   75.470555657,5] INIT: Starting kernel at 0x20011000, fdt at 0x30870398 355467 bytes
+
+zImage starting: loaded at 0x0000000020011000 (sp: 0x0000000020f20ee8)
+Allocating 0x1fc8358 bytes for kernel...
+Decompressing (0x0000000000000000 <- 0x0000000020020000:0x0000000020f1e438)...
+Done! Decompressed 0x1e04520 bytes
+
+Linux/PowerPC load: 
+Finalizing device tree... flat tree at 0x20f220c0
+
+
+nvram process returned non-zero exit status
+dmesg: klogctl: Operation not permitted
+)0[1;24r[m[4l[?7h[?25l[?1c[H[J[H[J Petitboot (v1.10.4)[2d ──────────────────────────────────────────────────────────────────────────────[4;3HSystem information[5;3HSystem configuration[6;3HSystem status log[7;3HLanguage[8;3HRescan devices[9;3HRetrieve config from URL[10;3HPlugins (0)[11d *[0;10;7mExit to shell           [22;2H[m──────────────────────────────────────────────────────────────────────────────[23d Enter=accept, e=edit, n=new, x=exit, l=language, g=log, h=help[24d Welcome to Petitboot Info: Waiting for device discovery[J[1;47H0000000000000000 0000000000000000[24d [enP4p1s0f0] Configuring with DHCP[24;15HProcessing DHCP lease response (ip: 10.61.161.193)[24;18Hbing from base tftp://10.61.2.7/pxelinux.ppc64/pxelinux.cfg/[3;21r[3;1H[2L[1;24r[3;3H[Network: enP4p1s0f0 / 98:be:94:83:00:96][4;5Hvmlinux.dev (Dev kernel on bran::/srv/tftp/ozrom2)[13;27H[0;10;7m                            [24;78H[m[4;21r[4;1HM[1;24r[4;5Hvmlinux.fallback (Fallback kernel on bran::/srv/tftp/ozrom2)[14;55H[0;10;7m          [24;78H[m[4;21r[4;1HM[1;24r[4;5HUNEXCEPTIONAL ELF HOUSE[24;78H[4;21r[4;1HM[1;24r[4;5HENCHANTED ELF HOUSE[24;78H[4;21r[4;1HM[1;24r[4;5Hvmlinux.syzkaller[24;78H[24;16Harsed PXE config from tftp://10.61.2.7/pxelinux.ppc64/pxelinux.c[?7lf[?7h [nvme0n1p1] Processing new Disk device[K [enP49p1s0f0] Configuring with DHCP[K [sdb2] Processing new Disk device[K[24;10Harsed GRUB configuration from /grub2/grub.cfg[9;21r[9;1H[2L[1;24r[9;3H[Disk: sdb2 / 3f2fc476-3140-4120-bbba-714fa0f475c3][10;5HRed Hat Enterprise Linux Server (4.15.0-rc6+) 7.4 (Maipo)[24;55H[10;21r[10;1HM[1;24r[10;5HRed Hat Enterprise Linux Server (4.11.0-HEYBATTERBATTER) 7.4 (Maipo)[20;65H[0;10;7m        [24;55H[m[10;21r[10;1HM[1;24r[10;5HRed Hat Enterprise Linux Server (4.11.0) 7.4 (Maipo)[24;55H[3;9r[9;1H
+[1;24r[9;5HRed Hat Enterprise Linux Server (4.11.0-44.el7a.ppc64le) 7.4 (Maipo)[24;55H[3;8r[8;1H
+[1;24r[8;5HRed Hat Enterprise Linux Server (0-rescue-d22294323a264cc9ac5206627c12709c)[21;73H[0;10;7m       [24;55H[m[5Ga1] Processing new Disk device[K[24;10Harsed native configuration from /petitboot.conf[24;16HGRUB configuration from /boot/grub/grub.cfg[3;13r[3;1H[2M[1;24r[11;3H[Disk: sda1 / 09d1034f-3cff-413a-af22-68be1fa5e3d8][12;5HBonus Ubuntu[24;59H[3;11r[11;1H
+[1;24r[11;5HUbuntu[24;59H[3;11r[11;1H
+[1;24r[10;11H, with Linux test[11;5HUbuntu[24;59H[3;9r[9;1H
+[1;24r[9;5HUbuntu, with Linux 5.1.0-rc5-13838-g2e18befc1b63-dirty[24;59H[3;9r[9;1H
+[1;24r[9;5HUbuntu, with Linux 5.1.0-rc5-13838-g2e18befc1b63-dirty[24;59H[3;7r[7;1H
+[1;24r[7;5HUbuntu, with Linux 5.0.0-rc4-SMAP-57315-gdbc4e3122eb9[24;59H[3;6r[6;1H
+[1;24r[6;5HUbuntu, with Linux 4.19.0-rc7+[24;59H[3;41H5.0-rc6+[11P[4;3H[Disk: sda1 / 09d1034f-3cff-413a-af22-68be1fa5e3d8][K[5;3H  Ubuntu, with Linux 4.15.18-surajjs-nested-kvm-10270-g69f1c95753e9-dirty[24;59H[3;3H[Disk: sda1 / 09d1034f-3cff-413a-af22-68be1fa5e3d8][K[4;3H  Ubuntu, with Linux 4.15.0-22-generic[K[24;59H[3;3H  Ubuntu, with Linux 4.15.0-20-generic[K[24;59H[6G2] Processing new Disk device[K[6G3[24;35H[24;10Harsed GRUB configuration from /boot/grub/grub.cfg[3;13r[3;1H[2M[1;24r[11;3H[Disk: sda3 / f0a79781-5d32-4d21-8b05-6cda4c3961d3][12;5HUbuntu[24;59H[3;13r[13;1H
+[1;24r[11;11H, with Linux rashmica[12;5HUbuntu[24;59H[3;13r[13;1H
+[1;24r[10;33H(recovery mode)[11;11H, with Linux rashmica[12;5HUbuntu[24;59H[3;9r[9;1H
+[1;24r[9;5HUbuntu, with Linux 5.7.0-rc1-ajd-00028-gce3fef1df99e[24;59H[3;9r[9;1H
+[1;24r[8;58H(recovery mode)[9;5HUbuntu, with Linux 5.7.0-rc1-ajd-00028-gce3fef1df99e[24;59H[3;7r[7;1H
+[1;24r[7;5HUbuntu, with Linux 5.7.0-rc1-ajd-00027-g9abe5b1d431e[24;59H[3;7r[7;1H
+[1;24r[6;58H(recovery mode)[7;5HUbuntu, with Linux 5.7.0-rc1-ajd-00027-g9abe5b1d431e[24;59H[3;4H Bonus Ubuntu[4;3H[Disk: sda3 / f0a79781-5d32-4d21-8b05-6cda4c3961d3][5;3H  Ubuntu, with Linux 5.5.0-rc1-00001-g83ab444248c1[K[24;59H[3;3H[Disk: sda3 / f0a79781-5d32-4d21-8b05-6cda4c3961d3][4;3H  Ubuntu, with Linux 5.5.0-rc1-00001-g83ab444248c1 (recovery mode)[24;59H[3;3H  Ubuntu, with Linux 5.5.0-rc1-00001-g83ab444248c1.old[24;59H [rhel_ozrom2-home] Processing new Disk device[K[24;15Hroot[24;47H [enP4p1s0f0] Processing DHCP lease response (ip: fd69:d75f:b8b5:0061:0001:0000[?7l:[?7h[24;15HRequesting config tftp://[fd69:d75f:b8b5:61::1]/sammj_petitboot_f[?7lu[?7h 1 item downloading: 100% - 66 B[K Download complete: ipxe_config[K [enP4p1s0f0] Parsed PXE [33Gfrom tftp://[fd69:d75f:b8b5:61::1]/sammj_petitb[?7lo[?7h[7G9p1s0f0] Processing DHCP lease response (ip: 10.61.161.207)[K[24;19Hbing from base tftp://10.61.2.7/pxelinux.ppc64/pxelinux.cfg/[3;13r[3;1H[2M[1;24r[11;3H[Network: enP49p1s0f0 / 6c:ae:8b:00:2f:38][12;5HInstall Ubuntu 18.04[24;79H[3d *[Network: enP4p1s0f0 / 98:be:94:83:00:96][K[4;5Hipxe_fun[K[5;5Hvmlinux.syzkaller[K[6;5HENCHANTED ELF HOUSE[K[7;6HNEXCEPTIONAL ELF HOUSE[K[8;5Hvmlinux.fallback (Fallback kernel on bran::/srv/tftp/ozrom2)[9;5Hvmlinux.dev (Dev kernel on bran::/srv/tftp/ozrom2)[10;3H[Disk: sdb2 / 3f2fc476-3140-4120-bbba-714fa0f475c3][11;3H  Red Hat Enterprise Linux Server (0-rescue-d22294323a264cc9ac5206627c12709c)[12;5HRed Hat Enterprise Linux Server (4.11.0-44.el7a.ppc64le) 7.4 (Maipo)[13;5HRed Hat Enterprise Linux Server (4.11.0) 7.4 (Maipo)[14;3H  Red Hat Enterprise Linux Server (4.11.0-HEYBATTERBATTER) 7.4 (Maipo)[15;3H  Red Hat Enterprise Linux Server (4.15.0-rc6+) 7.4 (Maipo)[16;3H[Disk: sda1 / 09d1034f-3cff-413a-af22-68be1fa5e3d8][17;3H  Ubuntu, with Linux 4.15.0-20-generic[18;3H  Ubuntu, with Linux 4.15.0-22-generic[19;3H  Ubuntu, with Linux 4.15.18-surajjs-nested-kvm-10270-g69f1c95753e9-dirty[20;3H  Ubuntu, with Linux 4.19.0-rc7+[21d    Ubuntu, with Linux 5.0.0-rc4-SMAP-57315-gdbc4e3122eb9[K[24;79H[24;17Harsed PXE config from tftp://10.61.2.7/pxelinux.ppc64/pxelinux.[?7lc[?7h

@@ -2,10 +2,10 @@ import pytest
 import optest
 
 from optest import system
-from optest.system import BaseSystem
+from optest.system import OpSystem
 from optest.console import FileConsole
 
-class StubSystem(BaseSystem):
+class StubSystem(OpSystem):
     def __init__(self, input_file):
         self.input_file = input_file
         self.host_on = False
@@ -14,9 +14,6 @@ class StubSystem(BaseSystem):
         con = FileConsole(self.input_file)
 
         super().__init__(console=con)
-
-        for s in system.OpSystem.openpower_state_table:
-            self._add_state(s)
 
     # host stubs
     # FIXME: should con remain active even across host reboots? if the BMC dies it can go away
@@ -30,33 +27,18 @@ class StubSystem(BaseSystem):
     def host_power_is_on(self): # -> Bool
         return self.host_on
 
-@pytest.fixture
-def off_system():
-    sys = StubSystem("test_data/bootlogs/boot-to-os")
+@pytest.fixture(params=["p8-boot-to-pb.log", "p9-boot-to-pb.log"])
+def off_system(request):
+    sys = StubSystem("test_data/bootlogs/{}".format(request.param))
     sys.host_power_off()
     sys.get_console().connect()
 
     yield sys
-#    sys.prepare()
-
-def test_boot_os(off_system):
-    sys = off_system
-
-    # FIXME: how is the "off" state handled?
-    sys.host_power_on()
-    sys.waitfor('ipling')
-    sys.waitfor('petitboot')
-    sys.waitfor('login')
 
 def test_boot_pb(off_system):
     sys = off_system
 
-    # FIXME: how is the "off" state handled?
     sys.host_power_on()
-    sys.waitfor('ipling')
+    sys.waitfor('hostboot')
     sys.waitfor('skiboot')
-    sys.waitfor('login')
-
-    # powering off sort of breaks our model, but it's a special case anyway
-
-    # FIXME: what do we have to verify where we are?
+    sys.waitfor('petitboot')
