@@ -41,6 +41,19 @@ class OpTestError(Exception):
     """
     pass
 
+class BootError(OpTestError):
+    """
+    Used to indicate an error occured while booting. Usually raised while
+    handling goto_state.
+    """
+    pass
+
+class PowerOnError(OpTestError):
+    pass
+
+class PowerOffError(OpTestError):
+    pass
+
 class CommandFailed(Exception):
     '''
     Running a command (BMC or Host) failed with non-zero exit code.

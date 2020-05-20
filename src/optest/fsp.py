@@ -424,7 +424,7 @@ class FSPIPLState(system.SysState):
             if state == 'ipling':
                 return
             time.sleep(1)
-        raise "ipl timeout"
+        raise BootError("Timeout waiting for ipling state on fsp")
 
     def wait_exit(self, system):
         for i in range(self.ipl_timeout):
@@ -436,7 +436,7 @@ class FSPIPLState(system.SysState):
                 return
 
             time.sleep(1)
-        raise "ipl timeout"
+        raise BootError("Timeout waiting for ipling to complete, waited {}".format(self.ipl_timeout))
 
 
 class FSPSystem(system.BaseSystem):
@@ -488,12 +488,7 @@ class FSPSystem(system.BaseSystem):
         output = self.fsp.run_command("plckIPLRequest 0x01")
         output = output.rstrip('\n')
         if not output.find("success"):
-            raise "poweron error"
-
-        # let the FSPs internal machinery wake up
-        time.sleep(0.5)
-        if self.fsp.get_state() != 'ipling':
-            raise "power error"
+            raise PowerOnError("Error powering on system", output)
 
     def host_power_off(self):
         state = self.fsp.get_state()
@@ -506,7 +501,7 @@ class FSPSystem(system.BaseSystem):
         output = output.rstrip('\n')
         if 'SUCCESS' not in output and \
            '0800A096' not in output: # complaining aborting an in-progress IPL. It'll still power off.
-            raise "power off error"
+            raise PowerOffError("Error occured while trying to power off the system", output)
 
     def host_power_off_hard(self):
         self.host_power_off() # use toolReset?
