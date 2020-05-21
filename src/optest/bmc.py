@@ -387,9 +387,14 @@ class IPMISystem(OpSystem):
         super().__init__(host=host, console=console, pdu=pdu)
 
     def bmc_is_alive(self):
-        utils.ping(self.bmc.hostname)
-        #def sys_bmc_state(self):
-        raise NotImplementedError()
+        return True
+
+        try:
+            utils.ping(self.bmc.bmc_host(), 1)
+        except Exception as e:
+            return False
+
+        return True
 
     # FIXME: implement
     def collect_debug(self):
