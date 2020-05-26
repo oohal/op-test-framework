@@ -416,7 +416,7 @@ class FSPIPLState(system.SysState):
         self.ipl_start_timeout = ipl_start_timeout
         self.ipl_timeout = ipl_timeout
 
-        super().__init__(name)
+        super().__init__(name, ipl_start_timeout, ipl_timeout)
 
     def wait_entry(self, system, waitat=False):
         for i in range(self.ipl_start_timeout):

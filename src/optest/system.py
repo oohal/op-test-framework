@@ -65,16 +65,10 @@ class SysState():
         FIXME: hmm, we might be able to wrap that up in wait_entry(), maybe not since
                we want to support waitat()
     '''
-    def __init__(self, name):
+    def __init__(self, name, entry_timeout, exit_timeout):
         self.name = name
-        # patterns we're looking on the console indicate this state was
-        # reached.
-        #
-        # FIXME: Doesn't work terribly well for FSP systems
-#        self.patterns = entry_patterns
-#        self.pause  = pause  # function to call to pause the IPL at this state
-#        self.resume = resume # function to call continue the IPL from this state
-#        self.verify = verify # function to call to check that we're in this state
+        self.exit_timeout = exit_timeout
+        self.entry_timeout = entry_timeout
 
     def __str__(self):
         return self.name
@@ -123,45 +117,54 @@ class ConsoleState(SysState):
     '''
     def __init__(self, name,
                  entry_patterns, entry_timeout, exit_patterns, exit_timeout):
-        self.entry_timeout = entry_timeout
         self.entry_patterns = entry_patterns
-
-        self.exit_timeout = exit_timeout
         self.exit_patterns = exit_patterns
-
-        super().__init__(name)
+        super().__init__(name, entry_timeout, exit_timeout)
 
     def _watch_for(self, system, patterns, timeout):
         expect_table = list(patterns.keys())
 
+        # FIXME: where's the right place to implement the console reconnect? possibly here...
         r = system.console.expect(expect_table, timeout=timeout)
         cb = patterns[expect_table[r]]
         if cb:
             raise Exception("hit error pattern") # FIXME: maybe we should... call the callback?
 
-    def wait_entry(self, system, waitat=False):
+    def run(self, system, exit_at):
         self._watch_for(system, self.entry_patterns, self.entry_timeout)
+        if exit_at:
+            return False
 
-#        if self.action:
-#            self.action(system)
-        if waitat:
-            raise "implement me"
+        self._watch_for(system, self.exit_patterns, self.exit_timeout)
+        return True
+
+"""
+class PetitbootState(ConsoleState):
+    def wait_exit(self, system)
+        ''' drives petitboot '''
+        opt = system.conf.get('boot_option')
+
+    def wait_entry(self, system):
+        self._watch_for(system, pb_entry_patterns, self.entry_timeout)
 
     def wait_exit(self, system):
-        self._watch_for(system, self.exit_patterns, self.exit_timeout)
-
+        '''
+        Drives petitboot to the selected boot option
+        opt = system.conf.get('boot_option')
+        if opt:
+        '''
+        pass
+"""
 
 class BaseSystem(object):
-    def __init__(self, host=None, console=None, pdu=None):
+    def __init__(self, conf=None, host=None, console=None, pdu=None):
         self.host = host
         self.console = console
         self.pdu = pdu
 
         # XXX: should setting this up be the job of the subclass? probably
         self.state_table = []
-        self.states = {}
-        self.state_idx = {}
-        self.visited = {}
+        self.last_state = None
 
         if conf and conf.get('power_off_delay'):
             self.power_off_delay = conf.get['power_off_delay']
@@ -191,6 +194,8 @@ class BaseSystem(object):
 
     # we use this to check if the BMC is still usable or not
     # This should allow us to catch NC-SI induced headaches, etc
+    # XXX: should we distingush between "alive" and "ready"? with openbmc we
+    # can be responding to ping, but not ready to boot. Same with the FSP.
     def bmc_is_alive(self):
         raise NotImplementedError()
 
@@ -203,13 +208,14 @@ class BaseSystem(object):
     def collect_debug(self):
         raise NotImplementedError()
 
-    def poweron(self):
-        self.reset_states()
-        self.host_power_on()
+    def boot(self):
+        # goto_state does a power off for us. Run until booted.
+        self.goto_state(self.state_table[-1].name)
 
     def poweroff(self, softoff=True):
         ''' helper for powering off the host and reset our state tracking '''
-        #self.reset_states()
+
+        self.last_state = None
 
         # possibly excessive, but we've found some systems where it can take
         # a while for the BMC to work again due to NC-SI issues.
@@ -217,13 +223,27 @@ class BaseSystem(object):
             self.host_power_off()
 
             for i in range(self.power_off_delay):
-                if not self.host_power_is_on():
+                # the BMC can flake out while rebooting the host which causes
+                # us to lose the console, etc.
+                # the polling here will cause errors. Catch any exceptions that
+                # crop up until we've hit the timeout.
+                if self.bmc_is_alive() and not self.host_power_is_on():
                     return
 
-                # run expect with no patterns so we get output during poweroff
-                # and so we catch any crashes that might happen while powering
-                # off
-                self.expect([pexpect.TIMEOUT], timeout=1)
+                try:
+                    if not self.host_power_is_on():
+                        return
+
+                    # run expect with no patterns so we get output during poweroff
+                    # and so we catch any crashes that might happen while powering
+                    # off
+                    self.expect([pexpect.TIMEOUT], timeout=1)
+                    log.info("Waiting for power off {}/{}s".format(i, self.power_off_delay))
+                    print("Waiting for power off {}/{}s".format(i, self.power_off_delay))
+
+                except Exception as e:
+                    raise e
+
             log.info("Timeout while powering off host. Yanking power now")
 
         # try a little harder...
@@ -272,11 +292,16 @@ class BaseSystem(object):
 
     def _add_state(self, new_state):
         self.state_table.append(new_state)
-        self.states[new_state.name] = new_state
-        self.state_idx[new_state] = len(self.state_table) - 1
-        self.visited[new_state] = False
 
-    def set_state(self, new_state):
+    def _get_state(self, name):
+        for s in self.state_table:
+            if s.name == name:
+                return s
+
+        msg = "{} is not supported by this system type".format(target)
+        raise UnsupportedStateError(msg)
+
+    def assume_state(self, new_state_name):
         ''' Updates the state tracking machinery to reflect reality
 
         NB: You probably should use goto_state() rather than this. However,
@@ -284,86 +309,27 @@ class BaseSystem(object):
             such as forcing a reboot, then use this to sync the state
             tracking up with reality.
         '''
+        self.last_state = self._get_state(new_state_name)
 
-        # TODO: update error patterns?
-        for i in range(self.state_idx[new_state]):
-            self.visited[self.state_table[i]] = True
-        self.last_state = new_state # XXX: Needed?
-
-    def waitfor(self, target_state):
-        ''' waits for the system to reach the requested state
-
-        It's up to the caller to initiate the state transition.
-        e.g.
-            To get to petitboot you would need to do:
-            system.power_off()
-            system.waitfor('off')
-            system.power_on()
-            system.waitat('petitboot')
-
-        This is a little verbose, but moving to a specific state generally
-        isn't required
-        '''
-
-        s = self.states.get(target_state, None)
-        if not s:
-            raise ValueError("System doesn't support {}".format(target_state))
-        if self.visited[s]:
-            raise ValueError('State already visited. Poweroff required')
-
-        log.info('waiting to enter {}'.format(s.name))
-        s.wait_entry(self, False)
-        self.set_state(s)
-        log.info("Reached {}".format(target_state))
-
-    def waitat(self, target):
-        if not self.states[target].interrupt:
-            raise ValueError("state can't be waited at")
-
-        self.waitfor(target)
-        self.states[target].stop()
-
-    def goto_off(self):
-        '''
-        Going to the off state is the only allowed "backwards" state transition
-        so it gets some special treatment. The main problem is that we can't
-        keep track of what state the system is in since the current test is
-        free to change it under our feet.
-
-        is in we don't know what's the "correct" way to power off the system
-        or how we're supposed to know the system is actually off.
-
-        For all the other boot states we can usually just sit and wait
-
-        There are some system specific sideband measures that we can use to
-        work this out though. For example, openbmc has the `obmcutil power`
-        command which tells you the state of the
-        '''
-
-    def goto_state(self, target):
-        s = self.states[target]
-        supported_states = [s.name for s in self.state_table]
-        if target not in supported_states:
-            msg = "{} is not supported by this system type".format(target)
-            raise UnsupportedStateError(msg)
+    def goto_state(self, target_name):
+        target = self._get_state(target_name)
 
         log.debug('goto_state target {}'.format(target))
         self.poweroff()
         self.host_power_on()
 
         for s in self.state_table:
-            log.info('waiting to enter {}'.format(s.name))
-            s.wait_entry(self, False)
-            self.set_state(s)
+            self.assume_state(s.name)
 
-            # landed at our target state...
-            if s.name == target:
-                log.info("Reached target state of {}".format(target))
+            log.info('state {} - running'.format(s))
+
+            if s == target:
+                s.run(self, True);
+                log.info("state {} - stopping, target reached".format(target))
                 return
 
-            log.debug('waiting to exit {}'.format(s.name))
-            s.wait_exit(self)
-            log.debug('waiting to exit {}'.format(s.name))
+            s.run(self, False);
+            log.info('state {} - done'.format(s.name))
 
 # called when we get to the login prompt when we wanted petitboot (i.e. missed PB)
 def error_pattern(pattern, context):
@@ -438,8 +404,9 @@ class OpSystem(BaseSystem):
 #        ConsoleState('sbe',       sbe_entry,     60, sbe_exit,      60),
         ConsoleState('hostboot',  hb_entry,      30, hb_exit,      180),
         ConsoleState('skiboot',   skiboot_entry, 30, skiboot_exit,  60),
+#        PetitbootState('petitboot', pb_entry,      30, pb_exit,      120),
         ConsoleState('petitboot', pb_entry,      30, pb_exit,      120),
-        ConsoleState('login',     login_entry,   30, login_exit,   180),
+#        LoginState('login',       login_entry,   30, login_exit,   180),
 #        ConsoleState('os',        os_entry,      10, os_exit,       30),
     ]
 

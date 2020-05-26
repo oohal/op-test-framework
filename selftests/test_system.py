@@ -39,6 +39,7 @@ def test_boot_pb(off_system):
     sys = off_system
 
     sys.host_power_on()
-    sys.waitfor('hostboot')
-    sys.waitfor('skiboot')
-    sys.waitfor('petitboot')
+    # FIXME: resume boot support
+#    sys.boot_to('hostboot')
+#    sys.boot_to('skiboot')
+    sys.boot_to('petitboot')
