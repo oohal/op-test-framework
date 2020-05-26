@@ -3,6 +3,9 @@
 import pexpect
 
 from . import logger
+from . import console
+from .system import ConsoleState, BaseSystem
+
 log = logger.optest_logger_glob.get_logger(__name__)
 
 # FIXME: port to the new framework
@@ -13,8 +16,13 @@ class PetitbootHelper():
     MENU = 0
     SHELL = 1
 
-    def __init__(self, console):
-        self.c = console
+    def __init__(self, input_console):
+        if isinstance(input_console, BaseSystem):
+            self.c = input_console.get_console()
+        elif isinstance(input_console, console.Console):
+            self.c = input_console
+        else:
+            raise TypeError("Unknown console object?")
 
         pty = self.c.pty
 
