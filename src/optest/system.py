@@ -160,6 +160,11 @@ class BaseSystem(object):
         self.state_idx = {}
         self.visited = {}
 
+        if conf and conf.get('power_off_delay'):
+            self.power_off_delay = conf.get['power_off_delay']
+        else:
+            self.power_off_delay = 120
+
         log.debug("Initialised {}".format(self.__class__.__name__))
 
     ############################################################################
@@ -205,7 +210,6 @@ class BaseSystem(object):
 
         # possibly excessive, but we've found some systems where it can take
         # a while for the BMC to work again due to NC-SI issues.
-        self.power_off_delay = 120
         if softoff:
             self.host_power_off()
 
