@@ -578,17 +578,15 @@ class OpTestConfiguration():
         # TODO: have a think about what the host object actually represents,
         #       and how it's different to the system object. It's a bit awkward
         #       right now...
-        host = optest.host.OpTestHost(None, # results dir, whatever that is
-                                            self.args['host_ip'],
-                                            self.args['host_user'],
-                                            self.args['host_password'],
-                                            self.args['bmc_ip'],
-#                                            self.output,
-                                            scratch_disk=self.args['host_scratch_disk'],
-                                            proxy=self.args['proxy'],
-#                                            logfile=self.logfile,
-                                            check_ssh_keys=self.args['check_ssh_keys'],
-                                            known_hosts_file=self.args['known_hosts_file'])
+        host = optest.host.OpTestHost(self.args['host_ip'],
+                                      self.args['host_user'],
+                                      self.args['host_password'],
+                                      self.args['bmc_ip'],
+                                      None,
+                                      scratch_disk=self.args['host_scratch_disk'],
+                                      proxy=self.args['proxy'],
+                                      check_ssh_keys=self.args['check_ssh_keys'],
+                                      known_hosts_file=self.args['known_hosts_file'])
 
         if self.args['bmc_type'] in ['AMI', 'SMC']:
             bmc = None
