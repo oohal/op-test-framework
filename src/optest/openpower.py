@@ -97,7 +97,7 @@ class OpSystem(BaseSystem):
     ]
 
     os_state_table = [
-        LoginState('login',                      30,               180),
+        LoginState('login', 180, 180), # booting can take a while, especially if quiet is on.
         OsState('os', 30, 30)
     ]
 
