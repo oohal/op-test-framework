@@ -62,6 +62,8 @@ class LoginState(ConsoleState):
 
         c = system.get_console()
 
+        # FIXME: Does c.handle_login() do all this for us? '''
+
         # drive the login prompt if we have to
         if "login" in pattern:
             c.sendline(system.host.username)

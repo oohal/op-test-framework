@@ -149,7 +149,7 @@ class Console():
         if prompt:
             built_prompt = prompt
         else:
-            built_prompt = "console-expect1" # FIXME: that # is a bug waiting to happen
+            built_prompt = "console-expect1#" # FIXME: that # is a bug waiting to happen
 
         return built_prompt
 
@@ -185,7 +185,7 @@ class Console():
 #        rc = self.pty.expect([unique, pexpect.EOF], timeout=5)
 
         # now setup the prompt
-        self.pty.sendline('PS1={}'.format(self.prompt))
+        self.pty.sendline('PS1="{}"'.format(self.prompt))
         rc = self.pty.expect([self.prompt, pexpect.EOF], timeout=1) # matches on the echoed output of sendline()
         rc = self.pty.expect([self.prompt, pexpect.EOF], timeout=1) # matches the actual prompt
 
