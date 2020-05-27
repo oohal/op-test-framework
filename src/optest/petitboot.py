@@ -282,6 +282,9 @@ class PetitbootState(ConsoleState):
 
         if exit_at:
             pb = PetitbootHelper(system)
+
+            # exit / enter to stop autoboot
+            pb.goto_shell()
             pb.goto_menu()
             return
 
