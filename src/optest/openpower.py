@@ -107,7 +107,7 @@ class OpSystem(BaseSystem):
         self._add_state_list(self.openpower_state_table)
 
         # some lab systems don't have disks and only netboot
-        if conf.args['host_username']:
+        if host.username():
             self._add_state_list(self.os_state_table)
 
         # a list of error patterns to look for while expect()ing the
