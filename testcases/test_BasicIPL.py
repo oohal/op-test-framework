@@ -62,7 +62,7 @@ class TestBasicIPL():
 
         log.debug("IPL: starting BootToPetitboot test")
 
-        sys.goto_state('petitboot')
+        sys.boot_to('petitboot')
 
         pb = PetitbootHelper(sys.get_console())
         pb.goto_shell()

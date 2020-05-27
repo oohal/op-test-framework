@@ -210,7 +210,7 @@ class BaseSystem(object):
 
     def boot(self):
         # goto_state does a power off for us. Run until booted.
-        self.goto_state(self.state_table[-1].name)
+        self.boot_to(self.state_table[-1].name)
 
     def poweroff(self, softoff=True):
         ''' helper for powering off the host and reset our state tracking '''
@@ -311,10 +311,10 @@ class BaseSystem(object):
         '''
         self.last_state = self._get_state(new_state_name)
 
-    def goto_state(self, target_name):
+    def boot_to(self, target_name):
         target = self._get_state(target_name)
 
-        log.debug('goto_state target {}'.format(target))
+        log.debug('booting to state {}'.format(target))
         self.poweroff()
         self.host_power_on()
 

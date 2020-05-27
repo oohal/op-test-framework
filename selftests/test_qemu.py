@@ -27,21 +27,13 @@ def test_qemu_boot_nokernel(qemu):
     qemu.host_power_on()
 
     with pytest.raises(optest.SkibootAssert):
-        qemu.waitfor('petitboot') # should fail since there's no kernel image
+        qemu.boot_to('petitboot') # should fail since there's no kernel image
     qemu.host_power_off()
 
 def test_qemu_boot_pb(qemu):
-    qemu.host_power_on()
-    qemu.waitfor('skiboot')
-    qemu.waitfor('petitboot') # should fail with a timeout
+    qemu.boot_to('petitboot') # should fail with a timeout
 
-    pb = PetitbootHelper(qemu.get_console())
+    pb = PetitbootHelper(qemu)
     pb.goto_shell()
 
     qemu.run_command("echo hi")
-
-
-def test_qemu_goto_state(qemu):
-    qemu.goto_state('petitboot')
-    pb = PetitbootHelper(qemu.get_console())
-    pb.goto_shell()
