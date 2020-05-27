@@ -160,7 +160,12 @@ class Console():
         patterns = [self.prompt, pexpect.TIMEOUT, pexpect.EOF]
 
         self.pty.sendline('unset HISTFILE PS1;')
-        self.pty.sendline("which sh && exec sh --norc --noprofile")
+
+        # NB: Previously we ran: sh --norc --noprofile, but dash (the debian
+        # /bin/sh) barfs if you pass it any arguments.
+        # Execing into sh with ENV set to /dev/null stops it from running
+        # the rc file so do that instead.
+        self.pty.sendline("ENV=/dev/null which sh && exec sh")
 
         # FIXME: do we even not have stty?
         self.pty.sendline("which stty && stty cols 300; which stty && stty rows 30;")
