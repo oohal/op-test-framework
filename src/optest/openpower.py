@@ -66,9 +66,9 @@ class LoginState(ConsoleState):
 
         # drive the login prompt if we have to
         if "login" in pattern:
-            c.sendline(system.host.username)
+            c.pty.sendline(system.host.username())
             c.expect('assword:')
-            c.sendline(system.host.password)
+            c.pty.sendline(system.host.password())
 
         # wait for a login shell prompt...
         self._watch_for(system, self.login_exit, self.exit_timeout)
@@ -77,8 +77,8 @@ class LoginState(ConsoleState):
         c = system.get_console()
 
         # send some blank lines to get us back to the login prompt
-        c.sendline('')
-        c.sendline('')
+        c.pty.sendline('')
+        c.pty.sendline('')
         self.run(system, False)
 
 
@@ -86,7 +86,7 @@ class OsState(SysState):
     ''' this is mainly just here so we can go system.boot_to('os') '''
 
     def run(self, system, stop):
-        system.get_console().setup_shell()
+        system.get_console().shell_setup()
 
 class OpSystem(BaseSystem):
     openpower_state_table = [
