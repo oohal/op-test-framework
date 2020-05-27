@@ -14,7 +14,7 @@ if ! [ -d op-test-venv ] ; then
 	python3 -m venv op-test-venv
 	source op-test-venv/bin/activate
 	pip3 install -r ./requirements.txt
-	pip3 install .
+	pip3 install . -e
 fi
 
 if ! [ -f ./qemu.conf ] ; then
