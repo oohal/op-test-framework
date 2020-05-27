@@ -277,6 +277,18 @@ class BaseSystem(object):
         '''
         self.last_state = self._get_state(new_state_name)
 
+    def _run_state(self, s, target):
+        self.assume_state(s.name)
+        log.info('state {} - running'.format(s))
+
+        if s == target:
+            s.run(self, True);
+            log.info("state {} - stopping, target reached".format(target))
+            return
+
+        s.run(self, False);
+        log.info('state {} - done'.format(s.name))
+
     def boot_to(self, target_name):
         target = self._get_state(target_name)
 
@@ -285,14 +297,27 @@ class BaseSystem(object):
         self.host_power_on()
 
         for s in self.state_table:
-            self.assume_state(s.name)
-
-            log.info('state {} - running'.format(s))
-
+            self._run_state(s, target)
             if s == target:
-                s.run(self, True);
-                log.info("state {} - stopping, target reached".format(target))
-                return
+                break
 
-            s.run(self, False);
-            log.info('state {} - done'.format(s.name))
+    def boot_resume(self, target):
+        ''' try and continue booting from the last known state. This needs to
+        used with care since it's pretty easy for the actual state and the last
+        known state to end up out of sync if the test does anything non-trivial.
+
+        This can be really useful for op-test development and for debug scripts
+        but try avoid it in CI tests since it's inherently fragile.
+        '''
+        found = False
+
+        for s in self.state_table:
+            if not found and s != self.last_state:
+                continue;
+
+            if s == self.last_state:
+                found = True
+                log.info("Attempting to resume booting from state {}".format(s))
+                s.resume(self)
+            else:
+                self._run_state(s, target)
