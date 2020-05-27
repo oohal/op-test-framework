@@ -108,6 +108,9 @@ class QemuSystem(BaseSystem):
         for s in qemu_state_table:
             self._add_state(s)
 
+    def bmc_is_alive(self):
+        return True
+
     def host_power_on(self):
         log.debug("QEMU Power on")
 
