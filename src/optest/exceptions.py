@@ -516,3 +516,17 @@ class ConsoleSettings(Exception):
                 "".format(self.kwargs['before'],
                           self.kwargs['after'],
                           self.kwargs['msg']))
+
+class UnsupportedStateError(Exception):
+    '''Raised when attempting to boot to a state the system doesn't support'''
+    pass
+
+class ErrorPattern(Exception):
+    ''' Raised when we see patterns on the host console that indicate an error'''
+    pass
+
+class MissedState(Exception):
+    '''Raised when we see patterns on the host console that indicate we
+       missed a state transition. If you see this there's probably a bug
+       in op-test, or the test system configuration.'''
+    pass

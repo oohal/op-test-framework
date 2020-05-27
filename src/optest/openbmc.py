@@ -32,7 +32,7 @@ from .exceptions import HTTPCheck, CommandFailed
 from .constants import Constants as BMC_CONST
 
 from .console import Console, SSHConsole
-from .system import BaseSystem, OpSystem
+from .openpower import OpSystem
 from .ipmi import OpTestIPMI
 
 from . import utils

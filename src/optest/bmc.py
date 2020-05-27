@@ -44,8 +44,8 @@ from . import opexpect
 from . import utils
 
 from .ipmi import OpTestIPMI
-from .system import OpSystem
 from .console import SSHConsole
+from .openpower import OpSystem
 from .constants import Constants as BMC_CONST
 from .exceptions import CommandFailed, SSHSessionDisconnected, OpTestError
 

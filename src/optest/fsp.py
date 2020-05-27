@@ -49,6 +49,7 @@ from .exceptions import OpTestError
 
 from . import system
 from . import logger
+from .petitboot import PetitbootState
 
 log = logger.optest_logger_glob.get_logger(__name__)
 
@@ -450,8 +451,8 @@ class FSPSystem(system.BaseSystem):
     # on FSP systems we don't get any console output for the IPLing process, so we just
     # have to wait on petitboot, which usually takes 5 minutes or so
     fsp_state_table = [
-        FSPIPLState('ipling', 30, 300),# 30s to enter ipling, 300s for runtime
-        system.ConsoleState('petitboot', system.pb_entry, 60, system.pb_exit, 30)
+        FSPIPLState('ipling', 30, 300), # 30s to enter ipling, 300s for runtime
+        PetitbootState('petitboot', 60, 30),
     ]
 
     def __init__(self,

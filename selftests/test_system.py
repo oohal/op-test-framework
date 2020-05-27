@@ -2,7 +2,7 @@ import pytest
 import optest
 
 from optest import system
-from optest.system import OpSystem
+from optest.openpower import OpSystem
 from optest.console import FileConsole
 
 class StubSystem(OpSystem):

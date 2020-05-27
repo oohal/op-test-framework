@@ -273,6 +273,10 @@ class PetitbootState(ConsoleState):
     #    'dracut:/#': dracut_callback,
     }
 
+    def __init__(self, name, enter_timeout, exit_timeout):
+        super().__init__(name, PetitbootState.pb_entry, enter_timeout,
+                               PetitbootState.pb_exit, exit_timeout)
+
     def run(self, system, exit_at):
         self._watch_for(system, self.pb_entry, self.entry_timeout)
 
