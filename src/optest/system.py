@@ -75,34 +75,12 @@ class SysState():
             return self.name == other.name
         return False
 
-    # FIXME: Wonder if we should even bother with entry / exit stuff and
-    # just have the one state handling function.
-    #
-    # FIXME: It's not clear to be how the state system should interact with cons
-    # reconnect stuff. If the console dropped we can miss the state transitions
-    # we're looking for. Old op-test handled this by "kicking" the console
-    # on reconnect, so if we were in a wait state (petitboot menu, os login)
-    # we could keep going. Even with that it's still possibly to miss
-    # a transition since the default petitboot timeout isn't that long (10s)
-    # and ipmitool won't notice the SOL flaking out instantly.
-    def wait_entry(self, system):
-        '''
-        Polls the system to check if we're entered this state.
-
-        Returns when the system is in this state.
-        Raises BootError we time out waiting for the state, or some other error
-        occurs.
-        '''
+    def run(self, stop):
         raise NotImplementedError()
 
-    def wait_exit(self):
-        '''
-        Returns when we detect the system has left this state.
-
-        Raises BootError if we time out waiting or some other error occurs
-        '''
+    def resume(self, stop):
+        ''' resumes the boot starting from where it was stopped '''
         raise NotImplementedError()
-
 
 # helper functions for the ConsoleState pattern tables
 def error_pattern(pattern, context):
