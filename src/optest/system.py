@@ -76,6 +76,9 @@ class SysState():
 #        self.resume = resume # function to call continue the IPL from this state
 #        self.verify = verify # function to call to check that we're in this state
 
+    def __str__(self):
+        return self.name
+
     def __hash__(self):
         return self.name.__hash__()
 
