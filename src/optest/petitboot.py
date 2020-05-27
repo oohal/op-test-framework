@@ -4,7 +4,7 @@ import pexpect
 
 from . import logger
 from . import console
-from .system import ConsoleState, BaseSystem
+from .system import ConsoleState, BaseSystem, missed_state, error_pattern
 
 log = logger.optest_logger_glob.get_logger(__name__)
 
@@ -252,3 +252,36 @@ class PetitbootHelper():
                 return OpSystemState.UNKNOWN
         else:  # TIMEOUT EOF from cat
             return OpSystemState.UNKNOWN
+
+
+class PetitbootState(ConsoleState):
+    pb_entry = {
+        'Petitboot': None,
+        'x=exit': None,
+        '/ #': None,
+        'login: ': missed_state,
+        'Aborting!': error_pattern,
+    }
+
+    pb_exit = {
+        "Performing kexec reboot" : None ,
+        "SIGTERM received, booting..." : None,
+        "kexec_core: Starting new kernel" : None,
+        'login: ': None,
+        '/ #': error_pattern,
+        'mon> ': error_pattern,
+    #    'dracut:/#': dracut_callback,
+    }
+
+    def run(self, system, exit_at):
+        self._watch_for(system, self.pb_entry, self.entry_timeout)
+
+        if exit_at:
+            pb = PetitbootHelper(system)
+            pb.goto_menu()
+            return
+
+        # TODO: allow choosing a boot option
+
+        # otherwise just wait for the autoboot to happen
+        self._watch_for(system, self.pb_exit, self.exit_timeout)

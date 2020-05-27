@@ -138,24 +138,6 @@ class ConsoleState(SysState):
         self._watch_for(system, self.exit_patterns, self.exit_timeout)
         return True
 
-"""
-class PetitbootState(ConsoleState):
-    def wait_exit(self, system)
-        ''' drives petitboot '''
-        opt = system.conf.get('boot_option')
-
-    def wait_entry(self, system):
-        self._watch_for(system, pb_entry_patterns, self.entry_timeout)
-
-    def wait_exit(self, system):
-        '''
-        Drives petitboot to the selected boot option
-        opt = system.conf.get('boot_option')
-        if opt:
-        '''
-        pass
-"""
-
 class BaseSystem(object):
     def __init__(self, conf=None, host=None, console=None, pdu=None):
         self.host = host
