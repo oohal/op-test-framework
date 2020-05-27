@@ -30,12 +30,12 @@ class PetitbootHelper():
         # do something to support older ones.
         pty.sendcontrol('l')
         r = pty.expect(['Petitboot', 'exit=x',
-                        "# $", self.c.expect_prompt,
+                        "# $", "/ # ", self.c.expect_prompt,
                         pexpect.TIMEOUT, pexpect.EOF], timeout=2)
 
         if r in [0, 1]:
             self.state = self.MENU
-        elif r in [2, 3]:
+        elif r in [2, 3, 4]:
             self.state = self.SHELL
         else:
             raise Exception("not at petitboot") # FIXME: subclass it
