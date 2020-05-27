@@ -37,36 +37,76 @@ skiboot_exit = {
     '] INIT: Starting kernel at' : None,
 }
 
-login_entry = {
-    'login: ': None,
-    '/ #': error_pattern,
-    'mon> ': error_pattern,
-#    'dracut:/#': dracut_callback,
-}
-login_exit = {
-    '# ' : None,
-    # FIXME: Add other shell patterns
-}
+class LoginState(ConsoleState):
+    login_entry = {
+        'login: ': None,
+        '/ #': error_pattern,
+        'mon> ': error_pattern,
+    #    'dracut:/#': dracut_callback,
+    }
+    login_exit = {
+        '# ' : None,
+        # FIXME: Add other shell patterns
+    }
+
+    def __init__(self, name, enter_timeout, exit_timeout):
+        super().__init__(name, self.login_entry, enter_timeout,
+                               self.login_exit, exit_timeout) 
+
+    def run(self, system, stop):
+
+        pattern = self._watch_for(system, self.login_entry, self.entry_timeout)
+
+        if stop:
+            return
+
+        c = system.get_console()
+
+        # drive the login prompt if we have to
+        if "login" in pattern:
+            c.sendline(system.host.username)
+            c.expect('assword:')
+            c.sendline(system.host.password)
+
+        # wait for a login shell prompt...
+        self._watch_for(system, self.login_exit, self.exit_timeout)
+
+    def resume(self, system):
+        c = system.get_console()
+
+        # send some blank lines to get us back to the login prompt
+        c.sendline('')
+        c.sendline('')
+        self.run(system, False)
+
+
+class OsState(SysState):
+    ''' this is mainly just here so we can go system.boot_to('os') '''
+
+    def run(self, system, stop):
+        system.get_console().setup_shell()
 
 class OpSystem(BaseSystem):
-    # ordered list of possible states for this system
     openpower_state_table = [
-#        ConsoleState('off',  None,           1),
-        # there's a bit before we hit skiboot_entry
-#        ConsoleState('sbe',       sbe_entry,     60, sbe_exit,      60),
+        # NB: we're ignoring the SBE since some systems don't have SBE output
         ConsoleState('hostboot',  hb_entry,      30, hb_exit,      180),
         ConsoleState('skiboot',   skiboot_entry, 30, skiboot_exit,  60),
         PetitbootState('petitboot', 30, 120),
-#        LoginState('login',       login_entry,   30, login_exit,   180),
-#        ConsoleState('os',        os_entry,      10, os_exit,       30),
     ]
 
-    def __init__(self, host=None, console=None, pdu=None):
-        super().__init__(host, console, pdu)
+    os_state_table = [
+        LoginState('login',                      30,               180),
+        OsState('os', 30, 30)
+    ]
 
-        # build our state table
-        for s in self.openpower_state_table:
-            self._add_state(s)
+    def __init__(self, conf=None, host=None, console=None, pdu=None):
+        super().__init__(host=host, console=console, pdu=pdu, conf=conf)
+
+        self._add_state_list(self.openpower_state_table)
+
+        # some lab systems don't have disks and only netboot
+        if conf.args['host_username']:
+            self._add_state_list(self.os_state_table)
 
         # a list of error patterns to look for while expect()ing the
         # host console FIXME: these are in OpExpect currently, which is

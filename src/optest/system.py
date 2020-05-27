@@ -131,6 +131,7 @@ class ConsoleState(SysState):
         cb = patterns[expect_table[r]]
         if cb:
             raise Exception("hit error pattern") # FIXME: maybe we should... call the callback?
+        return expect_table[r]
 
     def run(self, system, exit_at):
         self._watch_for(system, self.entry_patterns, self.entry_timeout)
@@ -273,6 +274,9 @@ class BaseSystem(object):
     # System state tracking circus.
     #
     ############################################################################
+
+    def _add_state_list(self, new_states):
+        self.state_table.extend(new_states)
 
     def _add_state(self, new_state):
         self.state_table.append(new_state)

@@ -8,8 +8,6 @@ from .system import ConsoleState, BaseSystem, missed_state, error_pattern
 
 log = logger.optest_logger_glob.get_logger(__name__)
 
-# FIXME: port to the new framework
-
 class PetitbootHelper():
     ''' helper class for driving petitboot '''
 
