@@ -233,7 +233,7 @@ class BaseSystem(object):
 
         # try a little harder...
         self.host_power_off_hard()
-        for i in range(self.power_yank_delay):
+        for i in range(self.power_off_delay):
             if not self.host_power_is_on():
                 return
 
