@@ -36,14 +36,35 @@ class FileLikeLogger():
     '''
     def __init__(self, l):
         self.log = l
+        self.gather = ""
+
+    def writeln(self, line):
+        stripped = line.strip()
+        if len(stripped) == 0:
+            return
+        self.log.debug(stripped)
 
     def write(self, data):
+        # Linux doesn't write to the console in blocks, so gather lines before
+        # writing them out.
+        if "\n" not in data:
+            self.gather += data
+            return
+
         lines = data.splitlines()
-        for line in lines:
-            self.log.debug(line.rstrip("\n"))
+        lines[0] = self.gather + lines[0]
+        for line in lines[:-1]:
+            self.writeln(line)
+
+        self.gather = lines[-1]
 
     def flush(self):
-        pass
+        '''
+        pexpect likes to flush a lot so enabling this makes the logs unreadable
+        self.writeln("flush:" + self.gather)
+        self.gather = ""
+        '''
+        return
 
 
 class OpTestLogger():
