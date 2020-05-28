@@ -51,6 +51,7 @@ class PetitbootHelper():
             sys_pty.send('x')
             pp = self.get_petitboot_prompt()
             if pp == 1:
+                self.state = self.SHELL
                 break
         if pp != 1:
             log.warning(
@@ -62,17 +63,12 @@ class PetitbootHelper():
             return
 
         sys_pty = self.c.pty
-
-        for i in range(3):
-            sys_pty.send('x')
-            pp = self.get_petitboot_prompt()
-            if pp == 1:
-                break
-        if pp != 1:
-            log.warning(
-                "OpTestSystem detected something, tried to recover, but still we have a problem, retry")
-            raise ConsoleSettings(before=sys_pty.before, after=sys_pty.after,
-                                  msg="System at Petitboot Menu unable to exit to shell after retry")
+        # send a new line to ensure we're at the prompt
+        self.c.pty.sendline('');
+        self.c.pty.sendcontrol('d')
+        self.c.expect('x=exit')
+        self.state = self.MENU
+        # FIXME: do something better
 
     def get_petitboot_prompt(self):
         my_pp = 0
@@ -86,46 +82,6 @@ class PetitbootHelper():
             self.c.shell_setup()
             my_pp = 1
         return my_pp
-
-    def to_menu(self):
-        sys_pty = self.c.pty
-        log.debug("USING EPS 1 Expect Buffer ID={}".format(hex(id(sys_pty))))
-        eps_rc = self.try_exit(sys_pty)
-        if eps_rc == 0:  # Petitboot
-            return
-        else:  # we timed out or eof
-            try:
-                self.util.try_recover(self.console, counter=3)
-                # if we get back here we're good and at the prompt
-                # but we lost our sys_pty, so get a new one
-                sys_pty = self.c
-                log.debug("USING EPS 2 Expect Buffer ID={}".format(
-                    hex(id(sys_pty))))
-                sys_pty.sendline()
-                eps_rc = self.try_exit(sys_pty)
-                if eps_rc == 0:  # Petitboot
-                    return
-                else:
-                    raise RecoverFailed(before=sys_pty.before, after=sys_pty.after,
-                                        msg="Unable to get the Petitboot prompt stage 3, we were trying to exit back to menu")
-            except Exception as e:
-                # who knows but keep on
-                log.debug("EPS Exception={}".format(e))
-
-    def try_exit(self, sys_pty):
-        self.util.clear_state(self)
-        log.debug("USING TE Expect Buffer ID={}".format(hex(id(sys_pty))))
-        sys_pty.sendline()
-        sys_pty.sendline("exit")
-        rc_return = sys_pty.expect(
-            ["Petitboot", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
-        log.debug("rc_return={}".format(rc_return))
-        log.debug("sys_pty.before={}".format(sys_pty.before))
-        log.debug("sys_pty.after={}".format(sys_pty.after))
-        if rc_return == 0:
-            return rc_return
-        else:
-            return -1
 
     def get_my_ip_from_host_perspective(self):
         raw_pty = self.c.pty
