@@ -7,6 +7,7 @@ import pyte
 from . import console
 from .system import ConsoleState, BaseSystem, missed_state, error_pattern
 from .keys import OpTestKeys
+from .exceptions import ConsoleSettings
 
 log = logging.getLogger(__name__)
 

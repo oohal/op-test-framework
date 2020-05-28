@@ -48,4 +48,8 @@ def test_boot_pb(off_system):
     # FIXME: resume boot support
 #    sys.boot_to('hostboot')
 #    sys.boot_to('skiboot')
-    sys.boot_to('petitboot')
+
+    # raises since boot_to will try and park at the petitboot menu so its
+    # console interactions don't do anything. That's fine for this test.
+    with pytest.raises(optest.ConsoleSettings):
+        sys.boot_to('petitboot')
