@@ -104,8 +104,7 @@ class QemuSystem(BaseSystem):
 
         self.console = QemuConsole(self.logfile)
 
-        # TODO: host object?
-        super().__init__(None, console=self.console)
+        super().__init__(None, console=self.console, host=kwargs.get('host'))
 
         for s in qemu_state_table:
             self._add_state(s)
