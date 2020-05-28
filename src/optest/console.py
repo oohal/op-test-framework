@@ -167,7 +167,9 @@ class Console():
         # the rc file so do that instead.
         self.pty.sendline("ENV=/dev/null which sh && exec sh")
 
-        # FIXME: do we even not have stty?
+        # NB: If you change the tty dimensions from (300, 30) to something else
+        # make sure the screen sized assumed by PetitbootHelper is kept in sync.
+        # FIXME: do we ever not have stty?
         self.pty.sendline("which stty && stty cols 300; which stty && stty rows 30;")
 
         # This is mainly for mambo where we can get two echos. One echo comes

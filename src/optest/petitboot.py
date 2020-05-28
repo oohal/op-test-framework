@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import pexpect
+import pyte
 
 from . import logger
 from . import console
 from .system import ConsoleState, BaseSystem, missed_state, error_pattern
+from .keys import OpTestKeys
 
 log = logger.optest_logger_glob.get_logger(__name__)
 
@@ -38,7 +40,7 @@ class PetitbootHelper():
         elif r in [2, 3, 4]:
             self.state = self.SHELL
         else:
-            raise Exception("not at petitboot") # FIXME: subclass it
+            raise Exception("Not at petitboot?") # FIXME: subclass it
 
 
     def goto_shell(self):
@@ -68,7 +70,7 @@ class PetitbootHelper():
         self.c.pty.sendcontrol('d')
         self.c.expect('x=exit')
         self.state = self.MENU
-        # FIXME: do something better
+        # FIXME: error checking
 
     def get_petitboot_prompt(self):
         my_pp = 0
@@ -209,6 +211,122 @@ class PetitbootHelper():
         else:  # TIMEOUT EOF from cat
             return OpSystemState.UNKNOWN
 
+    def read_screen_updates(self):
+        timeout = 2
+        buf = ""
+
+        # We should always get some output in response to a key press so we wait
+        # a bit until we get a response. Once we've gotten some data back we'll
+        # keep reading until we run out of data. That *probably* means it's the
+        # end of the screen update.
+        #
+        # NB: I am almost certain this is going to screw us at some point.
+        # We have no way to work out when the entire screen update has landed so
+        # we're forced to do this kind of janky crap. Increasing the timeout
+        # after the first batch of data is recieved might help, but we wait out
+        # that timeout after each petitboot interaction so making it too long
+        # can slow things down considerably. It's not too bad on a test system
+        # with only a few boot menu options, but the average development system
+        # can have dozens of test kernel menu entries.
+        #
+        # Just in case you're wondering: No, there isn't a simpler way to
+        # handle this. Ncurses is quite smart and will try to minimise the
+        # re-drawn areas of the screen so unless you're keeping around the
+        # full terminal state it's difficult-to-impossible to drive a TUI
+        # application reliably.
+        #
+        # TODO: Make the timeout a config param?
+        while True:
+            try:
+               segment = self.c.pty.read_nonblocking(1024, timeout)
+            except pexpect.exceptions.TIMEOUT as e: # Swallow the timeout
+                if len(buf):
+                    return buf
+                else:
+                    return None
+
+            buf = buf + segment
+            timeout = 0.1
+
+    def select_boot_option(self, target=None):
+        '''
+        Drives the petitboot ncurses interface to find the target boot menu
+        entry. This function only moves the cursor into place, it won't
+        actually start the process.
+
+        Returns a list of available boot options. When the target option is
+        found we stop looking. If target is None a full list is returned.
+        '''
+        # NB: The 300,30 are the dimensions that Console::shell_setup() sets.
+        # I'm not entirely sure why we use that, but keep them matching.
+        screen = pyte.Screen(300, 30)
+        input_stream = pyte.Stream(screen)
+
+        self.c.pty.send(OpTestKeys.HOME)
+        self.c.pty.sendcontrol('l')
+        options = []
+
+        while True:
+            # aren't being written to. I'm not too sure how to fix that...
+            input_buf = self.read_screen_updates()
+
+            if not input_buf:
+                raise Exception("empty buf? that shouldn't happen")
+            if len(input_buf) == 1:
+                # Saw this a while ago and it can happen as a result of
+                # sitting in the shell. If that happens it's because of a
+                # bug elsewhere, so don't try to handle it here.
+                raise Exception("Bad petitboot state?")
+
+            # Apply the update to our emulated tty
+            input_stream.feed(input_buf)
+
+            selected = None
+            for l in screen.display:
+                # The currently selected item is marked with a ' *'. We skip items
+                # with a left bracket as the first character since those are the
+                # header lines for boot devices (disk, network, etc).
+                if '*' in l[0:3]:
+                    log.debug("menu item: ", l.strip())
+
+                if l.startswith(' *') and not l.startswith(' *['):
+                    selected = l[2:]
+                    break
+
+            if selected:
+                # end of the boot option menu?
+                selected = selected.strip()
+                if "system information" in selected.lower():
+                    break
+
+                options.append(selected)
+                if target and selected == target:
+                    break
+
+            self.c.pty.send(OpTestKeys.DOWN)
+
+        return options
+
+    def boot_menu_option(self, option_name, timeout=60):
+        started = time.monotonic()
+
+        while time.monotonic() < start + timeout:
+            r = self.select_boot_option(self, option_name)
+
+            if r[-1] == option_name:
+                self.c.pty.sendline('') # push button!
+                return
+
+        # FIXME: change the type
+        raise Exception("Boot option: {} didn't appear inside timeout"
+                        .format(option_name, format(timeout)))
+
+    def add_custom_boot_opt(self, kernel, initrd=None, cmdline=None, dtb=None):
+        # TODO: implement this. It's possible to add random options using
+        # add from URL menu option with file:// URLs. There's probably a way
+        # to get pb-event to do it too, but I have to look at the code whenever
+        # I try to use pb-event so that's a problem for another day.
+        pass
 
 class PetitbootState(ConsoleState):
     pb_entry = {
@@ -232,10 +350,14 @@ class PetitbootState(ConsoleState):
     def __init__(self, name, enter_timeout, exit_timeout):
         super().__init__(name, PetitbootState.pb_entry, enter_timeout,
                                PetitbootState.pb_exit, exit_timeout)
+        self.boot_option = None
 
     def run(self, system, exit_at):
         self._watch_for(system, self.pb_entry, self.entry_timeout)
 
+
+        # NB: Instantiating PetitbootHelper has some side effects which might
+        #     cancel auto boot so don't do it in the common path.
         if exit_at:
             pb = PetitbootHelper(system)
 
@@ -245,6 +367,11 @@ class PetitbootState(ConsoleState):
             return
 
         # TODO: allow choosing a boot option
+        if self.boot_option:
+            pb = PetitbootHelper(system)
+            pb.goto_menu()
+            pb.select_boot_option(self.boot_option)
+            system.get_console().pty.sendline('') # push button
 
         # otherwise just wait for the autoboot to happen
         self._watch_for(system, self.pb_exit, self.exit_timeout)

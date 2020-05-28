@@ -11,3 +11,4 @@ class OpTestKeys():
     PGUP = '\x1b[5~'
     ENTER = '\n'
     SPACE = ' '
+    HOME = '\x1b[1~'
