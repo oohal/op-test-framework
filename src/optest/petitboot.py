@@ -31,9 +31,9 @@ class PetitbootHelper():
         # NB: ctrl+l only refreshes on newer petitboot versions, might need to
         # do something to support older ones.
         pty.sendcontrol('l')
-        r = pty.expect(['Petitboot', 'exit=x',
-                        "# $", "/ # ", self.c.expect_prompt,
-                        pexpect.TIMEOUT, pexpect.EOF], timeout=2)
+
+        r = pty.expect(['Petitboot', 'x=exit',
+                        "# $", "/ # ", self.c.expect_prompt], timeout=2)
 
         if r in [0, 1]:
             self.state = self.MENU
