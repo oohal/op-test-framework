@@ -89,6 +89,7 @@ class QemuSystem(BaseSystem):
     def __init__(self, **kwargs):
         self.qemu_binary = kwargs.get('qemu_binary')
         self.initramfs = kwargs.get('initramfs')
+        self.extra_args = kwargs.get('extra', "")
         self.skiboot = kwargs.get('skiboot')
         self.kernel = kwargs.get('kernel')
         self.cdrom = kwargs.get('cdrom')
@@ -137,6 +138,9 @@ class QemuSystem(BaseSystem):
         # We can add a pcie bridge to each of these, and each bridge has 31
         # slots.. if you see where I'm going..
         if self.skip_pci:
+            # The PCIe spec requires a one second wait after bringing up the
+            # link so that's what skiboot does. Unfortunately qemu is generally
+            # single threaded so you end up doing a lot of pointless waiting.
             cmd = cmd + " -global driver=power9_v2.0-pnv-chip,property=num-phbs,value=0"
         else:
             cmd = (cmd
@@ -230,7 +234,11 @@ class QemuSystem(BaseSystem):
             cmd += ",frudatafile=" + self.fru_path
         cmd = cmd + " -device isa-ipmi-bt,bmc=bmc0,irq=10"
         cmd = cmd + " -serial none -device isa-serial,chardev=s1 -chardev stdio,id=s1,signal=off"
+
+        # Add no-reboot to prevent qemu re-starting the guest. We need this to
+        # let op-test reliably detect kernel crashes via console timeout.
         cmd = cmd + " -no-reboot"
+        cmd = cmd + self.extra_args
 
         log.info("Qemu command: {}".format(cmd))
         print(cmd)
