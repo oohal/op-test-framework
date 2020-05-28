@@ -422,9 +422,60 @@ def get_parser():
 
     return parser
 
+def parse_config_file(filename, optional=False):
+    config = configparser.ConfigParser()
+
+    if not os.access(filename, os.R_OK):
+        if optional:
+            return {}
+        raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
+
+    config.read(filename)
+
+    if config.has_section('op-test'):
+        d = dict(config.items('op-test'))
+    else:
+        msg = "{} is missing an an [op-test] section header".format(filename)
+        raise configparser.NoSectionError(msg)
+
+    # FIXME: maybe we should allow config sections for specific tests?
+    return dict(config.items('op-test'))
+
+class OpTestEnv():
+    '''
+    OpTestEnv is here to store global configuration data for the library
+    rather than specific systems.
+
+    As a rule of thumb: if we're configuring the operation of op-test itself
+    rather than a specific system, then it should go in here. At some point
+    we'll stop folding the environment vars into the system config.
+    '''
+
+    def __init__(self, user_file=None):
+        self.args = {}
+
+        if not user_file:
+            user_file = os.environ.get('OP_TEST_CONFIG_FILE',
+                                       "~/.op-test-framework.conf")
+        if user_file:
+            user_file = os.path.expanduser(user_file)
+            self.user_conf = parse_config_file(user_file, True)
+            self.args.update(self.user_conf)
+
+        # Grab environmental variables we're interested in
+        # XXX: Should we have a whitelist here? If only so there's a complete
+        #      list somewhere which would help if we decide to remove env stuff
+        #      from the system config.
+        for k in os.environ.keys():
+            if k.startswith("OP_TEST_"):
+                internal_key = k.strip("OP_TEST_").lower()
+                self.args[internal_key] = os.environ[k]
+
+global optestenv
+optestenv = OpTestEnv()
 
 class OpTestConfiguration():
-    def __init__(self, **kwargs):
+    def __init__(self, env=optestenv, **kwargs):
         self.args = {}
 
         # dumb hack to get the default values until we get rid of the stuff above
@@ -432,12 +483,9 @@ class OpTestConfiguration():
         self.defaults = vars(parser.parse_args(""))
         self.args.update(self.defaults)
 
-        # first, parse the per-user config stuff
-        user_file = kwargs.get('user_config', "~/.op-test-framework.conf")
-        if user_file and not kwargs.get('skip_user_conf'):
-            user_file = os.path.expanduser(user_file)
-            self.user_conf = self.parse_config_file(user_file, True)
-            self.args.update(self.user_conf)
+        # First, fold in the per-user config
+        if not kwargs.get('skip_env'):
+            self.args.update(optestenv.args)
 
         # second, check for host reservation systems and grab any config data
         # NB: We don't make any reservations here
@@ -451,7 +499,7 @@ class OpTestConfiguration():
         # args they provide with your own in the local config.
         config_file = kwargs.get('config')
         if config_file:
-            self.local_cfg = self.parse_config_file(config_file)
+            self.local_cfg = parse_config_file(config_file)
             self.args.update(self.local_cfg)
 
         # now fold in the overrides
@@ -473,25 +521,6 @@ class OpTestConfiguration():
                           'Group_Name': None,
                           'envs': [],
                           }
-
-    def parse_config_file(self, filename, optional=False):
-        config = configparser.ConfigParser()
-
-        if not os.access(filename, os.R_OK):
-            if optional:
-                return {}
-            raise OSError(errno.ENOENT, os.strerror(errno.ENOENT), filename)
-
-        config.read(filename)
-
-        if config.has_section('op-test'):
-            d = dict(config.items('op-test'))
-        else:
-            msg = "{} is missing an an [op-test] section header".format(filename)
-            raise configparser.NoSectionError(msg)
-
-        # FIXME: maybe we should allow config sections for specific tests?
-        return dict(config.items('op-test'))
 
     def unlock(self):
         # FIXME: move the aes/hostlocker wrangling into here
