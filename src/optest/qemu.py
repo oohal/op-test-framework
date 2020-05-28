@@ -42,7 +42,7 @@ from . import logger
 log = logger.optest_logger_glob.get_logger(__name__)
 
 class QemuConsole(Console):
-    def __init__(self, logfile):
+    def __init__(self, log):
         self.qemu_pty = None
 
         # The "host console" for a QemuSystem comes from the pty created by
@@ -52,7 +52,7 @@ class QemuConsole(Console):
         # cat and we swap between the two as qemu starts and stops.
         self.cat_pty = pexpect.spawn("cat - >/dev/null", echo=False)
 
-        super().__init__(logfile=logfile)
+        super().__init__(log=log)
 
     def set_pty(self, pty):
         self.qemu_pty = pty
@@ -66,6 +66,7 @@ class QemuConsole(Console):
         # tied to that of the qemu process (i think? it might just EOF)
         if self.qemu_pty:
             self.pty = self.qemu_pty
+            # self.qemu_pty.logfile_read = self.logfile
         else:
             self.pty = self.cat_pty
 
@@ -96,14 +97,13 @@ class QemuSystem(BaseSystem):
         self.disks = kwargs.get('disks')
         self.pnor = kwargs.get('pnor')
 
-        self.logfile = kwargs.get('logfile', sys.stdout) # FIXME?
         self.skip_pci = kwargs.get('no_pci', False)
         self.fru_path = kwargs.get('fru_path')
 
         self.qemu_running = False
         self.mac_str = '52:54:00:22:34:56'
 
-        self.console = QemuConsole(self.logfile)
+        self.console = QemuConsole(log)
 
         super().__init__(None, console=self.console, host=kwargs.get('host'))
 

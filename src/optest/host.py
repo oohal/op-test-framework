@@ -66,9 +66,9 @@ class OpTestHost():
         self.passwd = i_hostpasswd
         self.bmcip = i_bmcip
         self.results_dir = i_results_dir
-        self.logfile = logfile
+        self.log = log
         self.ssh = SSHConsole(i_hostip, i_hostuser, i_hostpasswd,
-                             logfile=self.logfile, check_ssh_keys=check_ssh_keys,
+                             log=self.log, check_ssh_keys=check_ssh_keys,
                              known_hosts_file=known_hosts_file)
         self.scratch_disk = scratch_disk
         self.proxy = proxy
@@ -114,6 +114,8 @@ class OpTestHost():
         return self.ssh
 
     def get_new_ssh_connection(self, name="temp"):
+        # FIXME: This is probably broken due to the logfile changes.
+
         # time.sleep(1)
         outsuffix = time.strftime("%Y%m%d%H%M%S")
         filename = "%s-%s.log" % (outsuffix, name)

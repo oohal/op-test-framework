@@ -409,7 +409,7 @@ class HMCConsole(HMCUtil):
             self.state = ConsoleState.DISCONNECTED
         log.debug("HMC close -> TERMINATE")
 
-    def connect(self, logger=None):
+    def connect(self):
         if self.state == ConsoleState.CONNECTED:
             return self.pty
         self.util.clear_state(self)  # clear when coming in DISCONNECTED
@@ -433,11 +433,8 @@ class HMCConsole(HMCUtil):
             time.sleep(STALLTIME)
             i = self.pty.expect(
                 ["Open Completed.", pexpect.TIMEOUT], timeout=60)
-            self.pty.logfile = sys.stdout
-            if logger:
-                self.pty.logfile_read = OpTestLogger.FileLikeLogger(logger)
-            else:
-                self.pty.logfile_read = OpTestLogger.FileLikeLogger(log)
+
+            self.pty.logfile_read = self.logfile
 
             if i == 0:
                 time.sleep(STALLTIME)

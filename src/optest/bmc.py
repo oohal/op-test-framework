@@ -59,18 +59,18 @@ class OpTestBMC():
     '''
 
     def __init__(self, ip=None, username=None, password=None,
-                 logfile=sys.stdout, ipmi=None,
+                 log=sys.stdout, ipmi=None,
                  web=None, check_ssh_keys=False, known_hosts_file=None):
         self.cv_bmcIP = ip
         self.cv_bmcUser = username
         self.cv_bmcPasswd = password
         self.cv_IPMI = ipmi
         self.cv_WEB = web
-        self.logfile = logfile
+        self.log = log
         self.check_ssh_keys = check_ssh_keys
         self.known_hosts_file = known_hosts_file
 
-        self.ssh = SSHConsole(ip, username, password, logfile, prompt=None,
+        self.ssh = SSHConsole(ip, username, password, log=log, prompt=None,
                               check_ssh_keys=check_ssh_keys, known_hosts_file=known_hosts_file)
 
     def hostname(self):

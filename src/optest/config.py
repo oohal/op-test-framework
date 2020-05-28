@@ -761,7 +761,6 @@ class OpTestConfiguration():
                              kernel=self.args['flash_kernel'],
                              initramfs=self.args['flash_initramfs'],
                              cdrom=self.args['os_cdrom'],
-#                             logfile=self.logfile,
                              host=host)
             self.op_system = sys
         elif self.args['bmc_type'] in ['mambo']:

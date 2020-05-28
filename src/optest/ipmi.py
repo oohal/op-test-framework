@@ -62,13 +62,12 @@ class IPMITool():
     '''
 
     def __init__(self, method='lanplus', binary='ipmitool',
-                 ip=None, username=None, password=None, logfile=sys.stdout):
+                 ip=None, username=None, password=None):
         self.method = 'lanplus'
         self.ip = ip
         self.username = username
         self.password = password
         self.binary = binary
-        self.logfile = logfile
 
     def binary_name(self):
         return self.binary
@@ -112,7 +111,6 @@ class IPMITool():
                 raise CommandFailed(cmd, "Failed to spawn subprocess", -1)
             output = cmd.communicate()[0]
 
-            # strip to remove spurious newlines in the logfile
             log.info("ipmitool output={}".format(output).strip())
             return output
 
@@ -174,11 +172,11 @@ class pUpdate():
 
 
 class IPMIConsole(Console):
-    def __init__(self, ipmitool=None, logfile=sys.stdout, prompt=None,
+    def __init__(self, ipmitool=None, log=None, prompt=None,
                  delaybeforesend=None):
         self.ipmitool = ipmitool
         self.delaybeforesend = delaybeforesend
-        super().__init__(logfile, None)
+        super().__init__(log, None)
 
     def close(self):
         if self.state == ConsoleState.DISCONNECTED:
@@ -225,12 +223,8 @@ class IPMIConsole(Console):
         log.debug("#IPMI SOL CONNECT")
         self.pty.setwinsize(1000, 1000)
 
-        self.pty.logfile = self.logfile
 #        # XXX: why is this setting .logfile_read and not .logfile?
-#        if logger:
-#            self.pty.logfile_read = OpTestLogger.FileLikeLogger(logger)
-#        else:
-#            self.pty.logfile_read = OpTestLogger.FileLikeLogger(log)
+        self.pty.logfile_read = self.logfile
 
         if self.delaybeforesend:
             self.pty.delaybeforesend = self.delaybeforesend
@@ -261,23 +255,21 @@ class IPMIConsole(Console):
 
 
 class OpTestIPMI():
-    def __init__(self, i_bmcIP, i_bmcUser, i_bmcPwd, logfile=sys.stdout,
+    def __init__(self, i_bmcIP, i_bmcUser, i_bmcPwd, log=log,
                  delaybeforesend=None):
         self.cv_bmcIP = i_bmcIP
         self.cv_bmcUser = i_bmcUser
         self.cv_bmcPwd = i_bmcPwd
-        self.logfile = logfile
         self.ipmitool = IPMITool(method='lanplus',
                                  ip=i_bmcIP,
                                  username=i_bmcUser,
-                                 password=i_bmcPwd,
-                                 logfile=logfile)
+                                 password=i_bmcPwd)
         self.pUpdate = pUpdate(method='lan',
                                ip=i_bmcIP,
                                username=i_bmcUser,
                                password=i_bmcPwd)
         self.console = IPMIConsole(ipmitool=self.ipmitool,
-                                   logfile=self.logfile,
+                                   log=log,
                                    delaybeforesend=delaybeforesend)
 
     def get_sol_console(self):
@@ -548,9 +540,9 @@ class OpTestIPMI():
         '''
         output = self.ipmitool.run('sel elist')
 
-        if self.logfile:
-            for line in output:
-                self.logfile.write(line)
+        # FIXME: should we be doing this? don't we already log the output?
+        for line in output:
+            log.info(line)
 
         if i_string in output:
             raise OpTestError('Error log(s) detected during IPL: %s' % output)
