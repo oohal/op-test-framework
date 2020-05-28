@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
+import logging
 import pexpect
 import pyte
 
-from . import logger
 from . import console
 from .system import ConsoleState, BaseSystem, missed_state, error_pattern
 from .keys import OpTestKeys
 
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 class PetitbootHelper():
     ''' helper class for driving petitboot '''
@@ -287,7 +287,7 @@ class PetitbootHelper():
                 # with a left bracket as the first character since those are the
                 # header lines for boot devices (disk, network, etc).
                 if '*' in l[0:3]:
-                    log.debug("menu item: ", l.strip())
+                    log.debug("menu item: " + l.strip())
 
                 if l.startswith(' *') and not l.startswith(' *['):
                     selected = l[2:]

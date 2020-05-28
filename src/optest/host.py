@@ -47,8 +47,7 @@ from .console import SSHConsole
 from .exceptions import CommandFailed, NoKernelConfig, KernelModuleNotLoaded
 from .exceptions import KernelConfigNotSet, ParameterCheck, OpTestError
 
-from . import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 
 class OpTestHost():

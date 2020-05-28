@@ -52,8 +52,7 @@ from .exceptions import CommandFailed, RecoverFailed, ConsoleSettings, OpTestErr
 from .exceptions import HostLocker, AES, ParameterCheck, HTTPCheck, UnexpectedCase
 
 import logging
-from . import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 class OpTestUtil():
 
@@ -971,9 +970,6 @@ class Server(object):
                  minutes=3,
                  timeout=30):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-        # FIXME: dun work
-#        logger.optest_logger_glob.setUpChildLogger("urllib3")
 
         self.username = username
         self.password = password

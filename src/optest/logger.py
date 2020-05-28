@@ -196,6 +196,3 @@ class OpTestLogger():
         self.optest_custom_logger.info('Debug Log file: {}'.format(
             os.path.join(self.logdir, self.logger_debug_file)))
 
-
-global optest_logger_glob
-optest_logger_glob = OpTestLogger()

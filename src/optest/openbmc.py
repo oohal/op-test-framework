@@ -21,6 +21,7 @@ import re
 import sys
 import time
 import datetime
+import logging
 import pexpect
 import subprocess
 import json
@@ -37,8 +38,7 @@ from .ipmi import OpTestIPMI
 
 from . import utils
 
-from .logger import optest_logger_glob
-log = optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 # FIXME: is there any real point in having this seperate to the OpenBMC class?
 class HostManagement():

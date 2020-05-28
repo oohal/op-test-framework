@@ -25,6 +25,7 @@ Support testing against Qemu simulator
 import sys
 import time
 import pexpect
+import logging
 import subprocess
 import tempfile
 import os
@@ -38,8 +39,7 @@ from .exceptions import CommandFailed
 from .petitboot import PetitbootState
 from .console import Console, ConsoleState
 
-from . import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 class QemuConsole(Console):
     def __init__(self, log):

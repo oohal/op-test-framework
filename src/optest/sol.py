@@ -40,9 +40,8 @@ from .OpTestIPMI import IPMIConsoleState
 
 import logging
 from logging.handlers import RotatingFileHandler
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
 
+log = logging.getLogger(__name__)
 
 class OpSOLMonitorThread(threading.Thread):
     '''

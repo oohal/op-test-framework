@@ -35,10 +35,11 @@ throws.
 """
 
 import pexpect
+import logging
 
 from .exceptions import *
-from . import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+
+log = logging.getLogger(__name__)
 
 def handle_kernel_err(pty, p):
     log = str(pty.after)

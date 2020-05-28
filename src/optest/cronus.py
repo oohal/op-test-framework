@@ -29,14 +29,13 @@ import datetime
 import time
 import subprocess
 import traceback
+import logging
 import socket
 
 from .Exceptions import ParameterCheck, UnexpectedCase
 from .system import OpSystemState
 
-import logging
-from . import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 match_list = ["CRONUS_HOME",
               "OPTKROOT",

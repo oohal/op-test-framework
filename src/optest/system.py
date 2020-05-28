@@ -32,10 +32,11 @@
 
 import time
 import pexpect
+import logging
 
-from . import logger
 from .exceptions import *
-log = logger.optest_logger_glob.get_logger(__name__)
+
+log = logging.getLogger(__name__)
 
 class SysState():
     '''

@@ -24,8 +24,7 @@ from optest.constants import Constants as BMC_CONST
 from .console import SSHConsole
 from .openbmc import OpenBMCSystem
 
-from . import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 # system components
 #from optest.hmc import OpTestHMC
@@ -555,8 +554,7 @@ class OpTestConfiguration():
                 self.util.check_lockers()
                 break
             except Exception as e:
-                OpTestLogger.optest_logger_glob.optest_logger.debug(
-                    "locker_wait Exception={}".format(e))
+                log.debug("locker_wait Exception={}".format(e))
                 if "unable to lock" in e.message:
                     self.aes_print_helpers = False
                     # SystemExit exception needs message to print
@@ -568,11 +566,10 @@ class OpTestConfiguration():
                     rollup_flag = True  # bubble exception out
                 if time.time() > locker_timeout or rollup_flag:
                     # if not "unable to lock" we bubble up underlying exception
-                    OpTestLogger.optest_logger_glob.optest_logger.warning(
-                        "{}".format(rollup_message))
+                    log.warning("{}".format(rollup_message))
                     raise rollup_exception
                 else:
-                    OpTestLogger.optest_logger_glob.optest_logger.info(
+                    log.info(
                         "OpTestSystem waiting for requested environment/host"
                         " total time to wait is {} minutes, we will check"
                         " every minute"

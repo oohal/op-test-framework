@@ -38,6 +38,7 @@ assume (and check for) the NFS mount.
 
 import subprocess
 import pexpect
+import logging
 import time
 import sys
 import os
@@ -49,10 +50,9 @@ from .exceptions import OpTestError
 
 from . import utils
 from . import system
-from . import logger
 from .petitboot import PetitbootState
 
-log = logger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 Possible_Hyp_value = {'01': 'PowerVM', '03': 'PowerKVM'}
 Possible_Sys_State = {'terminated': 0, 'standby': 1,

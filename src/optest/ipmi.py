@@ -39,6 +39,7 @@ import time
 import subprocess
 import os
 import pexpect
+import logging
 import sys
 import re
 
@@ -49,8 +50,7 @@ from .exceptions import CommandFailed, BMCDisconnected, OpTestError
 from . import opexpect
 from .console import Console, ConsoleState
 
-from .logger import optest_logger_glob
-log = optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 
 class IPMITool():

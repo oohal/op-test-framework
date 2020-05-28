@@ -25,6 +25,7 @@ Support testing against Mambo simulator
 import sys
 import time
 import pexpect
+import logging
 import subprocess
 import os
 
@@ -32,8 +33,7 @@ from .exceptions import CommandFailed, ParameterCheck
 from .system import OpTestSystem, OpSystemState
 from . import opexpect
 
-from . import logger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 
 #FIXME: moved here from util.py, please fix

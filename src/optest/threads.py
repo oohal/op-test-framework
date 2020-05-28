@@ -28,6 +28,7 @@ to a different log file.
 
 import random
 import unittest
+import logging
 import time
 import threading
 import pexpect
@@ -37,8 +38,7 @@ from .OpTestConstants import OpTestConstants as BMC_CONST
 from .Exceptions import CommandFailed
 from .OpTestIPMI import IPMIConsoleState
 
-from . import OpTestLogger
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 
 class OpSSHThreadLinearVar1(threading.Thread):

@@ -49,8 +49,8 @@ from .openpower import OpSystem
 from .constants import Constants as BMC_CONST
 from .exceptions import CommandFailed, SSHSessionDisconnected, OpTestError
 
-from .logger import optest_logger_glob
-log = optest_logger_glob.get_logger(__name__)
+import logging
+log = logging.getLogger(__name__)
 
 
 class OpTestBMC():

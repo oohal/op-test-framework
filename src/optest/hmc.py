@@ -25,9 +25,9 @@ import os
 import sys
 import time
 import pexpect
+import logging
 
 from . import OpExpect
-from . import OpTestLogger
 
 from .OpTestError import OpTestError
 from .OpTestSSH import OpTestSSH
@@ -37,7 +37,7 @@ from .OpTestSystem import OpTestSystem, OpSystemState
 
 from .OpTestConstants import OpTestConstants as BMC_CONST
 
-log = OpTestLogger.optest_logger_glob.get_logger(__name__)
+log = logging.getLogger(__name__)
 
 WAITTIME = 15
 BOOTTIME = 500
