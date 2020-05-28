@@ -6,18 +6,6 @@ from optest.petitboot import PetitbootHelper
 
 import misc
 
-@pytest.fixture
-def qemu():
-    config = misc.get_config('qemu')
-
-    qemu = config.create_system()
-    qemu.get_console().connect()
-
-    yield qemu
-
-    qemu.host_power_off()
-    config.cleanup()
-
 def test_qemu_boot_nokernel(qemu):
 
     # HACK: zap the kernel (and pnor) so we crash at boot
