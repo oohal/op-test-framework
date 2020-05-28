@@ -355,6 +355,7 @@ class PetitbootState(ConsoleState):
     def run(self, system, exit_at):
         self._watch_for(system, self.pb_entry, self.entry_timeout)
 
+        log.info("entered petitboot")
 
         # NB: Instantiating PetitbootHelper has some side effects which might
         #     cancel auto boot so don't do it in the common path.
