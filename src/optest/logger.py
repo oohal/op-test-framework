@@ -196,3 +196,13 @@ class OpTestLogger():
         self.optest_custom_logger.info('Debug Log file: {}'.format(
             os.path.join(self.logdir, self.logger_debug_file)))
 
+def log_to_stdout():
+    ''' helper function to enable logging to stdout '''
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    root.addHandler(handler)
