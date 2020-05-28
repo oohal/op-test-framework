@@ -5,6 +5,10 @@ from optest import system
 from optest.openpower import OpSystem
 from optest.console import FileConsole
 
+class StubHost():
+    def username(self):
+        pass
+
 class StubSystem(OpSystem):
     def __init__(self, input_file):
         self.input_file = input_file
@@ -13,7 +17,7 @@ class StubSystem(OpSystem):
 
         con = FileConsole(self.input_file)
 
-        super().__init__(console=con)
+        super().__init__(console=con, host=StubHost())
 
     # host stubs
     # FIXME: should con remain active even across host reboots? if the BMC dies it can go away
@@ -26,6 +30,8 @@ class StubSystem(OpSystem):
         self.host_power_off()
     def host_power_is_on(self): # -> Bool
         return self.host_on
+    def bmc_is_alive(self):
+        return True
 
 @pytest.fixture(params=["p8-boot-to-pb.log", "p9-boot-to-pb.log"])
 def off_system(request):
