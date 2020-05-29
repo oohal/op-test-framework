@@ -1217,6 +1217,17 @@ def ping(i_ip, i_try=1, totalSleepTime=BMC_CONST.HOST_BRINGUP_TIME):
                          "verify and release any reservations".format(i_ip))
 
 
+def pingcheck(host_addr):
+    ''' Returns true if `host` is responding to ping, False otherwise '''
+    # TODO: use self.rest.get_bmc_state() to verify the BMC has booted
+    try:
+        ping(host_addr)
+    except ParameterCheck as e:
+        # assume ping failing means we can't reach the BMC
+        return False
+
+    return True
+
 #FIXME: fold this into the above?
 def ping_mtu_check(i_ip, i_try=1, totalSleepTime=BMC_CONST.HOST_BRINGUP_TIME):
     if i_ip == None:
