@@ -27,7 +27,7 @@ can be invoked on the command line to boot the machine a certain way or into
 a specific state.
 '''
 
-import unittest
+import logging
 import pexpect
 
 import pytest
@@ -35,8 +35,8 @@ import optest
 
 #from optest.OpTestSystem import OpSystemState
 #from optest.OpTestError import OpTestError
-from optest import logger
-log = logger.optest_logger_glob.get_logger(__name__)
+
+log = logging.getLogger(__name__)
 
 from optest.petitboot import PetitbootHelper
 

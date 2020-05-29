@@ -36,10 +36,6 @@ import pytest
 from optest import config
 from optest import logger
 
-# op-test is the parent logger
-global optestlog
-optestlog = logging.getLogger(logger.optest_logger_glob.parent_logger)
-
 import pytest
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -188,15 +184,9 @@ def optest_system(pytestconfig):
                                     aes=pytestconfig.option.aes,
                                     hostlocker=pytestconfig.option.hostlocker)
 
-        #OpTestConfiguration.conf.parse_args(sys.argv)
-        #OpTestConfiguration.conf.do_testing_setup()
-
         system = test_config.create_system()
-        print("heading to outta space")
+
         yield system
-        print("back from outta space")
 
         # do all our cleanup, etc
         test_config.cleanup()
-
-

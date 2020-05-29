@@ -23,15 +23,12 @@ OpTestHostboot: Hostboot checks
 
 Perform various hostboot validations and checks
 '''
-
-import pexpect
+import logging
 import time
 
-from optest.logger import optest_logger_glob
+log = logging.getLogger(__name__)
 
-log = optest_logger_glob.get_logger(__name__)
-
-
+import pexpect
 import pytest
 
 @pytest.fixture
