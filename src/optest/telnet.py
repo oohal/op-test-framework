@@ -39,6 +39,9 @@
 
 import telnetlib
 
+import logging
+
+log = logging.getLogger(__name__)
 
 class NoLoginPrompt(Exception):
     def __init__(self, output):
@@ -88,6 +91,7 @@ class TConnection():
         command = bytes(command.encode('ascii'))
         self.tn.write(command + b'\n')
         response = self.tn.read_until(self.prompt)
+        log.debug(response)
         return self._send_only_result(command, response)
 
     def issue_forget(self, command):
