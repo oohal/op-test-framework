@@ -264,7 +264,7 @@ class BaseSystem(object):
             if s.name == name:
                 return s
 
-        msg = "{} is not supported by this system type".format(target)
+        msg = "The {} state is not supported by this system type".format(name)
         raise UnsupportedStateError(msg)
 
     def assume_state(self, new_state_name):
