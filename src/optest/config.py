@@ -828,3 +828,12 @@ class OpTestConfiguration():
 
     def lspci_file(self): # XXX: maybe this one is justified?
         raise Exception('fix this test')
+
+
+def from_config(name):
+    ''' creates a system '''
+
+    config = OpTestConfiguration(config=name)
+    sys = config.create_system()
+
+    return sys
