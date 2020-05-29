@@ -46,7 +46,7 @@ import os
 from .asm import OpTestASM
 from .telnet import TConnection
 from .constants import Constants as BMC_CONST
-from .exceptions import OpTestError
+from .exceptions import OpTestError, PowerOffError, BootError
 
 from . import utils
 from . import system
@@ -420,25 +420,28 @@ class FSPIPLState(system.SysState):
 
         super().__init__(name, ipl_start_timeout, ipl_timeout)
 
-    def wait_entry(self, system, waitat=False):
+    def run(self, system, stop_at):
         for i in range(self.ipl_start_timeout):
             state = system.fsp.get_state()
             if state == 'ipling':
-                return
+                break
             time.sleep(1)
-        raise BootError("Timeout waiting for ipling state on fsp")
 
-    def wait_exit(self, system):
+        if state != 'ipling':
+            raise BootError("Timeout waiting for the FSP to enter the IPLing state")
+
+        log.info("IPLing started")
+
         for i in range(self.ipl_timeout):
             progress = system.fsp.progress_line() # display the current IPL status
             log.info(progress)
-            print(progress) # FIXME: mirror the log to stdout imo...
 
             if 'runtime' in progress:
                 return
-
             time.sleep(1)
-        raise BootError("Timeout waiting for ipling to complete, waited {}".format(self.ipl_timeout))
+
+        if state != 'runtime':
+            raise BootError("Timeout waiting for ipling to complete, waited {}".format(self.ipl_timeout))
 
 
 class FSPSystem(system.BaseSystem):
@@ -501,9 +504,16 @@ class FSPSystem(system.BaseSystem):
 
         output = self.fsp.run_command("panlexec -f 8")
         output = output.rstrip('\n')
-        if 'SUCCESS' not in output and \
-           '0800A096' not in output: # complaining aborting an in-progress IPL. It'll still power off.
-            raise PowerOffError("Error occured while trying to power off the system", output)
+
+        codes = ['SUCCESS',
+                 '0800A096', # in-progress IPL aborted. It'll still power off
+                 '0800A070', # same as above? still powers off
+                ]
+        for c in codes:
+            if c in output:
+                return
+
+        raise PowerOffError("Error occured while trying to power off the system", output)
 
     def host_power_off_hard(self):
         self.host_power_off() # use toolReset?
