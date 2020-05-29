@@ -47,6 +47,7 @@ from .telnet import TConnection
 from .constants import Constants as BMC_CONST
 from .exceptions import OpTestError
 
+from . import utils
 from . import system
 from . import logger
 from .petitboot import PetitbootState
@@ -470,7 +471,7 @@ class FSPSystem(system.BaseSystem):
         if not console:
             console = ipmi.get_sol_console()
 
-        super().__init__(host, console, pdu)
+        super().__init__(host=host, console=console, pdu=pdu)
 
         for s in self.fsp_state_table:
             self._add_state(s)
@@ -514,8 +515,11 @@ class FSPSystem(system.BaseSystem):
         return True
 
     def bmc_is_alive(self):
-        # FIXME: 1. check it pings, 2. check we're out of prestandby
-        raise NotImplementedError()
+        if not utils.pingcheck(self.fsp.hostname()):
+            return False
+        if "prestandby" == self.fsp.get_state():
+            return False
+        return True
 
     def collect_debug(self):
         raise NotImplementedError()

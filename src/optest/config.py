@@ -39,6 +39,7 @@ from optest.qemu import QemuSystem
 #from optest.bmc import BMCSystem, SMCSystem
 import optest.bmc
 import optest.ipmi
+import optest.fsp
 
 #from optest.fsp import OpTestFSP
 #from optest.openbmc import OpenBMCSystem
