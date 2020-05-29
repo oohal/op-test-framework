@@ -1159,7 +1159,7 @@ class OpenBMC():
         log.info("clear_field_mode rebooting the BMC")
         self.reboot()
 
-    def bmc_host(self):
+    def hostname(self):
         return self.hostname
 
     def get_ipmi(self):

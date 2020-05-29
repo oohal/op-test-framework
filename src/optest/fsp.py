@@ -77,7 +77,7 @@ class OpTestFSP():
         # console via debug tty at some point.
         self.fsp_get_console()
 
-    def bmc_host(self):
+    def hostname(self):
         return self.cv_ASM.host_name
 
     def get_ipmi(self):

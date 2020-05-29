@@ -73,7 +73,7 @@ class OpTestBMC():
         self.ssh = SSHConsole(ip, username, password, logfile, prompt=None,
                               check_ssh_keys=check_ssh_keys, known_hosts_file=known_hosts_file)
 
-    def bmc_host(self):
+    def hostname(self):
         return self.cv_bmcIP
 
     def run_command(self, command, timeout=60, retry=0):
@@ -390,7 +390,7 @@ class IPMISystem(OpSystem):
         return True
 
         try:
-            utils.ping(self.bmc.bmc_host(), 1)
+            utils.ping(self.bmc.hostname(), 1)
         except Exception as e:
             return False
 
