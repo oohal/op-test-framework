@@ -76,7 +76,7 @@ class SysState():
             return self.name == other.name
         return False
 
-    def run(self, stop):
+    def run(self, system, stop):
         raise NotImplementedError()
 
     def resume(self, stop):
@@ -259,6 +259,9 @@ class BaseSystem(object):
 
     def _add_state(self, new_state):
         self.state_table.append(new_state)
+
+    def has_state(self, name):
+        return name in [s.name for s in self.state_table]
 
     def _get_state(self, name):
         for s in self.state_table:
