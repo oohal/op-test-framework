@@ -1047,7 +1047,7 @@ class OpenBMC():
     def __init__(self, ip=None, username=None, password=None, ipmi=None,
                  rest_api=None, logfile=sys.stdout,
                  check_ssh_keys=False, known_hosts_file=None):
-        self.hostname = ip
+        self.ip = ip
         self.username = username
         self.password = password
         self.ipmi = ipmi
@@ -1160,7 +1160,7 @@ class OpenBMC():
         self.reboot()
 
     def hostname(self):
-        return self.hostname
+        return self.ip
 
     def get_ipmi(self):
         return self.ipmi
@@ -1219,10 +1219,14 @@ class OpenBMCSystem(OpSystem):
         OpSystem.__init__(self, host=host, console=console, pdu=pdu)
 
     def bmc_is_alive(self):
-        utils.ping(self.hostname)
-        #def sys_bmc_state(self):
-        #    self.rest.get_bmc_state()
-        raise NotImplementedError()
+        # TODO: use self.rest.get_bmc_state() to verify the BMC has booted
+        try:
+            utils.ping(self.bmc.hostname())
+        except ParameterCheck as e:
+            # assume ping failing means we can't reach the BMC
+            return False
+
+        return True
 
     # FIXME: implement
     def collect_debug(self):
