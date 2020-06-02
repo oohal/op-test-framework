@@ -43,6 +43,9 @@ unxz initramfs.xz
 # replace the contents of the .init.ramfs section with the default CPIO the
 # kernel uses. We need to pad out the stub to the full section size since
 # the kernel expects that.
+
+stub_path="$(realpath $(dirname $0))/stub_initramfs"
+
 dd if=/dev/zero of=tmp.padded bs=$size count=1
-dd if=./stub_initramfs of=tmp.padded conv=notrunc
+dd if=$stub_path of=tmp.padded conv=notrunc
 powerpc64-linux-gnu-objcopy --update-section .init.ramfs=tmp.padded ./vmlinux

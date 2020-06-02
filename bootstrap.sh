@@ -1,33 +1,36 @@
 #!/bin/bash -e
 
+# there's a lot of distros where packaged qemu eithe don't support the powernv
+# or only supports an old one, so build our own
 if ! [ -f qemu/ppc64-softmmu/qemu-system-ppc64 ] ; then
-	if ! [ -d qemu ] ; then
-		git clone https://github.com/qemu/qemu.git --depth=1
-	fi
-	cd qemu
-	./configure --target-list=ppc64-softmmu
-	make -j`nproc`
-	cd ..
+	ci/build-qemu-powernv.sh
+fi
+
+if ! [ -f ./qemu.conf ] ; then
+
+	# grab a PNOR and extract vmlinux/initramfs/skiboot from it
+	ci/extract-pnor.sh
+
+	# write a config for a qemu system to run op-test against
+	cat - > qemu.conf <<EOF
+[op-test]
+bmc_type=qemu
+qemu_binary=qemu/ppc64-softmmu/qemu-system-ppc64
+flash_skiboot=skiboot.lid
+flash_kernel=vmlinux
+flash_initramfs=initramfs
+EOF
+
+	# and setup images required for the qemu based self-tests
+	cp selftests/test_configs/qemu.conf.example selftests/test_configs/qemu.conf
+	ln -s ./vmlinux selftests/test_data/vmlinux
+	ln -s ./initramfs selftests/test_data/initramfs
+	ln -s ./skiboot.lid selftests/test_data/skiboot.lid
 fi
 
 if ! [ -d op-test-venv ] ; then
 	python3 -m venv op-test-venv
 	source op-test-venv/bin/activate
 	pip3 install -r ./requirements.txt
-	pip3 install . -e
+	pip3 install -e .
 fi
-
-if ! [ -f ./qemu.conf ] ; then
-	cat - > qemu.conf <<EOF
-[op-test]
-bmc_type=qemu
-qemu_binary=qemu/ppc64-softmmu/qemu-system-ppc64
-flash_skiboot=selftests/test_data/skiboot.lid.nophbs
-flash_kernel=selftests/test_data/vmlinux
-flash_initramfs=selftests/test_data/petitfs
-EOF
-fi
-
-source op-test-venv/bin/activate
-pytest --config-file ./qemu.conf -k boot_to_petitboot
-
