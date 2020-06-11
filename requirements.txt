@@ -3,3 +3,4 @@ ptyprocess
 requests
 pysocks
 pytest
+pyte
