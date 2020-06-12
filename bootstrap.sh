@@ -23,9 +23,9 @@ EOF
 
 	# and setup images required for the qemu based self-tests
 	cp selftests/test_configs/qemu.conf.example selftests/test_configs/qemu.conf
-	ln -s ./vmlinux selftests/test_data/vmlinux
-	ln -s ./initramfs selftests/test_data/initramfs
-	ln -s ./skiboot.lid selftests/test_data/skiboot.lid
+	ln -s ../../vmlinux selftests/test_data/vmlinux
+	ln -s ../../initramfs selftests/test_data/initramfs
+	ln -s ../../skiboot.lid selftests/test_data/skiboot.lid
 fi
 
 if ! [ -d op-test-venv ] ; then

@@ -1,5 +1,11 @@
 #!/bin/bash -ex
 
+# if we have a cached copy then use the artifacts from that
+if [ -f ci_cache/vmlinux ] && [ -f ci_cache/initramfs ] && [ -f ci_cache/skiboot.lid ] ; then
+	cp ci_cache/{vmlinux,initramfs,skiboot.lid} .
+	exit 0
+fi
+
 # grab a pnor - we should probably parameterise this.
 if ! [ -f ./romulus.pnor ] ; then
 	wget https://openpower.xyz/job/openpower/job/openpower-op-build/label=slave,target=romulus/lastSuccessfulBuild/artifact/images/romulus.pnor
@@ -49,3 +55,7 @@ stub_path="$(realpath $(dirname $0))/stub_initramfs"
 dd if=/dev/zero of=tmp.padded bs=$size count=1
 dd if=$stub_path of=tmp.padded conv=notrunc
 powerpc64-linux-gnu-objcopy --update-section .init.ramfs=tmp.padded ./vmlinux
+
+if [ -d "ci_cache" ] ; then
+	cp ./vmlinux initramfs skiboot.lid ci_cache/
+fi

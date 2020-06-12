@@ -4,6 +4,8 @@ dist: xenial
 cache:
   apt: true
   ccache: true
+  directories:
+    - "ci_cache"
 
 git:
   depth: false
