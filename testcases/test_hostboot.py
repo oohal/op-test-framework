@@ -37,7 +37,7 @@ def ipl_log(optest_system):
 
     optest_system.get_console().start_capture()
     optest_system.host_power_on()
-    optest_system.waitfor('petitboot')
+    optest_system.boot_to('petitboot')
     optest_system.get_console().stop_capture()
 
     yield optest_system.get_console().get_capture()
