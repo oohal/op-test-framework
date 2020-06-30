@@ -88,6 +88,25 @@ class OsState(SysState):
     def run(self, system, stop):
         system.get_console().shell_setup()
 
+    def check(self, system):
+        # When checking whether we're at an OS we don't want to make too many
+        # assumptions about *what* OS we're in. Checking /etc/os-release might isn't
+        # ideal since although we use buildroot for petitboot I want
+        # the ability to use a BR system as a test environment.
+
+        # Can we run a command? If not, probably not at the OS.
+        try:
+            result = system.run_command("ps | grep pb-discover | wc -l")
+        except:
+            return False
+
+        # Is pb-discover running? If so, probably petitboot.
+        if int(result[0]) >= 2: # we'll always count the grep process
+            return False
+
+        # FIXME: We should probably check a little harder.
+        return True
+
 class OpSystem(BaseSystem):
     openpower_state_table = [
         # NB: we're ignoring the SBE since some systems don't have SBE output

@@ -83,6 +83,20 @@ class SysState():
         ''' resumes the boot starting from where it was stopped '''
         raise NotImplementedError()
 
+    def check(self):
+        '''
+        Used to check if the system is in this state.
+
+        False negatives are ok, false positives are not ok because those
+        they will result in test scripts becoming confused about what
+        state the system is in.
+
+        If we're in the wrong state that can be fixed by rebooting. If we
+        *think* we're in the right state then anything we do subsequently
+        will be broken.
+        '''
+        return False
+
 # helper functions for the ConsoleState pattern tables
 def error_pattern(pattern, context):
     raise ErrorPattern("pattern: {}, context: {}".format(pattern, value))
@@ -175,6 +189,17 @@ class BaseSystem(object):
     def boot(self):
         # goto_state does a power off for us. Run until booted.
         self.boot_to(self.state_table[-1].name)
+
+    def in_state(self, name):
+        ''' Checks if the system is in the named state. Returns a bool '''
+
+        for s in self.state_table:
+            if s.name == name:
+                result = s.check(self)
+                log.info("in_state({}) = {}".format(name, result))
+                return result
+        # XXX: Should we update last_state if it passes?
+        return False
 
     def poweroff(self, softoff=True):
         ''' helper for powering off the host and reset our state tracking '''
