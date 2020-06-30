@@ -303,7 +303,11 @@ class Console():
             raises ValueError if you try to run sudo
             raises CommandFailed if the command fails
             might also raise ConsoleDisconnect if the underlying console
-            object disconnects'''
+            object disconnects
+
+            Returns a (list, int) tuple. The list contains each line of
+            console output from the command and the int is the exit code.
+        '''
 
         if command.strip().startswith('sudo '):
             raise ValueError('use .sudo_bash() to elevate the shell rather than sudo directly')
@@ -361,6 +365,10 @@ class Console():
         return res, echo_rc
 
     def run_command(self, command, timeout=60, retries=0):
+        ''' Same as try_command(), but with an optional retry mechanism.
+            Commands are retried when try_command() throws an exception. If the
+            number of re-tries are exceeded we re-throw the exception.
+        '''
         counter = 0
         while counter <= retries:
             try:
