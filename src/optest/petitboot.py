@@ -397,3 +397,11 @@ class PetitbootState(ConsoleState):
 
         # otherwise just wait for the autoboot to happen
         self._watch_for(system, self.pb_exit, self.exit_timeout)
+
+    def check(self, system):
+        # the validation that PetitbootHelper does should be enough
+        try:
+            pb = PetitbootHelper(system)
+        except:
+            return False
+        return True
