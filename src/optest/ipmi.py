@@ -46,7 +46,7 @@ import re
 from .constants import Constants as BMC_CONST
 #from .OpTestUtil import OpTestUtil
 #from . import OpTestSystem
-from .exceptions import CommandFailed, BMCDisconnected, OpTestError
+from .exceptions import CommandFailed, BMCDisconnected, OpTestError, ParameterCheck
 from . import opexpect
 from .console import Console, ConsoleState
 
@@ -76,8 +76,11 @@ class IPMITool():
         s = ' -H %s -I %s' % (self.ip, self.method)
         if self.username:
             s += ' -U %s' % (self.username)
-        if self.password:
-            s += ' -P %s' % (self.password)
+
+        if not self.password:
+            raise ParameterCheck(message="An IPMI password is required")
+
+        s += ' -P %s' % (self.password)
         s += ' '
         return s
 
