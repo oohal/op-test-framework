@@ -35,6 +35,7 @@ import pytest
 
 from optest import config
 from optest import logger
+from optest import petitboot
 
 import pytest
 
@@ -185,8 +186,50 @@ def optest_system(pytestconfig):
                                     hostlocker=pytestconfig.option.hostlocker)
 
         system = test_config.create_system()
+        system.get_console().connect()
 
         yield system
 
         # do all our cleanup, etc
         test_config.cleanup()
+
+
+# FIXME: Can we make this use yield?
+def sys_state_setup(state, test_sys):
+    if not test_sys.has_state(state):
+        pytest.skip("system doesn't support the {} state".format(state))
+
+    if not test_sys.in_state(state):
+        test_sys.boot_to(state)
+
+    # put the test_sys at the petitboot shell if that's desired
+    if state == 'petitboot':
+        pb = petitboot.PetitbootHelper(test_sys)
+        pb.goto_shell()
+
+def sys_state_check(state, test_sys):
+    # If the test didn't leave the test_sys at the OS then the test is broken
+    if not test_sys.in_state(state):
+        pytest.fail("The test didn't leave the system in the {} state.".format(state))
+
+
+@pytest.fixture()
+def optest_system_off(optest_system):
+    if not optest_system.host_powered_off():
+        optest_system.poweroff()
+
+    yield optest_system
+
+@pytest.fixture
+def optest_os_test(optest_system):
+    ''' Use for test that want to run entirely in the OS '''
+    sys_state_setup('os', optest_system)
+
+@pytest.fixture(params=['os', 'petitboot'])
+def openpower_linux_shell(request, optest_system):
+    state = request.param
+    sys_state_setup(state, optest_system)
+
+    yield optest_system
+
+    sys_state_check(state, optest_system)
