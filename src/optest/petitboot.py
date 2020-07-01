@@ -2,6 +2,7 @@
 
 import logging
 import pexpect
+import time
 import pyte
 
 from . import console
@@ -14,8 +15,31 @@ log = logging.getLogger(__name__)
 class PetitbootHelper():
     ''' helper class for driving petitboot '''
 
-    MENU = 0
-    SHELL = 1
+    MENU = 1
+    SHELL = 2
+
+    def _detect(self):
+        menu_patterns = ['Petitboot', 'x=exit']
+        shell_patterns = ["# $", "/ # ", "^# ", self.c.expect_prompt]
+
+        patterns = menu_patterns + shell_patterns
+        try:
+            r = self.c.pty.expect(patterns, timeout=2)
+        except pexpect.TIMEOUT:
+            return None
+
+        #pdb.set_trace()
+        if patterns[r] in menu_patterns:
+            log.debug('detected petitboot menu')
+            return self.MENU
+        elif patterns[r] == self.c.expect_prompt:
+            log.debug('detected configured petitboot shell')
+            return self.SHELL
+        elif patterns[r] in shell_patterns:
+            log.debug('detected unconfigured petitboot shell')
+            return self.SHELL
+
+        return None # shouldn't happen
 
     def __init__(self, input_console):
         if isinstance(input_console, BaseSystem):
@@ -27,22 +51,26 @@ class PetitbootHelper():
 
         pty = self.c.pty
 
+        # Needed?
         pty.zap()
 
-        # NB: ctrl+l only refreshes on newer petitboot versions, might need to
-        # do something to support older ones.
+        # sending ctrl+l causes a screen refresh which fills the expect buffer
         pty.sendcontrol('l')
+        self.state = self._detect()
+        if not self.state:
+            # if we're sitting at the shell already ctrl-l might not generate
+            # any output. Try send a ctrl-d to bring us back to the menu
+            # (probably).
+            pty.sendcontrol('d')
+            self.state = self._detect()
 
-        r = pty.expect(['Petitboot', 'x=exit',
-                        "# $", "/ # ", self.c.expect_prompt], timeout=2)
+        # Dunno what's going on, bail
+        if not self.state:
+            raise Exception("Not at petitboot?")
 
-        if r in [0, 1]:
-            self.state = self.MENU
-        elif r in [2, 3, 4]:
-            self.state = self.SHELL
-        else:
-            raise Exception("Not at petitboot?") # FIXME: subclass it
-
+        # setup the shell again, just in case
+        if self.state == self.SHELL:
+            self.c.shell_setup()
 
     def goto_shell(self):
         if self.state == self.SHELL:
@@ -52,15 +80,20 @@ class PetitbootHelper():
 
         for i in range(3):
             sys_pty.send('x')
-            pp = self.get_petitboot_prompt()
-            if pp == 1:
+
+            sys_pty.sendline()
+            pes_rc = sys_pty.expect(
+                [".*#", ".*# $", pexpect.TIMEOUT, pexpect.EOF], timeout=1)
+
+            if pes_rc in [0, 1]:
+                self.c.shell_setup()
                 self.state = self.SHELL
-                break
-        if pp != 1:
-            log.warning(
-                "OpTestSystem detected something, tried to recover, but still we have a problem, retry")
-            raise ConsoleSettings(before=sys_pty.before, after=sys_pty.after,
-                                  msg="System at Petitboot Menu unable to exit to shell after retry")
+                return
+            time.sleep(1);
+
+        raise ConsoleSettings(before=sys_pty.before, after=sys_pty.after,
+                              msg="System at Petitboot Menu unable to exit to shell after retry")
+
     def goto_menu(self):
         if self.state == self.MENU:
             return
@@ -72,19 +105,6 @@ class PetitbootHelper():
         self.c.expect('x=exit')
         self.state = self.MENU
         # FIXME: error checking
-
-    def get_petitboot_prompt(self):
-        my_pp = 0
-        sys_pty = self.c.pty
-        log.debug("USING GPP Expect Buffer ID={}".format(hex(id(sys_pty))))
-        sys_pty.sendline()
-        pes_rc = sys_pty.expect(
-            [".*#", ".*# $", pexpect.TIMEOUT, pexpect.EOF], timeout=1)
-
-        if pes_rc in [0, 1]:
-            self.c.shell_setup()
-            my_pp = 1
-        return my_pp
 
     def get_my_ip_from_host_perspective(self):
         raw_pty = self.c.pty
