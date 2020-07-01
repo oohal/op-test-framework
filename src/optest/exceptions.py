@@ -54,6 +54,9 @@ class PowerOnError(OpTestError):
 class PowerOffError(OpTestError):
     pass
 
+class PowerOffTimeout(OpTestError):
+    pass
+
 class CommandFailed(Exception):
     '''
     Running a command (BMC or Host) failed with non-zero exit code.
