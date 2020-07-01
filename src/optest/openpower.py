@@ -96,7 +96,10 @@ class OsState(SysState):
 
         # Can we run a command? If not, probably not at the OS.
         try:
-            result = system.run_command("ps | grep pb-discover | wc -l")
+            # Busybox ps just prints everything and sometimes it chokes on
+            # having arguments to ps (e.g. -ef or aux). We just want to reject
+            # petitboot so using a bare "ps" should be fine.
+            result, rc = system.run_command("ps | grep pb-discover | wc -l")
         except:
             return False
 

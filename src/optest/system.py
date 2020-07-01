@@ -201,6 +201,41 @@ class BaseSystem(object):
         # XXX: Should we update last_state if it passes?
         return False
 
+    def poweroff_wait(self):
+        for i in range(self.power_off_delay):
+
+            # The BMC can flake out while powering off the host (or rebooting)
+            # which might cause us to lose the console, etc. Wait for the BMC
+            # to come back and re-connect if needed.
+            try:
+                # FIXME: Should bmc_is_alive() be allowed to throw?
+                bmc_ok = self.bmc_is_alive()
+            except:
+                bmc_ok = False
+                self.console.disconnect()
+
+            if bmc_ok:
+                if not self.console.is_connected():
+                    self.console.connect()
+                if not self.host_power_is_on():
+                    log.info("Host powered off")
+                    return True
+
+            # Poll the console by running expect with no patterns to keep the
+            # console printing and to watch for kernel panics, etc.
+            if self.console.is_connected():
+                try:
+                    self.expect([pexpect.TIMEOUT], timeout=1)
+                except:
+                    pass
+            else:
+                time.sleep(1)
+
+            log.info("Waiting for power off {}/{}s".format(i, self.power_off_delay))
+
+        # Raise a time out exception?
+        return False
+
     def poweroff(self, softoff=True):
         ''' helper for powering off the host and reset our state tracking '''
 
@@ -209,42 +244,20 @@ class BaseSystem(object):
         # possibly excessive, but we've found some systems where it can take
         # a while for the BMC to work again due to NC-SI issues.
         if softoff:
+            log.info("Soft powering off host...")
             self.host_power_off()
-
-            for i in range(self.power_off_delay):
-                # the BMC can flake out while rebooting the host which causes
-                # us to lose the console, etc.
-                # the polling here will cause errors. Catch any exceptions that
-                # crop up until we've hit the timeout.
-                if self.bmc_is_alive() and not self.host_power_is_on():
-                    return
-
-                try:
-                    if not self.host_power_is_on():
-                        return
-
-                    # run expect with no patterns so we get output during poweroff
-                    # and so we catch any crashes that might happen while powering
-                    # off
-                    self.expect([pexpect.TIMEOUT], timeout=1)
-                    log.info("Waiting for power off {}/{}s".format(i, self.power_off_delay))
-                    print("Waiting for power off {}/{}s".format(i, self.power_off_delay))
-
-                except Exception as e:
-                    raise e
-
-            log.info("Timeout while powering off host. Yanking power now")
-
-        # try a little harder...
-        self.host_power_off_hard()
-        for i in range(self.power_off_delay):
-            if not self.host_power_is_on():
+            try:
+                self.poweroff_wait()
+                log.info("Soft power off finished")
                 return
+            except PowerOffTimeout:
+                pass
 
-            self.expect(timeout=1)
+        log.info("Timeout after soft powering off host. Trying hard power off")
 
-        # FIXME: use a precise exception type
-        raise Exception("host hasn't turned off after yanking power")
+        self.host_power_off_hard()
+        self.poweroff_wait()
+        log.info("Hard power off finished")
 
 
     ############################################################################
