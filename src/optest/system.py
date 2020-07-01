@@ -244,8 +244,16 @@ class BaseSystem(object):
         # possibly excessive, but we've found some systems where it can take
         # a while for the BMC to work again due to NC-SI issues.
         if softoff:
-            log.info("Soft powering off host...")
-            self.host_power_off()
+            for i in range(5):
+                log.info("Soft powering off host... Attempt {} / 5".format(i))
+                try:
+                    self.host_power_off()
+                except:
+                    time.sleep(1)
+                    continue
+
+                break
+
             try:
                 self.poweroff_wait()
                 log.info("Soft power off finished")
