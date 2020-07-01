@@ -419,6 +419,11 @@ class FileConsole(Console):
         # file.
         self.pty = opexpect.spawn("cat {}".format(inputfile), logfile=self.logfile)
 
+    def is_connected(self):
+        if self.state == ConsoleState.DISCONNECTED:
+            return False
+        return self.pty.isalive()
+
     def connect(self):
         self.state = ConsoleState.CONNECTED
 
@@ -438,6 +443,11 @@ class CmdConsole(Console):
     def __init__(self, cmd, log=None):
         super().__init__(log)
         self.cmd = cmd
+
+    def is_connected(self):
+        if self.state == ConsoleState.DISCONNECTED:
+            return False
+        return self.pty.isalive()
 
     def connect(self):
         if self.pty:
@@ -469,6 +479,11 @@ class SSHConsole(Console):
         self.delaybeforesend = delaybeforesend
 
         super().__init__(log, prompt)
+
+    def is_connected(self):
+        if self.state == ConsoleState.DISCONNECTED:
+            return False
+        return self.pty.isalive()
 
     def close(self):
         if self.state == ConsoleState.DISCONNECTED:
