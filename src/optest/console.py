@@ -178,7 +178,7 @@ class Console():
         # /bin/sh) barfs if you pass it any arguments.
         # Execing into sh with ENV set to /dev/null stops it from running
         # the rc file so do that instead.
-        self.pty.sendline("ENV=/dev/null which sh && exec sh")
+        self.pty.sendline("ENV=\"/dev/null\" which sh && exec sh;")
 
         # NB: If you change the tty dimensions from (300, 30) to something else
         # make sure the screen sized assumed by PetitbootHelper is kept in sync.
