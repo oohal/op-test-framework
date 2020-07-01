@@ -205,6 +205,11 @@ class IPMIConsole(Console):
             self.state = ConsoleState.DISCONNECTED
             pass
 
+    def is_connected(self):
+        if self.state == ConsoleState.DISCONNECTED:
+            return False
+        return self.pty.isalive()
+
     def connect(self, logger=None):
         if self.state == ConsoleState.CONNECTED:
             raise 're-opening connected console'  # FIXME: handle properly

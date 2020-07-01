@@ -78,7 +78,9 @@ class QemuConsole(Console):
         # FIXME: do we need to call super().close()?
 
     def is_connected(self):
-        return self.state == ConsoleState.CONNECTED
+        if self.state == ConsoleState.DISCONNECTED:
+            return False
+        return self.pty.isalive()
 
 qemu_state_table = [
     SysConsoleState('skiboot', openpower.skiboot_entry, 10, openpower.skiboot_exit, 30),
