@@ -48,7 +48,7 @@ import os
 import re
 
 import pexpect
-from .exceptions import CommandFailed, OpTestError
+from .exceptions import CommandFailed, OpTestError, ConsoleSettings
 
 from . import opexpect
 from . import logger
@@ -210,7 +210,7 @@ class Console():
         rc = self.pty.expect([self.prompt, pexpect.EOF], timeout=1) # matches the actual prompt
 
         if rc != 0:
-            raise ConsoleSettings(before=pty.before, after=pty.after,
+            raise ConsoleSettings(before=self.pty.before, after=self.pty.after,
                                   msg="Problem with logging in. Probably a "
                                       "connection or credential issue")
             # FIXME: uncomment later           self.get_versions()
@@ -263,7 +263,7 @@ class Console():
         # timeout or some other problem, welp
         log.warning("Problem with the login and/or password prompt,"
                     " raised Exception ConsoleSettings but continuing")
-        raise ConsoleSettings(before=pty.before, after=pty.after,
+        raise ConsoleSettings(before=self.pty.before, after=self.pty.after,
                               msg="Problem with logging in. Probably a "
                                   "connection or credential issue")
 
