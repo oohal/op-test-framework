@@ -1210,7 +1210,7 @@ class OpenBMCSystem(OpSystem):
         # do we do anything with this?
         self.bmc = OpenBMC(ip=hostname,
                            username=username,
-                           password=username,
+                           password=password,
                            logfile=self.logfile,
                            check_ssh_keys=check_ssh_keys,
                            known_hosts_file=known_hosts_file)
