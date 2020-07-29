@@ -34,8 +34,10 @@ from .constants import Constants as BMC_CONST
 
 from .console import Console, SSHConsole
 from .openpower import OpSystem
+from .logger import FileLikeLogger
 from .ipmi import OpTestIPMI
 
+from . import opexpect
 from . import utils
 
 log = logging.getLogger(__name__)
@@ -714,7 +716,7 @@ class HostManagement():
         '''
         Get List of Image IDs
         '''
-        l = self.get_list_of_image_ids(minutes=minutes)
+        l = self.rest_api.get_list_of_image_ids(minutes=minutes)
         for id in l[:]:
             i = self.image_data(id, minutes=minutes)
             # Here, we assume that if we don't have 'Purpose' it's something special
@@ -1052,54 +1054,61 @@ class OpenBMC():
         self.password = password
         self.ipmi = ipmi
         self.rest_api = rest_api
-        self.has_vpnor = None
         self.logfile = logfile
-        """
-        # FIXME: if this is doing anything useful we should probably be
-        # inheriting off it.
-        self.bmc = OpTestBMC(ip=self.hostname,
-                             username=self.username,
-                             password=self.password,
-                             logfile=self.logfile,
-                             check_ssh_keys=check_ssh_keys,
-                             known_hosts_file=known_hosts_file)
-        """
 
-    def set_system(self, system):
-        self.console.set_system(system)
-        self.bmc.set_system(system)
+        self.check_ssh_keys = check_ssh_keys
+        self.known_hosts_file = known_hosts_file
 
-    def query_vpnor(self, minutes=BMC_CONST.HTTP_RETRY):
-        if self.has_vpnor is not None:
-            return self.has_vpnor
+        self._has_pnor_api    = None
+        self._has_vpnor_patch = None
+        self._has_pflash      = None
 
-        has_local_share_pnor = True
-        try:
-            self.bmc.run_command("ls -1 /usr/local/share/pnor")
-        except CommandFailed:
-            log.debug("We do not have /usr/local/share/pnor, so has_local_share_pnor=False")
-            has_local_share_pnor = False
+        # FIXME: reconnect handling?
+        self.ssh = SSHConsole(ip, username, password, log=log, prompt=None,
+                              check_ssh_keys=check_ssh_keys,
+                              known_hosts_file=known_hosts_file)
+        self.ssh.connect()
+        self.ssh.shell_setup()
 
-        has_pflash = self.bmc.validate_pflash_tool()
+    def has_vpnor_patch(self):
+        if self._has_vpnor_patch is None:
+            try:
+                self.ssh.run_command("ls -1 /usr/local/share/pnor")
+                self._has_vpnor_patch = True
+            except CommandFailed:
+                log.debug("We do not have /usr/local/share/pnor, so has_local_share_pnor=False")
+                self._has_vpnor_patch = False
 
-        # As of April 2019, now there's APIs for machines using the non-vpnor
-        # layout. So our previous logic of assuming that we should use pflash
-        # only if the API is not there is now invalid.
-        # So we have to guess, as there's no real good documented way to work
-        # out what to do.
-        if not has_local_share_pnor and has_pflash:
-            return False
+        return self._has_vpnor_patch
 
-        log.debug("We are proceeding to validate VPNOR image for Host")
-        list = self.rest_api.get_list_of_image_ids(minutes=minutes)
+    def has_pflash(self):
+        if self._has_pflash is None:
+            try:
+                self.ssh.run_command("which pflash")
+                self.ssh.run_command("pflash -i")
+                self._has_pflash = True
+            except CommandFailed as e:
+                log.debug("No pflash: {}".format(e))
+                self._has_pflash = False
+
+        return self._has_pflash
+
+    def has_pnor_api(self):
+        if self._has_pnor_api is not None:
+            return self._has_pnor_api
+
+        log.debug("Checking if the host PNOR update API is supported...")
+        list = self.rest_api.get_list_of_image_ids()
         for id in list:
             log.debug("id={}".format(id))
             i = self.rest_api.image_data(id)
             if i['data'].get('Purpose') == 'xyz.openbmc_project.Software.Version.VersionPurpose.Host':
                 log.debug("Host image")
-                self.has_vpnor = True
+                self._has_pnor_api = True
                 return True
+
         # if we got this far we should return and say we don't have anything
+        self._has_pnor_api = False
         return False
 
     def reboot(self):
@@ -1111,47 +1120,76 @@ class OpenBMC():
         # Reboot BMC but do not wait for it to come back
         self.bmc.reboot_nowait()
 
+    # copying files to/from the BMC
     def image_transfer(self, i_imageName, copy_as=None):
-        self.bmc.image_transfer(i_imageName, copy_as=copy_as)
+        '''
+        This function copies the given image to the BMC /tmp dir.
 
-    def pnor_img_flash_openbmc(self, pnor_name):
-        self.bmc.pnor_img_flash_openbmc(pnor_name)
+        :param i_imageName: Local file to copy across
+        :param copy_as: file name to copy to (in /tmp)
+        :returns: Exit code of scp or rsync process
+        '''
+        img_path = i_imageName
+        ssh_opts = ' -o PubkeyAuthentication=no '
+        if not self.check_ssh_keys:
+            ssh_opts = ssh_opts + ' -o StrictHostKeyChecking=no'
+        elif self.known_hosts_file:
+            ssh_opts = ssh_opts + ' -o UserKnownHostsFile=' + self.known_hosts_file
 
-    def skiboot_img_flash_openbmc(self, lid_name):
-        if not self.query_vpnor():
-            log.debug("We do NOT have vpnor, so calling old pflash")
-            self.bmc.skiboot_img_flash_openbmc(lid_name)
+        rsync_cmd  = 'sshpass -p %s ' % (self.password)
+        rsync_cmd += 'rsync -P -v -e "ssh -k' + ssh_opts + \
+            '" %s %s@%s:/tmp' % (img_path, self.username, self.ip)
+        if copy_as:
+            rsync_cmd = rsync_cmd + '/' + copy_as
+
+        log.debug(rsync_cmd)
+        rsync = opexpect.spawn(rsync_cmd)
+        rsync.logfile = FileLikeLogger(log)
+        r = rsync.expect(['assword: ', 'total size is',
+                          'error while loading shared lib', pexpect.EOF], timeout=1800)
+        if r == 0:
+            rsync.sendline(self.password)
+            r = rsync.expect(['assword: ', 'total size is',
+                              'error while loading shared lib', pexpect.EOF], timeout=1800)
+
+        rsync.expect(pexpect.EOF)
+        rsync.close()
+        return rsync.exitstatus
+
+    def flash_pnor(self, i_imageName):
+        if self.has_pnor_api():
+            pass # FIXME: implement
+
+        elif self.has_pflash():
+            self.image_transfer(i_imageName)
+            cmd = 'pflash -E -f -p /tmp/%s' % os.path.baseame(i_imageName)
+            rc = self.ssh.run_command(cmd, timeout=1800)
+            return rc
+
         else:
-            # don't ask. There appears to be a bug where we need to be 4k aligned.
-            self.bmc.run_command(
-                "dd if=/dev/zero of=/dev/stdout bs=1M count=1 | tr '\\000' '\\377' > /tmp/ones")
-            self.bmc.run_command(
-                "cat /tmp/%s /tmp/ones > /tmp/padded" % lid_name)
-            self.bmc.run_command(
-                "dd if=/tmp/padded of=/usr/local/share/pnor/PAYLOAD bs=1M count=1")
-            #self.bmc.run_command("mv /tmp/%s /usr/local/share/pnor/PAYLOAD" % lid_name, timeout=60)
+            raise NotImplementedError("Can't flash partition. No vPNOR or pflash")
 
-    def skiroot_img_flash_openbmc(self, lid_name):
-        if not self.query_vpnor():
-            self.bmc.skiroot_img_flash_openbmc(lid_name)
-        else:
-            # don't ask. There appears to be a bug where we need to be 4k aligned.
-            #self.bmc.run_command("dd if=/dev/zero of=/dev/stdout bs=16M count=1 | tr '\\000' '\\377' > /tmp/ones")
-            #self.bmc.run_command("cat /tmp/%s /tmp/ones > /tmp/padded" % lid_name)
-            try:
-                # seems the success on following command gives echo $?=1
-                #self.bmc.run_command("dd if=/tmp/padded of=/usr/local/share/pnor/BOOTKERNEL bs=16M count=1")
-                self.bmc.run_command("rm -f /usr/local/share/pnor/BOOTKERNEL", timeout=60)
-                self.bmc.run_command("ln -s /tmp/{} /usr/local/share/pnor/BOOTKERNEL".format(lid_name), timeout=60)
-            except CommandFailed as e:
-                log.warning("FLASHING CommandFailed, check that this is ok for your setup")
+    def flash_part(self, part_name, filename):
+        if self.has_vpnor_patch():
+            # FIXME: bring back the old padding hacks?
+            # FIXME: if it's too large for the patch partition we should symlink to
+            # something in /tmp
+            self.image_transfer(filename)
+            self.ssh.run_command(
+                "mv /tmp/%s /usr/local/share/pnor/%s" % (filename, part_name), timeout=60)
+            return 0
 
-    def flash_part_openbmc(self, lid_name, part_name):
-        if not self.query_vpnor():
-            self.bmc.flash_part_openbmc(lid_name, part_name)
+        elif self.has_pflash():
+            basename = os.path.basename(filename)
+            log.debug("XXXX")
+            self.image_transfer(filename)
+            log.debug("XXXX")
+            cmd = 'pflash -p /tmp/%s -e -f -P %s' % (basename, part_name)
+            rc = self.ssh.run_command(cmd, timeout=1800)
+            return rc
+
         else:
-            self.bmc.run_command(
-                "mv /tmp/%s /usr/local/share/pnor/%s" % (lid_name, part_name), timeout=60)
+            raise NotImplementedError("Can't flash partition. No vPNOR or pflash")
 
     def clear_field_mode(self):
         self.bmc.run_command("fw_setenv fieldmode")
@@ -1212,6 +1250,7 @@ class OpenBMCSystem(OpSystem):
                            username=username,
                            password=password,
                            logfile=self.logfile,
+                           rest_api=self.rest,
                            check_ssh_keys=check_ssh_keys,
                            known_hosts_file=known_hosts_file)
         self.ipmi = OpTestIPMI(hostname, ipmiusername, ipmipassword)
