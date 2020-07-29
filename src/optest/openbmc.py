@@ -29,7 +29,7 @@ import requests
 import cgi
 import os
 
-from .exceptions import HTTPCheck, CommandFailed
+from .exceptions import HTTPCheck, CommandFailed, UnknownFwPartition
 from .constants import Constants as BMC_CONST
 
 from .console import Console, SSHConsole
@@ -1284,3 +1284,14 @@ class OpenBMCSystem(OpSystem):
 
     def host_power_off_hard(self):
         self.rest.power_off()
+
+    # FW Update / Patching support
+    def patch_fw(self, fw_name, filename):
+        # allow some aliases for the sake of convenience
+        if fw_name == "skiboot":
+            fw_name = "PAYLOAD"
+
+        self.bmc.flash_part(fw_name, filename)
+
+    def update_fw(self, filename):
+        self.bmc.flash_pnor(filename)

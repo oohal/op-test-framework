@@ -371,3 +371,12 @@ class BaseSystem(object):
                 s.resume(self)
             else:
                 self._run_state(s, target)
+
+    # FW Update support
+    def patch_fw(self, fw_name, filename):
+        ''' Patches a single FW component with the given file '''
+        raise NotImplementedError()
+
+    def update_fw(self, filename):
+        ''' updates the system firmware with the given image '''
+        raise NotImplementedError()

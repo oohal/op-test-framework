@@ -533,3 +533,9 @@ class MissedState(Exception):
        missed a state transition. If you see this there's probably a bug
        in op-test, or the test system configuration.'''
     pass
+
+
+class UnknownFwPartition(Exception):
+        ''' Raised when attempting to patch an unknown firmware component, or
+            or firmware component this system doesn't support patching.'''
+        pass
