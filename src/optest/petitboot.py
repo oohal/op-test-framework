@@ -287,6 +287,8 @@ class PetitbootHelper():
         self.c.pty.sendcontrol('l')
         options = []
 
+        log.info("finding boot options: {}".format(target))
+
         while True:
             # aren't being written to. I'm not too sure how to fix that...
             input_buf = self.read_screen_updates()
@@ -345,6 +347,8 @@ class PetitbootHelper():
         self.c.pty.sendcontrol('l')
         options = []
 
+        log.info("navigating to: {}".format(target))
+
         while True:
             # aren't being written to. I'm not too sure how to fix that...
             input_buf = self.read_screen_updates()
@@ -388,6 +392,7 @@ class PetitbootHelper():
         return None
 
     def boot_menu_option(self, option_name, timeout=60):
+        log.info("finding and booting: {}".format(option_name))
         started = time.monotonic()
 
         while time.monotonic() < start + timeout:
@@ -402,12 +407,16 @@ class PetitbootHelper():
                         .format(option_name, format(timeout)))
 
     def add_config_url(self, url):
+        log.info("Adding petitboot config from {}".format(url))
         self.select_menu_option('Retrieve config from URL')
         self.c.pty.sendline('')
 
         self.c.pty.sendline(url)
         self.c.pty.send(OpTestKeys.TAB)
         self.c.pty.sendline('')
+
+        # remove all the petitboot screen updates from the expect buffer
+        self.read_screen_updates()
 
     def add_custom_boot_opt(self, kernel, initrd=None, cmdline=None, dtb=None):
         # TODO: implement this. It's possible to add random options using
