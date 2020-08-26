@@ -450,6 +450,7 @@ class PetitbootState(ConsoleState):
         self.boot_option = None
 
     def run(self, system, exit_at):
+        log.info("watching for petitboot entry patterns")
         self._watch_for(system, self.pb_entry, self.entry_timeout)
 
         log.info("entered petitboot")
@@ -457,6 +458,7 @@ class PetitbootState(ConsoleState):
         # NB: Instantiating PetitbootHelper has some side effects which might
         #     cancel auto boot so don't do it in the common path.
         if exit_at:
+            log.info("exiting at petitboot")
             pb = PetitbootHelper(system)
 
             # exit / enter to stop autoboot
@@ -472,6 +474,7 @@ class PetitbootState(ConsoleState):
             system.get_console().pty.sendline('') # push button
 
         # otherwise just wait for the autoboot to happen
+        log.info("watching for petitboot exit patterns")
         self._watch_for(system, self.pb_exit, self.exit_timeout)
 
     def check(self, system):
