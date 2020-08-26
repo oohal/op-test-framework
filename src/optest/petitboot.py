@@ -290,11 +290,13 @@ class PetitbootHelper():
         log.info("finding boot options: {}".format(target))
 
         while True:
-            # aren't being written to. I'm not too sure how to fix that...
+            # the logfiles aren't being written to. I'm not too sure how to fix that...
             input_buf = self.read_screen_updates()
 
             if not input_buf:
-                raise Exception("empty buf? that shouldn't happen")
+                self.c.pty.sendcontrol('l')
+                continue
+#                raise Exception("empty buf? that shouldn't happen")
             if len(input_buf) == 1:
                 # Saw this a while ago and it can happen as a result of
                 # sitting in the shell. If that happens it's because of a
@@ -354,6 +356,7 @@ class PetitbootHelper():
             input_buf = self.read_screen_updates()
 
             if not input_buf:
+                self.c.pty.sendcontrol('l')
                 raise Exception("empty buf? that shouldn't happen")
             if len(input_buf) == 1:
                 # Saw this a while ago and it can happen as a result of
