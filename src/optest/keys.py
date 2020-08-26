@@ -12,3 +12,4 @@ class OpTestKeys():
     ENTER = '\n'
     SPACE = ' '
     HOME = '\x1b[1~'
+    END = '\x1b[4~'
