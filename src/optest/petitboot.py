@@ -393,10 +393,10 @@ class PetitbootHelper():
 
     def boot_menu_option(self, option_name, timeout=60):
         log.info("finding and booting: {}".format(option_name))
-        started = time.monotonic()
+        start = time.monotonic()
 
         while time.monotonic() < start + timeout:
-            r = self.select_boot_option(self, option_name)
+            r = self.select_boot_option(option_name)
 
             if r[-1] == option_name:
                 self.c.pty.sendline('') # push button!
@@ -410,15 +410,42 @@ class PetitbootHelper():
         log.info("Adding petitboot config from {}".format(url))
         self.select_menu_option('Retrieve config from URL')
         self.c.pty.sendline('')
+        time.sleep(1)
 
         self.c.pty.sendline(url)
         self.c.pty.send(OpTestKeys.TAB)
+        time.sleep(1)
         self.c.pty.sendline('')
 
         # remove all the petitboot screen updates from the expect buffer
         self.read_screen_updates()
 
-    def add_custom_boot_opt(self, kernel, initrd=None, cmdline=None, dtb=None):
+    def boot_custom(self, kernel, initrd=None, cmdline=None, dtb=None):
+        self.goto_menu()
+        self.c.pty.send('n')
+        time.sleep(1)
+
+        self.c.pty.send(OpTestKeys.TAB)
+        self.c.pty.send(kernel)
+
+        self.c.pty.send(OpTestKeys.TAB)
+        if initrd:
+            self.c.pty.send(initrd)
+
+        self.c.pty.send(OpTestKeys.TAB)
+        if dtb:
+            self.c.pty.send(dtb)
+
+        self.c.pty.send(OpTestKeys.TAB)
+        if cmdline:
+            self.c.pty.send(cmdline)
+
+        self.c.pty.send(OpTestKeys.TAB)
+        self.c.pty.sendline('')
+
+        self.read_screen_updates()
+        self.boot_menu_option('User item 1')
+
         # TODO: implement this. It's possible to add random options using
         # add from URL menu option with file:// URLs. There's probably a way
         # to get pb-event to do it too, but I have to look at the code whenever
