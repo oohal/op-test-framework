@@ -351,7 +351,7 @@ class BaseSystem(object):
             if s == target:
                 break
 
-    def boot_resume(self, target):
+    def boot_resume(self, target_name):
         ''' try and continue booting from the last known state. This needs to
         used with care since it's pretty easy for the actual state and the last
         known state to end up out of sync if the test does anything non-trivial.
@@ -359,18 +359,27 @@ class BaseSystem(object):
         This can be really useful for op-test development and for debug scripts
         but try avoid it in CI tests since it's inherently fragile.
         '''
+        target = self._get_state(target_name)
         found = False
+
 
         for s in self.state_table:
             if not found and s != self.last_state:
                 continue;
 
-            if s == self.last_state:
+            # call the state resume function if we have one
+            if not found and s == self.last_state:
                 found = True
                 log.info("Attempting to resume booting from state {}".format(s))
-                s.resume(self)
-            else:
-                self._run_state(s, target)
+                try:
+                    s.resume(self)
+                except NotImplementedError:
+                    pass
+
+            # otherwise continue cranking the state machine
+            self._run_state(s, target)
+            if s == target:
+                break
 
     # FW Update support
     def patch_fw(self, fw_name, filename):
