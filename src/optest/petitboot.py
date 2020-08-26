@@ -328,6 +328,65 @@ class PetitbootHelper():
 
         return options
 
+    def select_menu_option(self, target):
+        '''
+        Similar to select_boot_option(), but it's used to select the
+        petitboot menu options (e.g. Retrieve Config From URL).
+        '''
+        # TODO: unify this with select_boot_option? Keeping them seperate might be
+        # cleaner since the boot options can be tagged with device names, etc
+
+        # NB: The 300,30 are the dimensions that Console::shell_setup() sets.
+        # I'm not entirely sure why we use that, but keep them matching.
+        screen = pyte.Screen(300, 30)
+        input_stream = pyte.Stream(screen)
+
+        self.c.pty.send(OpTestKeys.END)
+        self.c.pty.sendcontrol('l')
+        options = []
+
+        while True:
+            # aren't being written to. I'm not too sure how to fix that...
+            input_buf = self.read_screen_updates()
+
+            if not input_buf:
+                raise Exception("empty buf? that shouldn't happen")
+            if len(input_buf) == 1:
+                # Saw this a while ago and it can happen as a result of
+                # sitting in the shell. If that happens it's because of a
+                # bug elsewhere, so don't try to handle it here.
+                raise Exception("Bad petitboot state?")
+
+            # Apply the update to our emulated tty
+            input_stream.feed(input_buf)
+
+            selected = None
+            for l in screen.display:
+                # The currently selected item is marked with a ' *'. We skip items
+                # with a left bracket as the first character since those are the
+                # header lines for boot devices (disk, network, etc).
+                if '*' in l[0:3]:
+                    log.debug("menu item: " + l.strip())
+
+                if l.startswith(' *') and not l.startswith(' *['):
+                    selected = l[2:]
+                    break
+
+            if selected:
+                # end of the boot option menu?
+                selected = selected.strip()
+
+                options.append(selected)
+                if target and selected == target:
+                    return selected
+
+                if "system information" in selected.lower():
+                    return None
+
+            self.c.pty.send(OpTestKeys.UP)
+
+        return None
+
     def boot_menu_option(self, option_name, timeout=60):
         started = time.monotonic()
 
@@ -341,6 +400,14 @@ class PetitbootHelper():
         # FIXME: change the type
         raise Exception("Boot option: {} didn't appear inside timeout"
                         .format(option_name, format(timeout)))
+
+    def add_config_url(self, url):
+        self.select_menu_option('Retrieve config from URL')
+        self.c.pty.sendline('')
+
+        self.c.pty.sendline(url)
+        self.c.pty.send(OpTestKeys.TAB)
+        self.c.pty.sendline('')
 
     def add_custom_boot_opt(self, kernel, initrd=None, cmdline=None, dtb=None):
         # TODO: implement this. It's possible to add random options using
